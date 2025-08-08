@@ -11,11 +11,14 @@ endif()
 
 project ("ToyEngine")
 
-# 将源代码添加到此项目的可执行文件。
-add_executable (ToyEngine "ToyEngine.cpp" "ToyEngine.h")
-
+# 设置C++标准
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ToyEngine PROPERTY CXX_STANDARD 20)
+  set(CMAKE_CXX_STANDARD 20)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
-# TODO: 如有需要，请添加测试并安装目标。
+# 添加Source子目录
+add_subdirectory(Source)
+
+# 设置ToyEngine为启动项目（需要在所有目标定义之后）
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ToyEngine)
