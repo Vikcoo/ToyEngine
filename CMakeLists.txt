@@ -11,14 +11,41 @@ endif()
 
 project ("ToyEngine")
 
-# 设置C++标准
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set(CMAKE_CXX_STANDARD 20)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# 关键：为 MSVC 编译器添加 /utf-8 选项，启用 UTF-8 编码
+if(MSVC)
+    add_compile_options(/utf-8)
 endif()
 
-# 添加Source子目录
+# 设置C++标准
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(WIN32)
+    message("windows")
+    add_definitions(-DTE_PLATFORM_WIN32)
+elseif(UNIX AND NOT APPLE)
+    message("linux")
+    add_definitions(-DTE_PLATFORM_LINUX)
+elseif(APPLE)
+    message("macos")
+    add_definitions(-DTE_PLATFORM_MACOS)
+endif()
+
+option(USE_OPENGL "Use OpenGL as graphics API" OFF)
+option(USE_VULKAN "Use Vulkan as graphics API" ON)
+option(USE_DIRECTX "Use DirectX as graphics API" OFF)
+if(USE_OPENGL)
+    add_definitions(-DTE_USE_OPENGL)
+elseif(USE_VULKAN)
+    add_definitions(-DTE_USE_VULKAN)
+elseif(USE_DIRECTX)
+    add_definitions(-DTE_USE_DIRECTX)
+endif()
+
+
+# 添加子目录
 add_subdirectory(Source)
+add_subdirectory(ThirdParty)
 
 # 设置ToyEngine为启动项目（需要在所有目标定义之后）
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ToyEngine)
