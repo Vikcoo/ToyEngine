@@ -12,6 +12,6 @@ namespace TE {
 		~TEVKGraphicContext() override;
 	private:
 		void CreateInstance();
-		VkInstance m_Instance;
+		vk::Instance m_Instance;
 	};
 }

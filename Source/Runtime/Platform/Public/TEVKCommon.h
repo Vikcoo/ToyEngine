@@ -1,5 +1,9 @@
 #pragma once
-#include "vulkan/vulkan.h"
+#include <windows.h>
+#include <sstream>
+#include <iomanip>
+#include "vulkan/vulkan.hpp"
+#include "vulkan/vulkan_win32.h"
 #include "TELog.h"
 
 
@@ -11,88 +15,110 @@ struct DeviceFeature
 
 #define CALL_VK_CHECK(result) vk_check(result, __FILE__, __LINE__, __FUNCTION__)
 
-/// <summary>
-/// ¼ì²éÉè±¸ÌØĞÔÖ§³ÖÇé¿ö£¬²¢Êä³öÒÑÆôÓÃµÄÌØĞÔÊıÁ¿ºÍÃû³Æ¡£
-/// </summary>
-/// <param name="label">ÓÃÓÚ±êÊ¶Éè±¸ÌØĞÔ¼ì²éµÄ±êÇ©¡£</param>
-/// <param name="isExtension">Ö¸Ê¾ÊÇ·ñ¼ì²éÀ©Õ¹ÌØĞÔ£¨true ÎªÀ©Õ¹£¬false ÎªºËĞÄÌØĞÔ£©¡£</param>
-/// <param name="availableCount">¿ÉÓÃÌØĞÔµÄÊıÁ¿¡£</param>
-/// <param name="available">Ö¸Ïò¿ÉÓÃÌØĞÔÁĞ±íµÄÖ¸Õë¡£</param>
-/// <param name="requestedCount">ÇëÇóÆôÓÃµÄÌØĞÔÊıÁ¿¡£</param>
-/// <param name="requestFeatures">Ö¸ÏòÇëÇóÆôÓÃµÄÉè±¸ÌØĞÔÊı×éµÄÖ¸Õë¡£</param>
-/// <param name="outEnableCount">Ö¸ÏòÊä³öÒÑÆôÓÃÌØĞÔÊıÁ¿µÄÖ¸Õë¡£</param>
-/// <param name="outEnableFeatures">Ö¸ÏòÊä³öÒÑÆôÓÃÌØĞÔÃû³ÆµÄÖ¸Õë¡£</param>
-/// <returns>Èç¹ûËùÓĞÇëÇóµÄÌØĞÔ¶¼±»Ö§³Ö£¬Ôò·µ»Ø true£»·ñÔò·µ»Ø false¡£</returns>
+/**
+ *
+ * @param label
+ * @param isExtension
+ * @param availableCount
+ * @param available
+ * @param requestedCount
+ * @param requestFeatures
+ * @param outEnableCount
+ * @param outEnableFeatures
+ * @return
+ */
 static bool CheckDeviceFeatureSupport(
-    const char* label, bool isExtension, 
-    uint32_t availableCount, void* available, 
-    uint32_t requestedCount, const DeviceFeature* requestFeatures,
-    uint32_t* outEnableCount, const char* outEnableFeatures) {
+    const std::string& label, bool isExtension,
+    uint32_t availableCount, void* available,
+    uint32_t requestedCount, const std::vector<DeviceFeature>& requestFeatures,
+    uint32_t& outEnableCount, std::vector<const char*>& outEnableFeatures) {
+    bool findAllRequiredFeatures = true;
+    outEnableCount = 0;
+    outEnableFeatures.clear();
+    LOG_DEBUG("--------------------{}--------------------", label);
+    for (uint32_t i = 0; i < requestedCount; i++) {
+        bool isFound = false;
+        std::string logContent = requestFeatures[i].isRequired ? "required , not found" : "no required, not found";
+        for (uint32_t j = 0; j < availableCount; j++) {
+            const char* availableName = isExtension ? ((VkExtensionProperties*)available)[j].extensionName : ((VkLayerProperties*)available)[j].layerName;
+            if (strcmp(availableName, requestFeatures[i].name) == 0) {
+                isFound = true;
+                outEnableCount++;
+                outEnableFeatures.push_back(availableName);
+                break;
+            }
+        }
+        if (isFound) {
+            logContent = requestFeatures[i].isRequired ? "required , found" : "no required, found";
+        }
+        // ?????????????????????????????????
+        findAllRequiredFeatures &= isFound || !requestFeatures[i].isRequired;
 
+        LOG_DEBUG("{}, {}", requestFeatures[i].name, logContent);
+    }
+    LOG_DEBUG("-------------------------------------");
+    return findAllRequiredFeatures;
 }
 
-
-
-static std::string VKResultToString(VkResult result) {
+static std::string VKResultToString(vk::Result result) noexcept {
     switch (result) {
-        // ³É¹¦×´Ì¬Âë
-    case VK_SUCCESS: return "VK_SUCCESS";
-    case VK_NOT_READY: return "VK_NOT_READY";
-    case VK_TIMEOUT: return "VK_TIMEOUT";
-    case VK_EVENT_SET: return "VK_EVENT_SET";
-    case VK_EVENT_RESET: return "VK_EVENT_RESET";
-    case VK_INCOMPLETE: return "VK_INCOMPLETE";
-    case VK_SUBOPTIMAL_KHR: return "VK_SUBOPTIMAL_KHR";  // ½»»»Á´´ÎÓÅÅäÖÃ
+        // æˆåŠŸçŠ¶æ€
+        case vk::Result::eSuccess:                  return "vk::Result::eSuccess";
+        case vk::Result::eNotReady:                 return "vk::Result::eNotReady";
+        case vk::Result::eTimeout:                  return "vk::Result::eTimeout";
+        case vk::Result::eEventSet:                 return "vk::Result::eEventSet";
+        case vk::Result::eEventReset:               return "vk::Result::eEventReset";
+        case vk::Result::eIncomplete:               return "vk::Result::eIncomplete";
+        case vk::Result::eSuboptimalKHR:            return "vk::Result::eSuboptimalKHR (äº¤æ¢é“¾æ¬¡ä¼˜é…ç½®)";
 
-        // ´íÎó×´Ì¬Âë£¨Ö÷»úÄÚ´æÏà¹Ø£©
-    case VK_ERROR_OUT_OF_HOST_MEMORY: return "VK_ERROR_OUT_OF_HOST_MEMORY";
-    case VK_ERROR_OUT_OF_DEVICE_MEMORY: return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
-    case VK_ERROR_INITIALIZATION_FAILED: return "VK_ERROR_INITIALIZATION_FAILED";
+            // é”™è¯¯çŠ¶æ€ - å†…å­˜ç›¸å…³
+        case vk::Result::eErrorOutOfHostMemory:     return "vk::Result::eErrorOutOfHostMemory (ä¸»æœºå†…å­˜ä¸è¶³)";
+        case vk::Result::eErrorOutOfDeviceMemory:   return "vk::Result::eErrorOutOfDeviceMemory (è®¾å¤‡å†…å­˜ä¸è¶³)";
+        case vk::Result::eErrorOutOfPoolMemory:     return "vk::Result::eErrorOutOfPoolMemory (å†…å­˜æ± ä¸è¶³)";
+        case vk::Result::eErrorMemoryMapFailed:     return "vk::Result::eErrorMemoryMapFailed (å†…å­˜æ˜ å°„å¤±è´¥)";
 
-        // ²ãºÍÀ©Õ¹Ïà¹Ø´íÎó
-    case VK_ERROR_LAYER_NOT_PRESENT: return "VK_ERROR_LAYER_NOT_PRESENT";
-    case VK_ERROR_EXTENSION_NOT_PRESENT: return "VK_ERROR_EXTENSION_NOT_PRESENT";
-    case VK_ERROR_INCOMPATIBLE_DRIVER: return "VK_ERROR_INCOMPATIBLE_DRIVER";
+            // é”™è¯¯çŠ¶æ€ - åˆå§‹åŒ–ä¸é©±åŠ¨
+        case vk::Result::eErrorInitializationFailed: return "vk::Result::eErrorInitializationFailed (åˆå§‹åŒ–å¤±è´¥)";
+        case vk::Result::eErrorIncompatibleDriver:  return "vk::Result::eErrorIncompatibleDriver (é©±åŠ¨ä¸å…¼å®¹)";
+        case vk::Result::eErrorDeviceLost:          return "vk::Result::eErrorDeviceLost (è®¾å¤‡å·²ä¸¢å¤±)";
 
-        // ÊµÀıºÍÉè±¸Ïà¹Ø´íÎó
-    case VK_ERROR_DEVICE_LOST: return "VK_ERROR_DEVICE_LOST";  // Éè±¸ÒÑ¶ªÊ§£¨ÈçÇı¶¯±ÀÀ££©
-    //case VK_ERROR_DEVICE_ALREADY_EXISTS: return "VK_ERROR_DEVICE_ALREADY_EXISTS";
-    case VK_ERROR_INVALID_EXTERNAL_HANDLE: return "VK_ERROR_INVALID_EXTERNAL_HANDLE";
-    case VK_ERROR_OUT_OF_DATE_KHR: return "VK_ERROR_OUT_OF_DATE_KHR";  // ½»»»Á´¹ıÆÚ
+            // é”™è¯¯çŠ¶æ€ - å±‚ä¸æ‰©å±•
+        case vk::Result::eErrorLayerNotPresent:     return "vk::Result::eErrorLayerNotPresent (å±‚ä¸å­˜åœ¨)";
+        case vk::Result::eErrorExtensionNotPresent: return "vk::Result::eErrorExtensionNotPresent (æ‰©å±•ä¸å­˜åœ¨)";
+        case vk::Result::eErrorFeatureNotPresent:   return "vk::Result::eErrorFeatureNotPresent (ç‰¹æ€§ä¸æ”¯æŒ)";
 
-        // ÄÚ´æÏà¹Ø´íÎó
-    case VK_ERROR_OUT_OF_POOL_MEMORY: return "VK_ERROR_OUT_OF_POOL_MEMORY";
-    //case VK_ERROR_INVALID_MEMORY_ALLOCATE: return "VK_ERROR_INVALID_MEMORY_ALLOCATE";
-    case VK_ERROR_MEMORY_MAP_FAILED: return "VK_ERROR_MEMORY_MAP_FAILED";
+            // é”™è¯¯çŠ¶æ€ - äº¤æ¢é“¾ä¸è¡¨é¢
+        case vk::Result::eErrorSurfaceLostKHR:      return "vk::Result::eErrorSurfaceLostKHR (è¡¨é¢å·²ä¸¢å¤±)";
+        case vk::Result::eErrorOutOfDateKHR:        return "vk::Result::eErrorOutOfDateKHR (äº¤æ¢é“¾è¿‡æœŸ)";
+        case vk::Result::eErrorNativeWindowInUseKHR: return "vk::Result::eErrorNativeWindowInUseKHR (çª—å£å·²è¢«ä½¿ç”¨)";
+        case vk::Result::eErrorIncompatibleDisplayKHR: return "vk::Result::eErrorIncompatibleDisplayKHR (æ˜¾ç¤ºå™¨ä¸å…¼å®¹)";
 
-        // ×ÊÔ´Ïà¹Ø´íÎó
-    case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: return "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS";
-    case VK_ERROR_FRAGMENTATION: return "VK_ERROR_FRAGMENTATION";  // ÄÚ´æËéÆ¬µ¼ÖÂ·ÖÅäÊ§°Ü
-    //case VK_ERROR_INVALID_PHYSICAL_DEVICE: return "VK_ERROR_INVALID_PHYSICAL_DEVICE";
+            // é”™è¯¯çŠ¶æ€ - å…¶ä»–
+        case vk::Result::eErrorInvalidExternalHandle: return "vk::Result::eErrorInvalidExternalHandle (å¤–éƒ¨å¥æŸ„æ— æ•ˆ)";
+        case vk::Result::eErrorInvalidOpaqueCaptureAddress: return "vk::Result::eErrorInvalidOpaqueCaptureAddress (æ•è·åœ°å€æ— æ•ˆ)";
+        case vk::Result::eErrorFragmentation:       return "vk::Result::eErrorFragmentation (å†…å­˜ç¢ç‰‡)";
+        case vk::Result::eErrorInvalidShaderNV:     return "vk::Result::eErrorInvalidShaderNV (ç€è‰²å™¨æ— æ•ˆ)";
+        case vk::Result::eErrorValidationFailedEXT: return "vk::Result::eErrorValidationFailedEXT (éªŒè¯å±‚é”™è¯¯)";
 
-        // ¹ÜµÀºÍ×ÅÉ«Æ÷Ïà¹Ø´íÎó
-    //case VK_ERROR_INVALID_PIPELINE_CACHE_UUID: return "VK_ERROR_INVALID_PIPELINE_CACHE_UUID";
-    case VK_ERROR_INVALID_SHADER_NV: return "VK_ERROR_INVALID_SHADER_NV";
-
-        // ±íÃæºÍ½»»»Á´Ïà¹Ø´íÎó
-    case VK_ERROR_SURFACE_LOST_KHR: return "VK_ERROR_SURFACE_LOST_KHR";  // ±íÃæÒÑ¶ªÊ§
-    case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR: return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
-    //case VK_ERROR_INVALID_DISPLAY_KHR: return "VK_ERROR_INVALID_DISPLAY_KHR";
-    //case VK_ERROR_DISPLAY_IN_USE_KHR: return "VK_ERROR_DISPLAY_IN_USE_KHR";
-
-        // ÆäËû´íÎó
-    //case VK_ERROR_INVALID_COMMAND_BUFFER: return "VK_ERROR_INVALID_COMMAND_BUFFER";
-    case VK_ERROR_FEATURE_NOT_PRESENT: return "VK_ERROR_FEATURE_NOT_PRESENT";
-    case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR: return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
-    case VK_ERROR_VALIDATION_FAILED_EXT: return "VK_ERROR_VALIDATION_FAILED_EXT";  // ÑéÖ¤²ã´íÎó
-
-        // Î´¶¨ÒåµÄ½á¹ûÂë
-    default: return "UNKNOWN_VK_RESULT (0x" + std::to_string(result) + ")";
+            // æœªçŸ¥ç»“æœç ï¼ˆC++17 å…¼å®¹çš„æ ¼å¼åŒ–ï¼‰
+        default: {
+            std::stringstream ss;
+            ss << "UNKNOWN_vk::Result (0x"
+               << std::hex << std::setw(8) << std::setfill('0')  // è¡¥é›¶è‡³ 8 ä½åå…­è¿›åˆ¶
+               << static_cast<int32_t>(result)
+               << ")";
+            return ss.str();
+        }
     }
 }
 
-static void vk_check(VkResult result, const char* fileName, uint32_t line, const char* func) {
-    if (result != VK_SUCCESS) {
-		LOG_ERROR("Vulkan error: " + VKResultToString(result) + " at " + fileName + ":" + std::to_string(line) + " in " + func);
+
+static void vk_check(vk::Result result, const char* fileName, uint32_t line, const char* func) {
+    if (result != vk::Result::eSuccess) {
+        std::stringstream ss;
+        ss << "Vulkan error: " << VKResultToString(result)
+           << " at " << fileName << ":" << line
+           << " in " << func;
+        LOG_ERROR(ss.str());
     }
 }

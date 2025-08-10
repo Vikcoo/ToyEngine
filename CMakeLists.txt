@@ -1,7 +1,7 @@
 ﻿# CMakeList.txt: ToyEngine 的 CMake 项目，在此处包括源代码并定义
 # 项目特定的逻辑。
 #
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.10)
 
 # 如果支持，请为 MSVC 编译器启用热重载。
 if (POLICY CMP0141)
@@ -22,24 +22,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(WIN32)
     message("windows")
-    add_definitions(-DTE_PLATFORM_WIN32)
+    add_definitions(-DTE_WIN32)
 elseif(UNIX AND NOT APPLE)
     message("linux")
-    add_definitions(-DTE_PLATFORM_LINUX)
+    add_definitions(-DTE_LINUX)
 elseif(APPLE)
     message("macos")
-    add_definitions(-DTE_PLATFORM_MACOS)
+    add_definitions(-DTE_MACOS)
 endif()
 
 option(USE_OPENGL "Use OpenGL as graphics API" OFF)
 option(USE_VULKAN "Use Vulkan as graphics API" ON)
 option(USE_DIRECTX "Use DirectX as graphics API" OFF)
 if(USE_OPENGL)
-    add_definitions(-DTE_USE_OPENGL)
+    add_definitions(-DTE_OPENGL)
 elseif(USE_VULKAN)
-    add_definitions(-DTE_USE_VULKAN)
+    add_definitions(-DTE_VULKAN)
 elseif(USE_DIRECTX)
-    add_definitions(-DTE_USE_DIRECTX)
+    add_definitions(-DTE_DIRECTX)
 endif()
 
 
