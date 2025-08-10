@@ -2,8 +2,10 @@
 #include <windows.h>
 #include <sstream>
 #include <iomanip>
+#include <optional>
+#include <set>
 #include "vulkan/vulkan.hpp"
-#include "vulkan/vulkan_win32.h"
+#include "vulkan/vulkan_core.h"
 #include "TELog.h"
 
 
@@ -31,9 +33,8 @@ static bool CheckDeviceFeatureSupport(
     const std::string& label, bool isExtension,
     uint32_t availableCount, void* available,
     uint32_t requestedCount, const std::vector<DeviceFeature>& requestFeatures,
-    uint32_t& outEnableCount, std::vector<const char*>& outEnableFeatures) {
+    std::vector<const char*>& outEnableFeatures) {
     bool findAllRequiredFeatures = true;
-    outEnableCount = 0;
     outEnableFeatures.clear();
     LOG_DEBUG("--------------------{}--------------------", label);
     for (uint32_t i = 0; i < requestedCount; i++) {
@@ -43,7 +44,6 @@ static bool CheckDeviceFeatureSupport(
             const char* availableName = isExtension ? ((VkExtensionProperties*)available)[j].extensionName : ((VkLayerProperties*)available)[j].layerName;
             if (strcmp(availableName, requestFeatures[i].name) == 0) {
                 isFound = true;
-                outEnableCount++;
                 outEnableFeatures.push_back(availableName);
                 break;
             }
@@ -51,7 +51,7 @@ static bool CheckDeviceFeatureSupport(
         if (isFound) {
             logContent = requestFeatures[i].isRequired ? "required , found" : "no required, found";
         }
-        // ?????????????????????????????????
+
         findAllRequiredFeatures &= isFound || !requestFeatures[i].isRequired;
 
         LOG_DEBUG("{}, {}", requestFeatures[i].name, logContent);

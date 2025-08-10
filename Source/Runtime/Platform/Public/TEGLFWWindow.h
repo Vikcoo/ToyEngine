@@ -14,6 +14,9 @@ namespace TE
 		void PollEvents() override;
 		void SwapBuffers() override;
 		virtual ~TEGLFWWindow() override;
+		GLFWwindow* GetGLFWWindowHandle() const {
+			return m_GLFWWindow;
+		};
 	private:
 		GLFWwindow* m_GLFWWindow = nullptr;
 	};
