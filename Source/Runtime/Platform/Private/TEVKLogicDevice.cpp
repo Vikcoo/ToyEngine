@@ -23,8 +23,8 @@ namespace TE {
 
 
     TEVKLogicDevice::~TEVKLogicDevice() {
-        m_logicDevice.waitIdle();
-        m_logicDevice.destroy();
+        m_handle.waitIdle();
+        m_handle.destroy();
     }
 
     TEVKLogicDevice::TEVKLogicDevice(TEVKGraphicContext *context, uint32_t graphicQueueCount, uint32_t presentQueueCount, const TEVKSetting &setting) {
@@ -72,7 +72,7 @@ namespace TE {
         std::vector<const char*> enableExtensionsNames;
         if (!CheckDeviceFeatureSupport("设备扩展 Device Extension", true,availableExtensionProperties.size(), availableExtensionProperties.data(),
             TEVKRequiredExtensions.size(), TEVKRequiredExtensions, enableExtensionsNames)) {
-                LOG_ERROR(" No TEVKRequiredExtensions");
+            LOG_ERROR(" No TEVKRequiredExtensions");
                 return;
             }
 
@@ -81,14 +81,14 @@ namespace TE {
                         .setQueueCreateInfos(queueCreateInfos)
                         .setPEnabledExtensionNames(enableExtensionsNames);
 
-        m_logicDevice = context->GetPhysicalDevice().createDevice(deviceCreateInfo);
-        LOG_TRACE("逻辑设备 logic device:{} ",(void*) m_logicDevice);
+        m_handle = context->GetPhysicalDevice().createDevice(deviceCreateInfo);
+        LOG_TRACE("逻辑设备 logic device:{} ", (void*) m_handle);
         for (uint32_t i = 0; i < graphicQueueCount; i++) {
-            vk::Queue queue = m_logicDevice.getQueue(graphicQueueFamilyInfo.queueFamilyIndex, i);
+            vk::Queue queue = m_handle.getQueue(graphicQueueFamilyInfo.queueFamilyIndex, i);
              m_graphicQueue.push_back(std::make_shared<TEVKQueue>(graphicQueueFamilyInfo.queueFamilyIndex, i, queue, false));
         }
         for (uint32_t i = 0; i < presentQueueCount; i++) {
-            vk::Queue queue = m_logicDevice.getQueue(presentQueueFamilyInfo.queueFamilyIndex, i);
+            vk::Queue queue = m_handle.getQueue(presentQueueFamilyInfo.queueFamilyIndex, i);
             m_presentQueue.push_back(std::make_shared<TEVKQueue>(presentQueueFamilyInfo.queueFamilyIndex, i, queue, true));
         }
     }

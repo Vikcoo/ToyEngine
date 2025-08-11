@@ -11,6 +11,10 @@ endif()
 
 project ("ToyEngine")
 
+
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -Wall")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os -Wall")
+
 # 关键：为 MSVC 编译器添加 /utf-8 选项，启用 UTF-8 编码
 if(MSVC)
     add_compile_options(/utf-8)

@@ -15,6 +15,8 @@ add_library(TEWindow
     Private/TEVKGraphicContext.cpp
     Private/TEVKLogicDevice.cpp
     Private/TEVKQueue.cpp
+        Private/TESwapChain.cpp
+        Public/TESwapChain.h
 )
 
 find_package(Vulkan REQUIRED)
