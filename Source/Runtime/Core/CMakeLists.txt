@@ -1,20 +1,20 @@
-# ¶¨Òå TELog Ä£¿éÎª¾²Ì¬¿â
+# ï¿½ï¿½ï¿½ï¿½ TELog Ä£ï¿½ï¿½Îªï¿½ï¿½Ì¬ï¿½ï¿½
 add_library(TELog 
-    # ¹«¿ªÍ·ÎÄ¼þ
+    # ï¿½ï¿½ï¿½ï¿½Í·ï¿½Ä¼ï¿½
     Public/TELog.h
 
-    # Ë½ÓÐÊµÏÖÎÄ¼þ
+    # Ë½ï¿½ï¿½Êµï¿½ï¿½ï¿½Ä¼ï¿½
     Private/TELog.cpp
 )
 
-# ¹Ø¼ü£ºÉèÖÃÍ·ÎÄ¼þÂ·¾¶£¬Public Ä¿Â¼¶ÔÍâ¹«¿ª
+# ï¿½Ø¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½Ä¼ï¿½Â·ï¿½ï¿½ï¿½ï¿½Public Ä¿Â¼ï¿½ï¿½ï¿½â¹«ï¿½ï¿½
 target_include_directories(TELog
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Public>  # ¹¹½¨Ê±µÄÂ·¾¶
-        $<INSTALL_INTERFACE:Public>  # °²×°ºóÂ·¾¶£¨¿ÉÑ¡£©
-        ${CMAKE_SOURCE_DIR}/ThirdParty  # Ìí¼Ó spdlog Í·ÎÄ¼þÂ·¾¶
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Public>  # ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Â·ï¿½ï¿½
+        $<INSTALL_INTERFACE:Public>  # ï¿½ï¿½×°ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½
+        ${CMAKE_SOURCE_DIR}/ThirdParty  # ï¿½ï¿½ï¿½ spdlog Í·ï¿½Ä¼ï¿½Â·ï¿½ï¿½
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/Private  # ÄÚ²¿ÊµÏÖÂ·¾¶£¬²»¶ÔÍâ±©Â¶
+        ${CMAKE_CURRENT_SOURCE_DIR}/Private  # ï¿½Ú²ï¿½Êµï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½â±©Â¶
 
 )
 

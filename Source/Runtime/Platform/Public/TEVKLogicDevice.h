@@ -22,6 +22,7 @@ namespace TE {
         TEVKLogicDevice(TEVKGraphicContext* context, uint32_t graphicQueueCount, uint32_t presentQueueCount, const TEVKSetting& setting = {});
         ~TEVKLogicDevice();
         vk::Device* GetHandle(){return &m_handle;}
+        const TEVKSetting& GetSetting(){return m_setting;}
         private:
         vk::Device m_handle;
         std::vector<std::shared_ptr<TEVKQueue>> m_graphicQueue;

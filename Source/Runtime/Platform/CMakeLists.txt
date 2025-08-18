@@ -1,4 +1,3 @@
-# TELog
 add_library(TEWindow
     # 公开
     Public/TEWindow.h
@@ -8,6 +7,10 @@ add_library(TEWindow
     Public/TEVKCommon.h
     Public/TEVKLogicDevice.h
     Public/TEVKQueue.h
+    Public/TEVKSwapChain.h
+    Public/TEVKRenderPass.h
+    Public/TEVKFrameBuffer.h
+    Public/TEVKImageView.h
     # 私有
     Private/TEWindow.cpp
     Private/TEGLFWWindow.cpp 
@@ -15,8 +18,10 @@ add_library(TEWindow
     Private/TEVKGraphicContext.cpp
     Private/TEVKLogicDevice.cpp
     Private/TEVKQueue.cpp
-        Private/TESwapChain.cpp
-        Public/TESwapChain.h
+    Private/TEVKSwapChain.cpp
+    Private/TEVKRenderPass.cpp
+    Private/TEVKFrameBuffer.cpp
+    Private/TEVKImageView.cpp
 )
 
 find_package(Vulkan REQUIRED)

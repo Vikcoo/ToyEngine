@@ -20,17 +20,22 @@ namespace TE {
         vk::SurfaceFormatKHR surfaceFormat;
         vk::PresentModeKHR presentMode;
     };
-    class TESwapChain {
+    class TEVKSwapChain {
         public:
-        TESwapChain(TEVKGraphicContext* context, TEVKLogicDevice* logicDevice);
-        ~TESwapChain();
+        TEVKSwapChain(TEVKGraphicContext* context, TEVKLogicDevice* logicDevice);
+        ~TEVKSwapChain();
         bool ReCreate();
         void SetupSurfaceCapabilities();
+        const std::vector<vk::Image> GetImages() const { return m_images; }
+        uint32_t GetWidth() const {return m_surfaceInfo.capabilities.currentExtent.width; }
+        uint32_t GetHeight() const {return m_surfaceInfo.capabilities.currentExtent.height; }
         private:
         vk::SwapchainKHR m_handle = VK_NULL_HANDLE;
         TEVKGraphicContext* m_context;
         TEVKLogicDevice* m_logicDevice;
 
-        vk::SurfaceCapabilitiesKHR m_surfaceCapabilities;
+        SurfaceInfo m_surfaceInfo;
+
+        std::vector<vk::Image> m_images;
     };
 }

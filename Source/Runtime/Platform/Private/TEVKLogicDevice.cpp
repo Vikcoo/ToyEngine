@@ -27,7 +27,7 @@ namespace TE {
         m_handle.destroy();
     }
 
-    TEVKLogicDevice::TEVKLogicDevice(TEVKGraphicContext *context, uint32_t graphicQueueCount, uint32_t presentQueueCount, const TEVKSetting &setting) {
+    TEVKLogicDevice::TEVKLogicDevice(TEVKGraphicContext *context, uint32_t graphicQueueCount, uint32_t presentQueueCount, const TEVKSetting &setting) :m_setting(setting){
         if (!context) {
             LOG_ERROR(" No TEVKGraphicContext");
         }
