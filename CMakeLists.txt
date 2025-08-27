@@ -1,43 +1,45 @@
-﻿# CMakeList.txt: ToyEngine 的 CMake 项目，在此处包括源代码并定义
-# 项目特定的逻辑。
-#
-cmake_minimum_required (VERSION 3.10)
-
-# 如果支持，请为 MSVC 编译器启用热重载。
-if (POLICY CMP0141)
-  cmake_policy(SET CMP0141 NEW)
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
-endif()
+﻿cmake_minimum_required (VERSION 4.0.0)
 
 project ("ToyEngine")
 
+# 启用并行编译（数字为线程数，建议设为 CPU 核心数，如 8）
+set(CMAKE_BUILD_PARALLEL_LEVEL 14)
 
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -Wall")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os -Wall")
-
-# 关键：为 MSVC 编译器添加 /utf-8 选项，启用 UTF-8 编码
-if(MSVC)
-    add_compile_options(/utf-8)
-endif()
+# 为 Release模式设置添加的C/C++编译器添加额外编译选项
+# 对 C 编译器
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -Wall -Wextra -Wpedantic -Werror")
+# 对 C++ 编译器
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os -Wall -Wextra -Wpedantic -Werror")
 
 # 设置C++标准
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 资源目录
+Set(TE_DEFINE_RES_ROOT_DIR "${CMAKE_SOURCE_DIR}/Content/")
+add_definitions(-DTE_DEFINE_RES_ROOT_DIR="${TE_DEFINE_RES_ROOT_DIR}")
+message("123${TE_DEFINE_RES_ROOT_DIR}")
+
 if(WIN32)
-    message("windows")
+    message("Target OS: windows")
     add_definitions(-DTE_WIN32)
 elseif(UNIX AND NOT APPLE)
-    message("linux")
+    message("Target OS: linux")
     add_definitions(-DTE_LINUX)
 elseif(APPLE)
-    message("macos")
+    message("Target OS: macos")
     add_definitions(-DTE_MACOS)
 endif()
 
 option(USE_OPENGL "Use OpenGL as graphics API" OFF)
 option(USE_VULKAN "Use Vulkan as graphics API" ON)
 option(USE_DIRECTX "Use DirectX as graphics API" OFF)
+
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(SPIR-V)
+#
+# 
 if(USE_OPENGL)
     add_definitions(-DTE_OPENGL)
 elseif(USE_VULKAN)
@@ -45,11 +47,25 @@ elseif(USE_VULKAN)
 elseif(USE_DIRECTX)
     add_definitions(-DTE_DIRECTX)
 endif()
+# 检查选项互斥性（确保只能选择一个 API）
+set(GRAPHICS_API_COUNT 0)
+if(USE_OPENGL)
+    math(EXPR GRAPHICS_API_COUNT "${GRAPHICS_API_COUNT} + 1")
+endif()
+if(USE_VULKAN)
+    math(EXPR GRAPHICS_API_COUNT "${GRAPHICS_API_COUNT} + 1")
+endif()
+if(USE_DIRECTX)
+    math(EXPR GRAPHICS_API_COUNT "${GRAPHICS_API_COUNT} + 1")
+endif()
+# 如果选择了多个或零个API，抛出错误并提示
+if(GRAPHICS_API_COUNT GREATER 1)
+    message(FATAL_ERROR "Only one graphics API can be enabled at a time (OpenGL/Vulkan/DirectX)")
+elseif(GRAPHICS_API_COUNT EQUAL 0)
+    message(FATAL_ERROR "At least one graphics API must be enabled (OpenGL/Vulkan/DirectX)")
+endif()
 
 
 # 添加子目录
 add_subdirectory(Source)
 add_subdirectory(ThirdParty)
-
-# 设置ToyEngine为启动项目（需要在所有目标定义之后）
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ToyEngine)
