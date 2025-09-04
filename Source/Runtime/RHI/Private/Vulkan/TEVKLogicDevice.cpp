@@ -1,6 +1,8 @@
-//
-// Created by yukai on 2025/8/10.
-//
+/*
+文件用途: 逻辑设备实现
+- 依据上下文中的物理设备/队列族，创建 vk::Device 并获取图形/呈现队列
+- 同时创建 PipelineCache 以加速后续管线创建
+*/
 #include "Vulkan/TEVKLogicDevice.h"
 #include "TELog.h"
 #include "Vulkan/TEVKGraphicContext.h"
@@ -9,6 +11,7 @@
 
 
 namespace TE {
+    // 设备级扩展需求：至少需要 Swapchain 扩展
     const std::vector<DeviceFeature> TEVKRequiredExtensions = {
         {vk::KHRSwapchainExtensionName, true},
 #ifdef TE_WIN32
@@ -20,11 +23,13 @@ namespace TE {
 #endif
     };
 
+    // 创建管线缓存：用于跨管线复用编译结果，加速创建
     void TEVKLogicDevice::CreatePipelineCache() {
         vk::PipelineCacheCreateInfo pipelineCacheCreateInfo;
         m_pipelineCache = m_handle.createPipelineCache(pipelineCacheCreateInfo);
     }
 
+    // 构造: 组装队列创建信息 -> 检查并启用设备扩展 -> 创建逻辑设备 -> 获取队列 -> 创建 PipelineCache
     TEVKLogicDevice::TEVKLogicDevice(TEVKGraphicContext &context, uint32_t graphicQueueCount, uint32_t presentQueueCount, const TEVKSetting &setting) :m_setting(setting){
 
         QueueFamilyInfo graphicQueueFamilyInfo = context.GetGraphicQueueFamilyInfo();

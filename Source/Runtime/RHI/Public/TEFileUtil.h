@@ -1,6 +1,8 @@
-//
-// Created by yukai on 2025/8/20.
-//
+/*
+文件用途: 资源路径与文件工具
+- 负责: 统一资源目录宏定义、常用文件名/大小/时间格式化工具、二进制读取
+- 说明: 与 Vulkan 无强耦合，但在加载着色器(.spv)等场景中常用
+*/
 #pragma once
 #include <filesystem>
 #include <fstream>
@@ -22,7 +24,7 @@
 #define TE_RES_SCENE_DIR TE_RES_ROOT_DIR"Scene/"
 
 namespace TE {
-    // 修正：将函数定义的括号由 ( ) 改为 { }，并去除多余空格
+    // 提取文件名（不含路径）
     static std::string GetFileName(const std::string &filePath) {
         if (filePath.empty()) {
             return filePath;
@@ -32,6 +34,7 @@ namespace TE {
         return path.filename().string();
     }
 
+    // 将字节数格式化为带单位字符串（B/KB/MB/GB）
     static void FormatFileSize(std::uintmax_t filesize, float* outsize, std::string& outUnit) {
         float size = static_cast<float>(filesize);
 
@@ -69,7 +72,7 @@ namespace TE {
         return  ss.str();
     }
 
-    // 从文件读取二进制数据到字符向量
+    // 从文件读取二进制数据到字符向量（用于读取 .spv 着色器等）
     static std::vector<char> ReadCharArrayFromFile(const std::string& filePath) {
         std::ifstream file(filePath, std::ios::ate | std::ios::binary);
 

@@ -1,3 +1,8 @@
+/*
+文件用途: Vulkan 公共工具与辅助方法
+- 统一封装 vk::Result 文本化、错误检查宏、Layer/Extension 的可用性检查
+- 供 RHI/Vulkan 下的各模块（设备/实例/交换链/管线等）复用
+*/
 #pragma once
 #include <iomanip>
 #include <sstream>
@@ -6,31 +11,41 @@
 #include <vulkan/vulkan_raii.hpp>
 #include "TELog.h"
 
-
+// 描述想要启用的 Layer 或 Extension
+// name: 名称（如 "VK_LAYER_KHRONOS_validation" / VK_KHR_SWAPCHAIN_EXTENSION_NAME）
+// isRequired: 是否为强制需求（true 时未找到将视为不可用）
 struct DeviceFeature
 {
 	const char* name;
 	bool isRequired;
 };
 
+// 封装 VK 返回码检查：若 result != eSuccess，则记录错误码与源位置，便于定位
 #define CALL_VK_CHECK(result) vk_check(result, __FILE__, __LINE__, __FUNCTION__)
 
-
+// 将任意 Feature 类型映射到可比较的“名字”，用于统一的特性匹配流程
 template<typename T>
-    const char* getFeatureName(const T& feature);
+const char* getFeatureName(const T& feature);
 
-// 针对LayerProperties的特化
+// LayerProperties 特化：返回 layerName
 template<>
 inline const char* getFeatureName<vk::LayerProperties>(const vk::LayerProperties& feature) {
     return feature.layerName;
 }
 
-// 针对ExtensionProperties的特化
+// ExtensionProperties 特化：返回 extensionName
 template<>
 inline const char* getFeatureName<vk::ExtensionProperties>(const vk::ExtensionProperties& feature) {
     return feature.extensionName;
 }
 
+// 统一检查“请求的特性(层/扩展)”是否被“可用特性列表”满足
+// 参数:
+//  - label: 日志标识（便于区分是 Instance Layer/Extension 还是 Device Extension）
+//  - availableFeatures: 已查询到的可用特性列表
+//  - requestFeatures: 期望启用的特性（含是否必需）
+//  - outEnableFeatures: 输出最终启用的特性名数组（仅匹配到的会被填充）
+// 返回: 是否所有“必需”特性均被满足
 template<typename FeatureType>
 static bool CheckDeviceFeatureSupport(
     const std::string& label, std::vector<FeatureType>& availableFeatures,
@@ -69,7 +84,7 @@ static bool CheckDeviceFeatureSupport(
     return findAllRequiredFeatures;
 }
 
-
+// 将 vk::Result 转换为可读字符串（含常见错误的简短说明）
 static std::string VKResultToString(vk::Result result) noexcept {
     switch (result) {
         // 成功状态
@@ -122,7 +137,7 @@ static std::string VKResultToString(vk::Result result) noexcept {
     }
 }
 
-
+// 核心检查函数，由 CALL_VK_CHECK 宏调用：记录出错位置 + 结果码文本
 static void vk_check(vk::Result result, const char* fileName, uint32_t line, const char* func) {
     if (result != vk::Result::eSuccess) {
         std::stringstream ss;

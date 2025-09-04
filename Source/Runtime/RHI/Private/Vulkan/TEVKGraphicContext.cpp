@@ -1,3 +1,8 @@
+/*
+文件用途: Vulkan 图形上下文实现
+- 步骤: 创建 Instance -> 创建 Surface -> 选择 PhysicalDevice(含队列族解析与评分)
+- 提供: DebugUtils 回调，打印设备/内存/队列/扩展等诊断信息
+*/
 #include "Vulkan/TEVKGraphicContext.h"
 #include <vector>
 
@@ -29,6 +34,7 @@ namespace TE {
 #endif
 	};
 
+    // 构造: 依次创建 Instance/Surface 并选择物理设备
 	TEVKGraphicContext::TEVKGraphicContext(TEWindow& window)
 	{
 		CreateInstance();
@@ -37,6 +43,7 @@ namespace TE {
 	}
 
 
+    // 创建 Vulkan 实例: 选择 Layer/Extension，挂接 DebugMessenger
 	void TEVKGraphicContext::CreateInstance()
 	{
 		vk::ApplicationInfo applicationInfo(
@@ -77,6 +84,7 @@ namespace TE {
 		LOG_TRACE("application : {}", applicationInfo.applicationVersion);
 	}
 
+    // 创建 Surface: 从窗口系统(GLFW)创建 VkSurfaceKHR
 	void TEVKGraphicContext::CreateSurface(TEWindow& window) {
 
 		// todo:可能有除了glfw的
@@ -95,6 +103,7 @@ namespace TE {
 		LOG_INFO("m_Surface : {}",reinterpret_cast<uint64_t>(static_cast<void*>(*m_surface)));
 	}
 
+    // 选择物理设备: 遍历设备 -> 评分 -> 解析图形/呈现队列族 -> 缓存内存属性
 	void TEVKGraphicContext::SelectPhysicalDevice() {
 		const auto physicalDevices = m_instance.enumeratePhysicalDevices();
         LOG_TRACE("物理设备数 : {}", physicalDevices.size());
@@ -127,7 +136,7 @@ namespace TE {
 				if (presentQueue.queueFamilyIndex == -1) {
 					vk::Bool32 presentSupport; // 直接使用原始句柄调用 C 函数，避免类型转换问题
 					vkGetPhysicalDeviceSurfaceSupportKHR(
-						*device,					// 原始物理设备句柄
+						*device,						// 原始物理设备句柄
 						j,                          // 队列族索引
 						*m_surface,              // 原始表面句柄（VkSurfaceKHR）
 						&presentSupport             // 输出是否支持
@@ -166,6 +175,7 @@ namespace TE {
 		LOG_TRACE("选择的物理设备 : {}  , 分数 : {}", m_physicalDevice.getProperties().deviceName.data(), maxScore);
 	}
 
+    // 打印设备属性/特性/内存/队列/扩展等信息，便于调试与学习
 	void TEVKGraphicContext::PrintPhysicalDeviceInfo(const vk::PhysicalDevice &device) {
 		// 1. 获取设备属性
 		vk::PhysicalDeviceProperties properties = device.getProperties();
@@ -221,6 +231,7 @@ namespace TE {
 		}
 	}
 
+    // 设备评分规则: 离散>集成>虚拟；偏好支持 GS/TS/各向异性；偏好更大显存与关键扩展
 	int TEVKGraphicContext::ScorePhysicalDevice(const vk::PhysicalDevice& device) {
 		int score = 0;
 		vk::PhysicalDeviceProperties props = device.getProperties();
@@ -266,7 +277,7 @@ namespace TE {
 		return score;
 	}
 
-	// 初始化调试信使创建信息
+	// 初始化调试信使创建信息（VK_EXT_debug_utils）
 	vk::DebugUtilsMessengerCreateInfoEXT TEVKGraphicContext::populateDebugMessengerCreateInfo() {
 		vk::DebugUtilsMessengerCreateInfoEXT createInfo;
 		// 显式初始化所有必要成员，避免使用不明确的初始化列表
@@ -292,6 +303,7 @@ namespace TE {
 		return createInfo;
 	}
 
+	// 验证层回调：将 Warning 及以上输出到日志
 	vk::Bool32 TEVKGraphicContext::debugMessageFunc(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity,vk::DebugUtilsMessageTypeFlagsEXT messageTypes,vk::DebugUtilsMessengerCallbackDataEXT const * pCallbackData,void * pUserData) {
 		if (messageSeverity >= vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning) {
 			LOG_WARN("{}",pCallbackData->pMessage);

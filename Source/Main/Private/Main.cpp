@@ -42,114 +42,63 @@ int main(){
     constexpr vk::FenceCreateInfo fenceInfo(
         vk::FenceCreateFlagBits::eSignaled  // flags
     );
-    auto m_imageAvailableSemaphore = device->GetHandle()->createSemaphore( semaphoreInfo );
-    auto m_renderFinishedSemaphore = device->GetHandle()->createSemaphore( semaphoreInfo );
-    auto m_inFlightFence = device->GetHandle()->createFence( fenceInfo );
 
+    const uint32_t numBuffer = 2;
+    std::vector<vk::raii::Fence> fences;
+    std::vector<vk::raii::Semaphore> imageAvailableSemaphores;
+    std::vector<vk::raii::Semaphore> submitSemaphores;
+
+    vk::SemaphoreCreateInfo semaphoreCreateInfo;
+    vk::FenceCreateInfo fenceCreateInfo;
+    fenceCreateInfo.setFlags(vk::FenceCreateFlagBits::eSignaled);
+
+    for (int i = 0; i < numBuffer; ++i) {
+        imageAvailableSemaphores.emplace_back(device->GetHandle()->createSemaphore(semaphoreCreateInfo));
+        submitSemaphores.emplace_back(device->GetHandle()->createSemaphore(semaphoreCreateInfo));
+        fences.emplace_back(device->GetHandle()->createFence(fenceCreateInfo));
+    }
+
+
+    uint32_t currentBuffer = 0;
+     std::vector<vk::ClearValue> clearValues = {vk::ClearValue({0.2f, 0.2f, 0.2f, 1.0f})};
     while (!window->IsShouldClose())
     {
         window->PollEvents();
-
-        if(const auto res = device->GetHandle()->waitForFences( *m_inFlightFence, true, std::numeric_limits<uint64_t>::max() );
-           res != vk::Result::eSuccess
-       ) throw std::runtime_error{ "waitForFences in drawFrame was failed" };
-
-        device->GetHandle()->resetFences( *m_inFlightFence );
-
-        auto [nxtRes, imageIndex] = swapChain->GetHandle().acquireNextImage(std::numeric_limits<uint64_t>::max(), m_imageAvailableSemaphore);
-
-        commandBuffers[0].reset();
+        CALL_VK_CHECK(device->GetHandle()->waitForFences(*fences[currentBuffer], 1, UINT64_MAX));
+        device->GetHandle()->resetFences(*fences[currentBuffer]);
 
 
+        // 1.获取交换链图片
+        uint32_t imageIndex = swapChain->AcquireImage(imageAvailableSemaphores[currentBuffer]);
+        // 2.开启命令缓冲
+        TE::TEVKCommandPool::BeginCommandBuffer(commandBuffers[imageIndex]);
+        // 3.开启 render pass，绑定frame buffer
+        renderPass->Begin(commandBuffers[imageIndex],*frameBuffers[imageIndex],clearValues);
+        // 4.绑定资源
+        pipeline->Bind(commandBuffers[imageIndex]);
 
-        constexpr vk::CommandBufferBeginInfo beginInfo;
-        commandBuffers[0].begin( beginInfo );
+        vk::Viewport viewport;
+        viewport.setX(0).setY(0).setWidth( static_cast<float>(frameBuffers[imageIndex]->GetWidth())).setHeight( static_cast<float>(frameBuffers[imageIndex]->GetHeight()));
+        commandBuffers[imageIndex].setViewport(0,viewport);
+        vk::Rect2D scissor;
+        scissor.setOffset({ 0, 0 }).setExtent({ frameBuffers[imageIndex]->GetWidth(), frameBuffers[imageIndex]->GetHeight() });
+        commandBuffers[imageIndex].setScissor(0,scissor);
+        // 5.draw
+        commandBuffers[imageIndex].draw(3, 1, 0, 0);
+        // 6.end render pass
+        renderPass->End(commandBuffers[imageIndex]);
+        // 7.结束command buffer
+        TE::TEVKCommandPool::EndCommandBuffer(commandBuffers[imageIndex]);
+        // 8.提交command buffer到queue
+        std::vector<vk::CommandBuffer> rawCmdBuffers;
+        rawCmdBuffers.push_back(*commandBuffers[imageIndex]);  // 解引用RAII对象获取原始句柄
+        device->GetFirstGraphicQueue()->Submit({rawCmdBuffers},{imageAvailableSemaphores[currentBuffer]},{submitSemaphores[currentBuffer]},fences[currentBuffer]);
 
-        vk::RenderPassBeginInfo renderPassInfo;
-        renderPassInfo.renderPass = renderPass->GetHandle();
-        renderPassInfo.framebuffer = frameBuffers[imageIndex]->GetHandle();
-        renderPassInfo.renderArea.setOffset(vk::Offset2D{0, 0});
-        renderPassInfo.renderArea.setExtent({frameBuffers[imageIndex]->GetWidth(),frameBuffers[imageIndex]->GetHeight()});
-        constexpr vk::ClearValue clearColor(vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f));
-        renderPassInfo.setClearValues( clearColor );
-
-        commandBuffers[0].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
-
-        commandBuffers[0].bindPipeline( vk::PipelineBindPoint::eGraphics, pipeline->GetHandle() );
-
-        const vk::Viewport viewport(
-            0.0f, 0.0f, // x, y
-            static_cast<float>(frameBuffers[imageIndex]->GetWidth()),    // width
-            static_cast<float>(frameBuffers[imageIndex]->GetHeight()),   // height
-            0.0f, 1.0f  // minDepth maxDepth
-        );
-        commandBuffers[0].setViewport(0, viewport);
-
-        const vk::Rect2D scissor(
-            vk::Offset2D{0, 0}, // offset
-            vk::Extent2D{frameBuffers[imageIndex]->GetWidth(), frameBuffers[imageIndex]->GetHeight()}   // extent
-        );
-        commandBuffers[0].setScissor(0, scissor);
-
-        commandBuffers[0].draw(3, 1, 0, 0);
-
-        commandBuffers[0].endRenderPass();
-        commandBuffers[0].end();
-
-
-
-
-
-
-
-
-        vk::SubmitInfo submitInfo;
-        submitInfo.setWaitSemaphores( *m_imageAvailableSemaphore );
-        std::array<vk::PipelineStageFlags,1> waitStages = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
-        submitInfo.setWaitDstStageMask( waitStages );
-        submitInfo.setCommandBuffers( *commandBuffers[0] );
-
-        submitInfo.setSignalSemaphores( *m_renderFinishedSemaphore );
-        device->GetFirstGraphicQueue()->GetHandle().submit(submitInfo, m_inFlightFence);
-
-        vk::PresentInfoKHR presentInfo;
-        presentInfo.setWaitSemaphores( *m_renderFinishedSemaphore );
-        presentInfo.setSwapchains( *swapChain->GetHandle() );
-        presentInfo.pImageIndices = &imageIndex;
-        if (const auto res =  device->GetFirstPresentQueue()->GetHandle().presentKHR( presentInfo );
-            res != vk::Result::eSuccess
-        ) throw std::runtime_error{ "presentKHR in drawFrame was failed" };
-
-        // // 1.获取交换链图片
-        // uint32_t imageIndex = swapChain->AcquireImage();
-        // // 2.开启命令缓冲
-        // TE::TEVKCommandPool::BeginCommandBuffer(commandBuffers[imageIndex]);
-        // // 3.开启 render pass，绑定frame buffer
-        // renderPass->Begin(commandBuffers[imageIndex],*frameBuffers[imageIndex],clearValues);
-        // // 4.绑定资源
-        // pipeline->Bind(commandBuffers[imageIndex]);
-        //
-        // vk::Viewport viewport;
-        // viewport.setX(0).setY(0).setWidth( static_cast<float>(frameBuffers[imageIndex]->GetWidth())).setHeight( static_cast<float>(frameBuffers[imageIndex]->GetHeight()));
-        // commandBuffers[imageIndex].setViewport(0,viewport);
-        // vk::Rect2D scissor;
-        // scissor.setOffset({ 0, 0 }).setExtent({ frameBuffers[imageIndex]->GetWidth(), frameBuffers[imageIndex]->GetHeight() });
-        // commandBuffers[imageIndex].setScissor(0,scissor);
-        // // 5.draw
-        // commandBuffers[imageIndex].draw(3, 1, 0, 0);
-        // // 6.end render pass
-        // renderPass->End(commandBuffers[imageIndex]);
-        // // 7.结束command buffer
-        // TE::TEVKCommandPool::EndCommandBuffer(commandBuffers[imageIndex]);
-        // // 8.提交command buffer到queue
-        // std::vector<vk::CommandBuffer> rawCmdBuffers;
-        // rawCmdBuffers.push_back(*commandBuffers[imageIndex]);  // 解引用RAII对象获取原始句柄
-        // device->GetFirstGraphicQueue()->Submit({rawCmdBuffers});
-        // device->GetFirstGraphicQueue()->WaitIdle();
-        // // 9.present
-        // swapChain->Present(imageIndex);
+        // 9.present
+        swapChain->Present(imageIndex,{submitSemaphores[currentBuffer]});
 
         window->SwapBuffers();
+        currentBuffer = (currentBuffer + 1) % numBuffer;
     }
     return 0;
 }

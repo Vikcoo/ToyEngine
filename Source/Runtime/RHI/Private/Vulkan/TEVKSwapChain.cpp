@@ -107,15 +107,21 @@ namespace TE {
         return details;
     }
 
-    uint32_t TEVKSwapChain::AcquireImage() const {
-        auto [result, imageIndex] = m_handle.acquireNextImage(UINT64_MAX,VK_NULL_HANDLE,VK_NULL_HANDLE);
+    uint32_t TEVKSwapChain::AcquireImage(vk::Semaphore semaphore, vk::Fence fence) const {
+        auto [result, imageIndex] = m_handle.acquireNextImage(UINT64_MAX,semaphore,fence);
+        if (fence != VK_NULL_HANDLE) {
+            CALL_VK_CHECK(m_logicDevice.GetHandle()->waitForFences(fence, 1, UINT64_MAX));
+            m_logicDevice.GetHandle()->resetFences(fence);
+        }
         return imageIndex;
     }
 
-    void TEVKSwapChain::Present(uint32_t imageIndex) const {
+    void TEVKSwapChain::Present(uint32_t imageIndex, const std::vector<vk::Semaphore>& waitSemaphores) const {
         vk::PresentInfoKHR presentInfo;
         presentInfo.setSwapchains(*m_handle);
         presentInfo.setImageIndices(imageIndex);
+        presentInfo.setWaitSemaphores(waitSemaphores);
+
         auto result = m_logicDevice.GetFirstPresentQueue()->GetHandle().presentKHR(presentInfo);
         m_logicDevice.GetFirstPresentQueue()->WaitIdle();
     }

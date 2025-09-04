@@ -12,16 +12,14 @@ namespace TE {
         m_handle.waitIdle();
     }
 
-    void TEVKQueue::Submit(std::vector<vk::CommandBuffer> &commandBuffers) {
+    void TEVKQueue::Submit(std::vector<vk::CommandBuffer>& commandBuffers, const std::vector<vk::Semaphore>& waitSemaphores, const std::vector<vk::Semaphore>& signalSemaphores, vk::Fence fence) {
         std::vector<vk::PipelineStageFlags>  waitDstStageMask = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
         vk::SubmitInfo submitInfo;
-        submitInfo.waitSemaphoreCount = 0;
-        submitInfo.pWaitSemaphores = nullptr;
+        submitInfo.setWaitSemaphores(waitSemaphores);
         submitInfo.pWaitDstStageMask = waitDstStageMask.data();
         submitInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
         submitInfo.pCommandBuffers = commandBuffers.data();
-        submitInfo.signalSemaphoreCount = 0;
-        submitInfo.pSignalSemaphores = nullptr;
-        m_handle.submit(submitInfo);
+        submitInfo.setSignalSemaphores(signalSemaphores);
+        m_handle.submit(submitInfo,fence);
     }
 }
