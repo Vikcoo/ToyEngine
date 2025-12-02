@@ -52,9 +52,9 @@ VulkanRenderPass::VulkanRenderPass(PrivateTag,
     
     // 创建 RenderPass
     vk::RenderPassCreateInfo createInfo;
-    createInfo.setAttachments(attachmentDescriptions);
-    createInfo.setSubpasses(subpass);
-    createInfo.setDependencies(dependency);
+    createInfo.setAttachments(attachmentDescriptions)
+              .setSubpasses(subpass)
+              .setDependencies(dependency);
     
     try {
         m_renderPass = m_device->GetHandle().createRenderPass(createInfo);

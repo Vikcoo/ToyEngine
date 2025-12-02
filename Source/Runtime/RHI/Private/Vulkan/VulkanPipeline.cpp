@@ -98,26 +98,26 @@ void VulkanPipeline::CreatePipeline(const VulkanRenderPass& renderPass,
     
     // 光栅化
     vk::PipelineRasterizationStateCreateInfo rasterizer;
-    rasterizer.setDepthClampEnable(VK_FALSE);
-    rasterizer.setRasterizerDiscardEnable(VK_FALSE);
-    rasterizer.setPolygonMode(config.polygonMode);
-    rasterizer.setLineWidth(config.lineWidth);
-    rasterizer.setCullMode(config.cullMode);
-    rasterizer.setFrontFace(config.frontFace);
-    rasterizer.setDepthBiasEnable(VK_FALSE);
+    rasterizer.setDepthClampEnable(VK_FALSE)
+              .setRasterizerDiscardEnable(VK_FALSE)
+              .setPolygonMode(config.polygonMode)
+              .setLineWidth(config.lineWidth)
+              .setCullMode(config.cullMode)
+              .setFrontFace(config.frontFace)
+              .setDepthBiasEnable(VK_FALSE);
     
     // 多重采样
     vk::PipelineMultisampleStateCreateInfo multisampling;
-    multisampling.setSampleShadingEnable(VK_FALSE);
-    multisampling.setRasterizationSamples(config.rasterizationSamples);
+    multisampling.setSampleShadingEnable(VK_FALSE)
+                 .setRasterizationSamples(config.rasterizationSamples);
     
     // 深度测试
     vk::PipelineDepthStencilStateCreateInfo depthStencil;
-    depthStencil.setDepthTestEnable(config.depthTestEnable);
-    depthStencil.setDepthWriteEnable(config.depthWriteEnable);
-    depthStencil.setDepthCompareOp(config.depthCompareOp);
-    depthStencil.setDepthBoundsTestEnable(VK_FALSE);
-    depthStencil.setStencilTestEnable(VK_FALSE);
+    depthStencil.setDepthTestEnable(config.depthTestEnable)
+                 .setDepthWriteEnable(config.depthWriteEnable)
+                 .setDepthCompareOp(config.depthCompareOp)
+                 .setDepthBoundsTestEnable(VK_FALSE)
+                 .setStencilTestEnable(VK_FALSE);
     
     // 颜色混合
     vk::PipelineColorBlendAttachmentState colorBlendAttachment;
@@ -126,18 +126,18 @@ void VulkanPipeline::CreatePipeline(const VulkanRenderPass& renderPass,
         vk::ColorComponentFlagBits::eG |
         vk::ColorComponentFlagBits::eB |
         vk::ColorComponentFlagBits::eA
-    );
-    colorBlendAttachment.setBlendEnable(config.blendEnable);
-    colorBlendAttachment.setSrcColorBlendFactor(config.srcColorBlendFactor);
-    colorBlendAttachment.setDstColorBlendFactor(config.dstColorBlendFactor);
-    colorBlendAttachment.setColorBlendOp(config.colorBlendOp);
-    colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
-    colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-    colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
+    )
+    .setBlendEnable(config.blendEnable)
+    .setSrcColorBlendFactor(config.srcColorBlendFactor)
+    .setDstColorBlendFactor(config.dstColorBlendFactor)
+    .setColorBlendOp(config.colorBlendOp)
+    .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+    .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
+    .setAlphaBlendOp(vk::BlendOp::eAdd);
     
     vk::PipelineColorBlendStateCreateInfo colorBlending;
-    colorBlending.setLogicOpEnable(VK_FALSE);
-    colorBlending.setAttachments(colorBlendAttachment);
+    colorBlending.setLogicOpEnable(VK_FALSE)
+                  .setAttachments(colorBlendAttachment);
     
     // 动态状态
     vk::PipelineDynamicStateCreateInfo dynamicState;
@@ -145,20 +145,20 @@ void VulkanPipeline::CreatePipeline(const VulkanRenderPass& renderPass,
     
     // 创建管线
     vk::GraphicsPipelineCreateInfo pipelineInfo;
-    pipelineInfo.setStages(shaderStages);
-    pipelineInfo.setPVertexInputState(&vertexInputInfo);
-    pipelineInfo.setPInputAssemblyState(&inputAssembly);
-    pipelineInfo.setPViewportState(&viewportState);
-    pipelineInfo.setPRasterizationState(&rasterizer);
-    pipelineInfo.setPMultisampleState(&multisampling);
-    pipelineInfo.setPDepthStencilState(&depthStencil);
-    pipelineInfo.setPColorBlendState(&colorBlending);
-    pipelineInfo.setPDynamicState(&dynamicState);
-    pipelineInfo.setLayout(*m_layout);
-    pipelineInfo.setRenderPass(*renderPass.GetHandle());
-    pipelineInfo.setSubpass(0);
-    pipelineInfo.setBasePipelineHandle(nullptr);
-    pipelineInfo.setBasePipelineIndex(-1);
+    pipelineInfo.setStages(shaderStages)
+                .setPVertexInputState(&vertexInputInfo)
+                .setPInputAssemblyState(&inputAssembly)
+                .setPViewportState(&viewportState)
+                .setPRasterizationState(&rasterizer)
+                .setPMultisampleState(&multisampling)
+                .setPDepthStencilState(&depthStencil)
+                .setPColorBlendState(&colorBlending)
+                .setPDynamicState(&dynamicState)
+                .setLayout(*m_layout)
+                .setRenderPass(*renderPass.GetHandle())
+                .setSubpass(0)
+                .setBasePipelineHandle(nullptr)
+                .setBasePipelineIndex(-1);
     
     try {
         auto result = m_device->GetHandle().createGraphicsPipeline(

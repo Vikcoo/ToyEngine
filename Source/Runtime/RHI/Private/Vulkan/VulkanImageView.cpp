@@ -12,25 +12,25 @@ VulkanImageView::VulkanImageView(PrivateTag,
                                  const vk::ImageAspectFlags aspectFlags)
     : m_device(std::move(device))
 {
-    vk::ImageViewCreateInfo createInfo;
-    createInfo.setImage(image);
-    createInfo.setViewType(vk::ImageViewType::e2D);
-    createInfo.setFormat(format);
-    
     vk::ComponentMapping components;
-    components.setR(vk::ComponentSwizzle::eIdentity);
-    components.setG(vk::ComponentSwizzle::eIdentity);
-    components.setB(vk::ComponentSwizzle::eIdentity);
-    components.setA(vk::ComponentSwizzle::eIdentity);
-    createInfo.setComponents(components);
+    components.setR(vk::ComponentSwizzle::eIdentity)
+              .setG(vk::ComponentSwizzle::eIdentity)
+              .setB(vk::ComponentSwizzle::eIdentity)
+              .setA(vk::ComponentSwizzle::eIdentity);
     
     vk::ImageSubresourceRange subresourceRange;
-    subresourceRange.setAspectMask(aspectFlags);
-    subresourceRange.setBaseMipLevel(0);
-    subresourceRange.setLevelCount(1);
-    subresourceRange.setBaseArrayLayer(0);
-    subresourceRange.setLayerCount(1);
-    createInfo.setSubresourceRange(subresourceRange);
+    subresourceRange.setAspectMask(aspectFlags)
+                     .setBaseMipLevel(0)
+                     .setLevelCount(1)
+                     .setBaseArrayLayer(0)
+                     .setLayerCount(1);
+    
+    vk::ImageViewCreateInfo createInfo;
+    createInfo.setImage(image)
+              .setViewType(vk::ImageViewType::e2D)
+              .setFormat(format)
+              .setComponents(components)
+              .setSubresourceRange(subresourceRange);
 
     try {
         m_imageView = m_device->GetHandle().createImageView(createInfo);

@@ -97,19 +97,19 @@ void VulkanSwapChain::Initialize(const SwapChainConfig& config,
     
     // 创建交换链
     vk::SwapchainCreateInfoKHR createInfo;
-    createInfo.setSurface(*m_surface->GetHandle());
-    createInfo.setMinImageCount(imageCount);
-    createInfo.setImageFormat(m_format);
-    createInfo.setImageColorSpace(m_colorSpace);
-    createInfo.setImageExtent(m_extent);
-    createInfo.setImageArrayLayers(1);
-    createInfo.setImageUsage(config.usage);
-    createInfo.setImageSharingMode(sharingMode);
-    createInfo.setQueueFamilyIndices(queueFamilyIndices);
-    createInfo.setPreTransform(capabilities.currentTransform);
-    createInfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
-    createInfo.setPresentMode(presentMode);
-    createInfo.setClipped(VK_TRUE);
+    createInfo.setSurface(*m_surface->GetHandle())
+              .setMinImageCount(imageCount)
+              .setImageFormat(m_format)
+              .setImageColorSpace(m_colorSpace)
+              .setImageExtent(m_extent)
+              .setImageArrayLayers(1)
+              .setImageUsage(config.usage)
+              .setImageSharingMode(sharingMode)
+              .setQueueFamilyIndices(queueFamilyIndices)
+              .setPreTransform(capabilities.currentTransform)
+              .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+              .setPresentMode(presentMode)
+              .setClipped(VK_TRUE);
     
     try {
         m_swapchain = m_device->GetHandle().createSwapchainKHR(createInfo);
@@ -179,9 +179,9 @@ vk::Result VulkanSwapChain::Present(
     const std::vector<vk::Semaphore>& waitSemaphores) const
 {
     vk::PresentInfoKHR presentInfo;
-    presentInfo.setSwapchains(*m_swapchain);
-    presentInfo.setImageIndices(imageIndex);
-    presentInfo.setWaitSemaphores(waitSemaphores);
+    presentInfo.setSwapchains(*m_swapchain)
+               .setImageIndices(imageIndex)
+               .setWaitSemaphores(waitSemaphores);
     
     try {
         const vk::Result result = presentQueue.GetHandle().presentKHR(presentInfo);

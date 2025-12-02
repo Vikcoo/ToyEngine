@@ -85,10 +85,8 @@ bool VulkanContext::CreateInstance() {
 
     vk::InstanceCreateInfo createInfo;
     createInfo.setPApplicationInfo(&appInfo)
-              .setEnabledExtensionCount(static_cast<uint32_t>(extensions.size()))
-              .setPpEnabledExtensionNames(extensions.data())
-              .setEnabledLayerCount(static_cast<uint32_t>(layers.size()))
-              .setPpEnabledLayerNames(layers.data());
+              .setPEnabledExtensionNames(extensions)  // vulkan-hpp API：传递 vector<const char*>
+              .setPEnabledLayerNames(layers);        // vulkan-hpp API：传递 vector<const char*>
 
     // Debugger
     vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo;
@@ -134,9 +132,9 @@ vk::DebugUtilsMessengerCreateInfoEXT VulkanContext::GetDebugMessengerCreateInfo(
 
 VKAPI_ATTR VkBool32 VKAPI_CALL VulkanContext::DebugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
-    VkDebugUtilsMessageTypeFlagsEXT type,
+    [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT type,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData)
+    [[maybe_unused]] void* pUserData)
 {
     if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
         TE_LOG_ERROR("[Vulkan] {}", pCallbackData->pMessage);
@@ -153,9 +151,9 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanContext::DebugCallback(
 
 VkBool32 VulkanContext::DebugCallbackCpp(
     vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
-    vk::DebugUtilsMessageTypeFlagsEXT type,
+    [[maybe_unused]] vk::DebugUtilsMessageTypeFlagsEXT type,
     const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData)
+    [[maybe_unused]] void* pUserData)
 {
     // 使用 vulkan-hpp 风格的类型
     if (severity >= vk::DebugUtilsMessageSeverityFlagBitsEXT::eError) {

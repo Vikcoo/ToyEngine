@@ -367,7 +367,10 @@ int main()
         
         // 如果该图像正在使用，等待它完成（避免信号量重用问题）
         if (imagesInFlight[imageIndex] != nullptr) {
-            device->GetHandle().waitForFences(**imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+            auto imageWaitResult = device->GetHandle().waitForFences(**imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+            if (imageWaitResult != vk::Result::eSuccess) {
+                TE_LOG_ERROR("Failed to wait for image fence: {}", vk::to_string(imageWaitResult));
+            }
         }
         
         if (result == vk::Result::eErrorOutOfDateKHR) {

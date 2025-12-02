@@ -20,11 +20,11 @@ VulkanFramebuffer::VulkanFramebuffer(PrivateTag,
     }
     
     vk::FramebufferCreateInfo createInfo;
-    createInfo.setRenderPass(*renderPass.GetHandle());
-    createInfo.setAttachments(attachments);
-    createInfo.setWidth(extent.width);
-    createInfo.setHeight(extent.height);
-    createInfo.setLayers(1);
+    createInfo.setRenderPass(*renderPass.GetHandle())
+              .setAttachments(attachments)
+              .setWidth(extent.width)
+              .setHeight(extent.height)
+              .setLayers(1);
     
     try {
         m_framebuffer = m_device->GetHandle().createFramebuffer(createInfo);

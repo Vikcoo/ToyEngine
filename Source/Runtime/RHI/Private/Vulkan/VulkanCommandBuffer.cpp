@@ -50,10 +50,10 @@ RenderPassScope::RenderPassScope(
     : m_commandBuffer(commandBuffer)
 {
     vk::RenderPassBeginInfo renderPassInfo;
-    renderPassInfo.setRenderPass(*renderPass.GetHandle());
-    renderPassInfo.setFramebuffer(*framebuffer.GetHandle());
-    renderPassInfo.setRenderArea(vk::Rect2D({0, 0}, framebuffer.GetExtent()));
-    renderPassInfo.setClearValues(clearValues);
+    renderPassInfo.setRenderPass(*renderPass.GetHandle())
+                  .setFramebuffer(*framebuffer.GetHandle())
+                  .setRenderArea(vk::Rect2D({0, 0}, framebuffer.GetExtent()))
+                  .setClearValues(clearValues);
     
     m_commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 }
@@ -129,10 +129,10 @@ void VulkanCommandBuffer::BeginRenderPassInternal(
     const std::vector<vk::ClearValue>& clearValues)
 {
     vk::RenderPassBeginInfo renderPassInfo;
-    renderPassInfo.setRenderPass(*renderPass.GetHandle());
-    renderPassInfo.setFramebuffer(*framebuffer.GetHandle());
-    renderPassInfo.setRenderArea(vk::Rect2D({0, 0}, framebuffer.GetExtent()));
-    renderPassInfo.setClearValues(clearValues);
+    renderPassInfo.setRenderPass(*renderPass.GetHandle())
+                  .setFramebuffer(*framebuffer.GetHandle())
+                  .setRenderArea(vk::Rect2D({0, 0}, framebuffer.GetExtent()))
+                  .setClearValues(clearValues);
     
     m_commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 }

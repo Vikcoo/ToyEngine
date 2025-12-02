@@ -125,9 +125,9 @@ void VulkanDevice::CreateLogicalDevice(const DeviceConfig& config) {
 
     // 创建设备
     vk::DeviceCreateInfo createInfo;
-    createInfo.setQueueCreateInfos(queueCreateInfos);
-    createInfo.setPEnabledExtensionNames(config.extensions);
-    createInfo.setPEnabledFeatures(&enabledFeatures);
+    createInfo.setQueueCreateInfos(queueCreateInfos)
+              .setPEnabledExtensionNames(config.extensions)  // vulkan-hpp API：传递 vector<const char*>
+              .setPEnabledFeatures(&enabledFeatures);
 
     try {
         m_device = m_physicalDevice->GetHandle().createDevice(createInfo);

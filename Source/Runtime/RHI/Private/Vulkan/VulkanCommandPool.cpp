@@ -14,8 +14,8 @@ VulkanCommandPool::VulkanCommandPool(PrivateTag,
     , m_queueFamilyIndex(queueFamilyIndex)
 {
     vk::CommandPoolCreateInfo createInfo;
-    createInfo.setQueueFamilyIndex(queueFamilyIndex);
-    createInfo.setFlags(flags);
+    createInfo.setQueueFamilyIndex(queueFamilyIndex)
+              .setFlags(flags);
 
     try {
         m_pool = m_device->GetHandle().createCommandPool(createInfo);
@@ -36,9 +36,9 @@ std::vector<vk::raii::CommandBuffer> VulkanCommandPool::AllocateBuffers(
     const vk::CommandBufferLevel level)
 {
     vk::CommandBufferAllocateInfo allocInfo;
-    allocInfo.setCommandPool(*m_pool);
-    allocInfo.setLevel(level);
-    allocInfo.setCommandBufferCount(count);
+    allocInfo.setCommandPool(*m_pool)
+             .setLevel(level)
+             .setCommandBufferCount(count);
 
     try {
         auto buffers = vk::raii::CommandBuffers(m_device->GetHandle(), allocInfo);

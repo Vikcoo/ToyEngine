@@ -23,10 +23,10 @@ void VulkanQueue::Submit(
     const vk::Fence fence)
 {
     vk::SubmitInfo submitInfo;
-    submitInfo.setCommandBuffers(cmdBuffers);
-    submitInfo.setWaitSemaphores(waitSemaphores);
-    submitInfo.setWaitDstStageMask(waitStages);
-    submitInfo.setSignalSemaphores(signalSemaphores);
+    submitInfo.setCommandBuffers(cmdBuffers)
+              .setWaitSemaphores(waitSemaphores)
+              .setWaitDstStageMask(waitStages)
+              .setSignalSemaphores(signalSemaphores);
 
     try {
         m_queue.submit(submitInfo, fence);
