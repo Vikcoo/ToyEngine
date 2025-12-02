@@ -11,13 +11,17 @@ namespace TE {
 
 VulkanSwapChain::VulkanSwapChain(PrivateTag,
                                  std::shared_ptr<VulkanDevice> device,
-                                 VulkanSurface& surface,
+                                 std::shared_ptr<VulkanSurface> surface,
                                  const SwapChainConfig& config,
                                  const uint32_t desiredWidth,
                                  const uint32_t desiredHeight)
     : m_device(std::move(device))
-    , m_surface(&surface)
+    , m_surface(std::move(surface))
 {
+    if (!m_surface) {
+        TE_LOG_ERROR("Surface is null");
+        throw std::invalid_argument("Surface cannot be null");
+    }
     Initialize(config, desiredWidth, desiredHeight);
 }
 
@@ -28,6 +32,11 @@ VulkanSwapChain::~VulkanSwapChain() {
 void VulkanSwapChain::Initialize(const SwapChainConfig& config, 
                                  const uint32_t desiredWidth, 
                                  const uint32_t desiredHeight) {
+    if (!m_surface) {
+        TE_LOG_ERROR("Surface is null during initialization");
+        throw std::runtime_error("Surface is null");
+    }
+    
     const auto& physicalDevice = m_device->GetPhysicalDevice();
     
     // 查询 Surface 能力
@@ -119,10 +128,15 @@ void VulkanSwapChain::Initialize(const SwapChainConfig& config,
 }
 
 std::unique_ptr<VulkanSwapChain> VulkanSwapChain::Recreate(const SwapChainConfig& config) const {
+    if (!m_surface) {
+        TE_LOG_ERROR("Cannot recreate swap chain: surface is null");
+        return nullptr;
+    }
+    
     return std::make_unique<VulkanSwapChain>(
         PrivateTag{},
         m_device,
-        *m_surface,
+        m_surface,  // 共享同一个surface
         config,
         m_extent.width,
         m_extent.height
@@ -136,10 +150,25 @@ SwapChainAcquireResult VulkanSwapChain::AcquireNextImage(
 {
     try {
         const auto [result, imageIndex] = m_swapchain.acquireNextImage(timeout, signalSemaphore, fence);
+        
+        // 处理设备丢失和交换链过时
+        if (result == vk::Result::eErrorDeviceLost) {
+            TE_LOG_ERROR("Device lost during acquire next image");
+            return {0, vk::Result::eErrorDeviceLost};
+        }
+        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
+            TE_LOG_WARN("Swap chain out of date or suboptimal: {}", vk::to_string(result));
+            return {imageIndex, result};
+        }
+        
         return {imageIndex, result};
     }
     catch (const vk::SystemError& e) {
         TE_LOG_ERROR("Failed to acquire next image: {}", e.what());
+        // 检查是否是设备丢失
+        if (e.code() == vk::Result::eErrorDeviceLost) {
+            return {0, vk::Result::eErrorDeviceLost};
+        }
         return {0, vk::Result::eErrorUnknown};
     }
 }
@@ -155,27 +184,54 @@ vk::Result VulkanSwapChain::Present(
     presentInfo.setWaitSemaphores(waitSemaphores);
     
     try {
-        return presentQueue.GetHandle().presentKHR(presentInfo);
+        const vk::Result result = presentQueue.GetHandle().presentKHR(presentInfo);
+        
+        // 处理设备丢失和交换链过时
+        if (result == vk::Result::eErrorDeviceLost) {
+            TE_LOG_ERROR("Device lost during present");
+            return vk::Result::eErrorDeviceLost;
+        }
+        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
+            TE_LOG_WARN("Swap chain out of date or suboptimal during present: {}", vk::to_string(result));
+            return result;
+        }
+        
+        return result;
     }
     catch (const vk::SystemError& e) {
         TE_LOG_ERROR("Failed to present: {}", e.what());
+        // 检查是否是设备丢失
+        if (e.code() == vk::Result::eErrorDeviceLost) {
+            return vk::Result::eErrorDeviceLost;
+        }
         return vk::Result::eErrorUnknown;
     }
 }
 
 std::unique_ptr<VulkanImageView> VulkanSwapChain::CreateImageView(const uint32_t imageIndex) const {
     if (imageIndex >= m_images.size()) {
-        TE_LOG_ERROR("Invalid image index: {}", imageIndex);
+        TE_LOG_ERROR("Invalid image index: {} (max: {})", imageIndex, m_images.size() - 1);
         return nullptr;
     }
     
-    return std::make_unique<VulkanImageView>(
-        VulkanImageView::PrivateTag{},
-        m_device,
-        m_images[imageIndex],
-        m_format,
-        vk::ImageAspectFlagBits::eColor
-    );
+    if (!m_device) {
+        TE_LOG_ERROR("Device is null");
+        return nullptr;
+    }
+    
+    try {
+        return std::make_unique<VulkanImageView>(
+            VulkanImageView::PrivateTag{},
+            m_device,
+            m_images[imageIndex],
+            m_format,
+            vk::ImageAspectFlagBits::eColor
+        );
+    }
+    catch (const std::exception& e) {
+        TE_LOG_ERROR("Failed to create image view: {}", e.what());
+        return nullptr;
+    }
 }
 
 } // namespace TE

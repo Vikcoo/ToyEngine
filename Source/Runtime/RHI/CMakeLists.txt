@@ -36,6 +36,14 @@ add_library(RHI STATIC
     Private/Vulkan/VulkanRenderPass.cpp
     Private/Vulkan/VulkanFramebuffer.h
     Private/Vulkan/VulkanFramebuffer.cpp
+    
+    # 层次4：命令和管线
+    Private/Vulkan/VulkanShader.h
+    Private/Vulkan/VulkanShader.cpp
+    Private/Vulkan/VulkanPipeline.h
+    Private/Vulkan/VulkanPipeline.cpp
+    Private/Vulkan/VulkanCommandBuffer.h
+    Private/Vulkan/VulkanCommandBuffer.cpp
 )
 
 # 包含目录

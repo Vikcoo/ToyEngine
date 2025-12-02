@@ -33,8 +33,14 @@ public:
     VulkanCommandPool(VulkanCommandPool&&) noexcept = default;
     VulkanCommandPool& operator=(VulkanCommandPool&&) noexcept = default;
 
-    // 分配命令缓冲
+    // 分配命令缓冲（返回 vk::raii::CommandBuffer，用于兼容）
     [[nodiscard]] std::vector<vk::raii::CommandBuffer> AllocateBuffers(
+        uint32_t count,
+        vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary
+    );
+
+    // 分配 VulkanCommandBuffer（推荐使用）
+    [[nodiscard]] std::vector<std::unique_ptr<VulkanCommandBuffer>> AllocateCommandBuffers(
         uint32_t count,
         vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary
     );

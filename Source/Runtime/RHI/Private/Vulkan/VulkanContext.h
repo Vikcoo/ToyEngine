@@ -54,8 +54,8 @@ public:
     // 枚举物理设备
     [[nodiscard]] std::vector<std::shared_ptr<VulkanPhysicalDevice>> EnumeratePhysicalDevices();
 
-    // 创建 Surface
-    [[nodiscard]] std::unique_ptr<VulkanSurface> CreateSurface(Window& window);
+    // 创建 Surface（返回shared_ptr以确保生命周期安全）
+    [[nodiscard]] std::shared_ptr<VulkanSurface> CreateSurface(Window& window);
 
 private:
     bool Initialize();

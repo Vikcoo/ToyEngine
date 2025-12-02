@@ -32,7 +32,7 @@
 └─────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────┐
-│  Layer 4: Command & Pipeline (命令和管线)   │
+│  Layer 4: Command & Pipeline ✅ 已实现       │
 │  - VulkanCommandBuffer                      │
 │  - VulkanPipeline                           │
 │  - VulkanShader                             │
@@ -475,9 +475,9 @@ private:
 
 ---
 
-## 层次4：命令和管线（规划）
+## 层次4：命令和管线 ✅
 
-**状态：待实现**
+**状态：已实现**
 
 ### VulkanCommandBuffer
 
@@ -785,11 +785,10 @@ Device 创建时自动创建 PipelineCache，加速管线创建。
   - [x] VulkanFramebuffer
   - [x] VulkanImageView
 
-- [ ] **层次4：命令和管线**
-  - [ ] VulkanCommandBuffer
-  - [ ] VulkanPipeline
-  - [ ] VulkanShader
-  - [ ] VulkanDescriptorSet
+- [x] **层次4：命令和管线**
+  - [x] VulkanCommandBuffer（RAII Scope 模式）
+  - [x] VulkanPipeline
+  - [x] VulkanShader
 
 ---
 

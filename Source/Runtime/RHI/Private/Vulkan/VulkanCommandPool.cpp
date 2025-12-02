@@ -1,5 +1,6 @@
 // Vulkan Command Pool 实现
 #include "VulkanCommandPool.h"
+#include "VulkanCommandBuffer.h"
 #include "VulkanDevice.h"
 #include "Log/Log.h"
 
@@ -66,6 +67,27 @@ void VulkanCommandPool::Reset(const vk::CommandPoolResetFlags flags) {
         TE_LOG_ERROR("Failed to reset command pool: {}", e.what());
         throw;
     }
+}
+
+std::vector<std::unique_ptr<VulkanCommandBuffer>> VulkanCommandPool::AllocateCommandBuffers(
+    const uint32_t count,
+    const vk::CommandBufferLevel level)
+{
+    auto raiiBuffers = AllocateBuffers(count, level);
+    
+    std::vector<std::unique_ptr<VulkanCommandBuffer>> result;
+    result.reserve(count);
+    
+    for (auto& buffer : raiiBuffers) {
+        auto cmdBuffer = std::make_unique<VulkanCommandBuffer>(
+            VulkanCommandBuffer::PrivateTag{},
+            m_device,
+            std::move(buffer)
+        );
+        result.push_back(std::move(cmdBuffer));
+    }
+    
+    return result;
 }
 
 } // namespace TE

@@ -200,7 +200,7 @@ std::vector<std::shared_ptr<VulkanPhysicalDevice>> VulkanContext::EnumeratePhysi
     return devices;
 }
 
-std::unique_ptr<VulkanSurface> VulkanContext::CreateSurface(Window& window) {
+std::shared_ptr<VulkanSurface> VulkanContext::CreateSurface(Window& window) {
     VkSurfaceKHR surface;
     auto* glfwWindow = static_cast<GLFWwindow*>(window.GetNativeHandle());
     
@@ -215,7 +215,7 @@ std::unique_ptr<VulkanSurface> VulkanContext::CreateSurface(Window& window) {
     
     TE_LOG_INFO("Surface created");
     
-    return std::make_unique<VulkanSurface>(
+    return std::make_shared<VulkanSurface>(
         VulkanSurface::PrivateTag{},
         weak_from_this(),
         std::move(raiiSurface)

@@ -5,6 +5,7 @@
 #include "VulkanSwapChain.h"
 #include "VulkanRenderPass.h"
 #include "VulkanFramebuffer.h"
+#include "VulkanPipeline.h"
 #include "VulkanUtils.h"
 #include "Log/Log.h"
 #include <set>
@@ -77,6 +78,24 @@ bool VulkanDevice::Initialize(const DeviceConfig& config) {
 }
 
 void VulkanDevice::CreateLogicalDevice(const DeviceConfig& config) {
+    // 验证启用的特性是否被物理设备支持
+    const auto supportedFeatures = m_physicalDevice->GetFeatures();
+    vk::PhysicalDeviceFeatures enabledFeatures = config.enabledFeatures;
+    
+    // 检查每个启用的特性是否被支持（简化检查，只检查常见特性）
+    if (enabledFeatures.samplerAnisotropy && !supportedFeatures.samplerAnisotropy) {
+        TE_LOG_WARN("Requested samplerAnisotropy feature is not supported, disabling it");
+        enabledFeatures.samplerAnisotropy = VK_FALSE;
+    }
+    if (enabledFeatures.geometryShader && !supportedFeatures.geometryShader) {
+        TE_LOG_WARN("Requested geometryShader feature is not supported, disabling it");
+        enabledFeatures.geometryShader = VK_FALSE;
+    }
+    if (enabledFeatures.tessellationShader && !supportedFeatures.tessellationShader) {
+        TE_LOG_WARN("Requested tessellationShader feature is not supported, disabling it");
+        enabledFeatures.tessellationShader = VK_FALSE;
+    }
+    
     // 收集所有唯一的队列族索引
     std::set<uint32_t> uniqueQueueFamilies;
     if (m_queueFamilies.graphics.has_value()) {
@@ -108,7 +127,7 @@ void VulkanDevice::CreateLogicalDevice(const DeviceConfig& config) {
     vk::DeviceCreateInfo createInfo;
     createInfo.setQueueCreateInfos(queueCreateInfos);
     createInfo.setPEnabledExtensionNames(config.extensions);
-    createInfo.setPEnabledFeatures(&config.enabledFeatures);
+    createInfo.setPEnabledFeatures(&enabledFeatures);
 
     try {
         m_device = m_physicalDevice->GetHandle().createDevice(createInfo);
@@ -136,7 +155,7 @@ void VulkanDevice::CreateQueues() {
     // 创建呈现队列
     if (m_queueFamilies.present.has_value()) {
         // 如果与图形队列是同一个，则共享
-        if (m_queueFamilies.IsSameGraphicsPresent()) {
+        if (m_queueFamilies.IsSameGraphicsPresent() && m_graphicsQueue) {
             m_presentQueue = m_graphicsQueue;
             TE_LOG_DEBUG("Present queue shared with graphics queue");
         } else {
@@ -236,15 +255,20 @@ void VulkanDevice::WaitIdle() {
 // ============================================================================
 
 std::unique_ptr<VulkanSwapChain> VulkanDevice::CreateSwapChain(
-    VulkanSurface& surface,
+    std::shared_ptr<VulkanSurface> surface,
     const SwapChainConfig& config,
     uint32_t desiredWidth,
     uint32_t desiredHeight)
 {
+    if (!surface) {
+        TE_LOG_ERROR("Cannot create swap chain: surface is null");
+        return nullptr;
+    }
+    
     return std::make_unique<VulkanSwapChain>(
         VulkanSwapChain::PrivateTag{},
         shared_from_this(),
-        surface,
+        std::move(surface),
         config,
         desiredWidth,
         desiredHeight
@@ -272,6 +296,18 @@ std::unique_ptr<VulkanFramebuffer> VulkanDevice::CreateFramebuffer(
         renderPass,
         attachments,
         extent
+    );
+}
+
+std::unique_ptr<VulkanPipeline> VulkanDevice::CreateGraphicsPipeline(
+    const VulkanRenderPass& renderPass,
+    const GraphicsPipelineConfig& config)
+{
+    return std::make_unique<VulkanPipeline>(
+        VulkanPipeline::PrivateTag{},
+        std::const_pointer_cast<VulkanDevice>(shared_from_this()),
+        renderPass,
+        config
     );
 }
 

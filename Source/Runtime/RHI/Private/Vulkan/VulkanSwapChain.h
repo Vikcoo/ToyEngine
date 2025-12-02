@@ -41,7 +41,7 @@ public:
 
     explicit VulkanSwapChain(PrivateTag,
                             std::shared_ptr<VulkanDevice> device,
-                            VulkanSurface& surface,
+                            std::shared_ptr<VulkanSurface> surface,
                             const SwapChainConfig& config,
                             uint32_t desiredWidth = 1280,
                             uint32_t desiredHeight = 720);
@@ -87,7 +87,7 @@ private:
 
 private:
     std::shared_ptr<VulkanDevice> m_device;
-    VulkanSurface* m_surface;  // 不拥有，由外部管理
+    std::shared_ptr<VulkanSurface> m_surface;  // 持有shared_ptr确保生命周期安全
     
     vk::raii::SwapchainKHR m_swapchain{nullptr};
     std::vector<vk::Image> m_images;  // 不拥有，由 swapchain 管理

@@ -14,10 +14,12 @@ class VulkanSwapChain;
 class VulkanRenderPass;
 class VulkanFramebuffer;
 class VulkanSurface;
+class VulkanPipeline;
 
 // 前向声明配置结构（定义在对应的头文件中）
 struct SwapChainConfig;
 struct AttachmentConfig;
+struct GraphicsPipelineConfig;
 
 /// 设备配置
 struct DeviceConfig {
@@ -68,7 +70,7 @@ public:
     );
 
     [[nodiscard]] std::unique_ptr<VulkanSwapChain> CreateSwapChain(
-        VulkanSurface& surface,
+        std::shared_ptr<VulkanSurface> surface,
         const SwapChainConfig& config,
         uint32_t desiredWidth = 1280,
         uint32_t desiredHeight = 720
@@ -82,6 +84,11 @@ public:
         const VulkanRenderPass& renderPass,
         const std::vector<vk::ImageView>& attachments,
         vk::Extent2D extent
+    );
+
+    [[nodiscard]] std::unique_ptr<VulkanPipeline> CreateGraphicsPipeline(
+        const VulkanRenderPass& renderPass,
+        const GraphicsPipelineConfig& config
     );
 
     // 创建同步对象
