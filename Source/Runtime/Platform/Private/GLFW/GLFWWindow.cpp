@@ -83,6 +83,7 @@ GLFWWindow::GLFWWindow(const WindowConfig& config)
     glfwSetFramebufferSizeCallback(m_Window, GLFWFramebufferSizeCallback);
     glfwSetWindowCloseCallback(m_Window, GLFWWindowCloseCallback);
     glfwSetWindowFocusCallback(m_Window, GLFWWindowFocusCallback);
+    glfwSetWindowIconifyCallback(m_Window, GLFWWindowIconifyCallback);
 }
 
 GLFWWindow::~GLFWWindow()
@@ -143,6 +144,11 @@ void GLFWWindow::SetFocusCallback(WindowFocusCallback callback)
     m_FocusCallback = std::move(callback);
 }
 
+void GLFWWindow::SetIconifyCallback(WindowIconifyCallback callback)
+{
+    m_IconifyCallback = std::move(callback);
+}
+
 // GLFW静态回调 -> 调用用户回调
 void GLFWWindow::GLFWFramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -176,6 +182,16 @@ void GLFWWindow::GLFWWindowFocusCallback(GLFWwindow* window, int focused)
     if (self && self->m_FocusCallback)
     {
         self->m_FocusCallback(focused == GLFW_TRUE);
+    }
+}
+
+void GLFWWindow::GLFWWindowIconifyCallback(GLFWwindow* window, int iconified)
+{
+    TE_LOG_DEBUG("[Platform] Window IconifyCallback");
+    const auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+    if (self && self->m_IconifyCallback)
+    {
+        self->m_IconifyCallback(iconified == GLFW_TRUE);
     }
 }
 

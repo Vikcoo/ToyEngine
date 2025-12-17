@@ -8,6 +8,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <utility>
+
 namespace TE {
 
 // ============================================================================
@@ -16,23 +18,18 @@ namespace TE {
 
 std::shared_ptr<VulkanContext> VulkanContext::Create(const VulkanContextConfig& config) {
     auto context = std::make_shared<VulkanContext>(PrivateTag{}, config);
-
+    TE_LOG_INFO("Creating Vulkan Context, App: {}, Validation: {}", config.appName, config.enableValidation ? "Enabled" : "Disabled");
     if (!context->Initialize()) {
         TE_LOG_ERROR("Failed to initialize Vulkan context");
         return nullptr;
     }
-    
-    TE_LOG_INFO("Vulkan Context created successfully");
+
     return context;
 }
 
-VulkanContext::VulkanContext(PrivateTag, const VulkanContextConfig& config)
-    : m_config(config)
-{
-    TE_LOG_INFO("Initializing Vulkan Context");
-    TE_LOG_INFO("  App: {}", config.appName);
-    TE_LOG_INFO("  Validation: {}", config.enableValidation ? "Enabled" : "Disabled");
-}
+VulkanContext::VulkanContext(PrivateTag, VulkanContextConfig  config)
+    : m_config(std::move(config))
+{}
 
 VulkanContext::~VulkanContext() {
     TE_LOG_INFO("Destroying Vulkan Context");
@@ -66,13 +63,14 @@ bool VulkanContext::CreateInstance() {
     
     // 获取所需扩展
     const auto extensions = GetRequiredInstanceExtensions(m_config.enableValidation);
-    
+
+    // 验证所需扩展都被支持
     if (!CheckInstanceExtensionSupport(extensions)) {
         TE_LOG_ERROR("Required extensions not supported");
         return false;
     }
     
-    // 验证层
+    // 启用验证层并检查是否支持验证层
     std::vector<const char*> layers;
     if (m_config.enableValidation) {
         layers = {"VK_LAYER_KHRONOS_validation"};
@@ -97,6 +95,10 @@ bool VulkanContext::CreateInstance() {
     
     // 创建 Instance
     m_instance = vk::raii::Instance(m_context, createInfo);
+    if (m_instance == nullptr ){
+        return false;
+    }
+
     TE_LOG_INFO("Vulkan Instance created");
     return true;
 }
@@ -106,15 +108,14 @@ bool VulkanContext::CreateInstance() {
 // ============================================================================
 
 void VulkanContext::SetupDebugMessenger() {
-    const VkDebugUtilsMessengerCreateInfoEXT createInfo = GetDebugMessengerCreateInfo();
-    
-    try {
-        m_debugMessenger = vk::raii::DebugUtilsMessengerEXT(m_instance, createInfo);
-        TE_LOG_INFO("Debug Messenger setup complete");
+    const vk::DebugUtilsMessengerCreateInfoEXT createInfo = GetDebugMessengerCreateInfo();
+
+    m_debugMessenger = vk::raii::DebugUtilsMessengerEXT(m_instance, createInfo);
+    if (m_debugMessenger == nullptr)
+    {
+        TE_LOG_WARN("Failed to setup Debug Messenger: {}");
     }
-    catch (const vk::SystemError& e) {
-        TE_LOG_WARN("Failed to setup Debug Messenger: {}", e.what());
-    }
+    TE_LOG_INFO("Debug Messenger setup complete");
 }
 
 vk::DebugUtilsMessengerCreateInfoEXT VulkanContext::GetDebugMessengerCreateInfo() {
@@ -210,7 +211,10 @@ std::shared_ptr<VulkanSurface> VulkanContext::CreateSurface(Window& window) {
     }
 
     vk::raii::SurfaceKHR raiiSurface(m_instance, surface);
-    
+    if (raiiSurface == VK_NULL_HANDLE)
+    {
+        TE_LOG_ERROR("Failed to create surface vk::raii");
+    }
     TE_LOG_INFO("Surface created");
     
     return std::make_shared<VulkanSurface>(

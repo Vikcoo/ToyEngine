@@ -10,10 +10,7 @@ VulkanQueue::VulkanQueue(PrivateTag,
                          const uint32_t queueIndex)
     : m_queue(std::move(queue))
     , m_familyIndex(familyIndex)
-    , m_queueIndex(queueIndex)
-{
-    TE_LOG_DEBUG("Queue created: Family={}, Index={}", familyIndex, queueIndex);
-}
+    , m_queueIndex(queueIndex){}
 
 void VulkanQueue::Submit(
     const std::vector<vk::CommandBuffer>& cmdBuffers,

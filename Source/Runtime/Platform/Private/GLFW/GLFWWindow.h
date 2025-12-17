@@ -31,6 +31,7 @@ public:
     void SetResizeCallback(WindowResizeCallback callback) override;
     void SetCloseCallback(WindowCloseCallback callback) override;
     void SetFocusCallback(WindowFocusCallback callback) override;
+    void SetIconifyCallback(WindowIconifyCallback callback) override;
 
 private:
     // GLFW窗口句柄
@@ -45,11 +46,13 @@ private:
     WindowResizeCallback m_ResizeCallback;
     WindowCloseCallback m_CloseCallback;
     WindowFocusCallback m_FocusCallback;
+    WindowIconifyCallback m_IconifyCallback;
 
     // 内部使用的静态GLFW回调
     static void GLFWFramebufferSizeCallback(GLFWwindow* window, int width, int height);
     static void GLFWWindowCloseCallback(GLFWwindow* window);
     static void GLFWWindowFocusCallback(GLFWwindow* window, int focused);
+    static void GLFWWindowIconifyCallback(GLFWwindow* window, int iconified);
 
     // 初始化/清理GLFW（静态，全局只初始化一次）
     static void InitializeGLFW();

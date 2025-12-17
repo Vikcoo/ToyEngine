@@ -34,7 +34,7 @@ public:
     [[nodiscard]] static std::shared_ptr<VulkanContext> Create(const VulkanContextConfig& config = {});
 
     // 构造函数需要 PrivateTag，外部无法直接调用
-    explicit VulkanContext(PrivateTag, const VulkanContextConfig& config);
+    explicit VulkanContext(PrivateTag, VulkanContextConfig  config);
 
     ~VulkanContext();
 

@@ -44,7 +44,6 @@ bool CheckValidationLayerSupport(const std::vector<const char*>& layers) {
 }
 
 bool CheckInstanceExtensionSupport(const std::vector<const char*>& extensions) {
-    // 使用 vulkan-hpp 风格
     const auto available = vk::enumerateInstanceExtensionProperties();
     
     for (const char* ext : extensions) {
@@ -84,7 +83,7 @@ bool CheckDeviceExtensionSupport(const vk::PhysicalDevice& device, const std::ve
     return true;
 }
 
-std::vector<const char*> GetRequiredInstanceExtensions(bool enableValidation) {
+std::vector<const char*> GetRequiredInstanceExtensions(const bool enableValidation) {
     uint32_t glfwExtCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtCount);
     

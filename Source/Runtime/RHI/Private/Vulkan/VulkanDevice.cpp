@@ -33,7 +33,7 @@ std::shared_ptr<VulkanDevice> VulkanDevice::Create(
         return nullptr;
     }
 
-    TE_LOG_INFO("Vulkan Device created successfully");
+    TE_LOG_INFO("Vulkan Logical device create successfully");
     return device;
 }
 
@@ -126,17 +126,15 @@ void VulkanDevice::CreateLogicalDevice(const DeviceConfig& config) {
     // 创建设备
     vk::DeviceCreateInfo createInfo;
     createInfo.setQueueCreateInfos(queueCreateInfos)
-              .setPEnabledExtensionNames(config.extensions)  // vulkan-hpp API：传递 vector<const char*>
+              .setPEnabledExtensionNames(config.extensions)
               .setPEnabledFeatures(&enabledFeatures);
 
-    try {
-        m_device = m_physicalDevice->GetHandle().createDevice(createInfo);
-        TE_LOG_INFO("Logical device created");
+    m_device = m_physicalDevice->GetHandle().createDevice(createInfo);
+    if (m_device == nullptr)
+    {
+        TE_LOG_ERROR("Failed to create logical device");
     }
-    catch (const vk::SystemError& e) {
-        TE_LOG_ERROR("Failed to create logical device: {}", e.what());
-        throw;
-    }
+    TE_LOG_INFO("Logical device created");
 }
 
 void VulkanDevice::CreateQueues() {
@@ -198,13 +196,11 @@ void VulkanDevice::CreateQueues() {
 void VulkanDevice::CreatePipelineCache() {
     vk::PipelineCacheCreateInfo createInfo;
 
-    try {
-        m_pipelineCache = m_device.createPipelineCache(createInfo);
-        TE_LOG_DEBUG("Pipeline cache created");
+    m_pipelineCache = m_device.createPipelineCache(createInfo);
+    if (m_pipelineCache == nullptr){
+        TE_LOG_ERROR("Failed to create pipeline cache");
     }
-    catch (const vk::SystemError& e) {
-        TE_LOG_WARN("Failed to create pipeline cache: {}", e.what());
-    }
+    TE_LOG_DEBUG("Pipeline cache created");
 }
 
 // ============================================================================
