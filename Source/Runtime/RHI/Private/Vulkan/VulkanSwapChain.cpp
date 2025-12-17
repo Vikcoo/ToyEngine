@@ -18,10 +18,6 @@ VulkanSwapChain::VulkanSwapChain(PrivateTag,
     : m_device(std::move(device))
     , m_surface(std::move(surface))
 {
-    if (!m_surface) {
-        TE_LOG_ERROR("Surface is null");
-        throw std::invalid_argument("Surface cannot be null");
-    }
     Initialize(config, desiredWidth, desiredHeight);
 }
 
@@ -34,7 +30,7 @@ void VulkanSwapChain::Initialize(const SwapChainConfig& config,
                                  const uint32_t desiredHeight) {
     if (!m_surface) {
         TE_LOG_ERROR("Surface is null during initialization");
-        throw std::runtime_error("Surface is null");
+        return;
     }
     
     const auto& physicalDevice = m_device->GetPhysicalDevice();
@@ -46,7 +42,7 @@ void VulkanSwapChain::Initialize(const SwapChainConfig& config,
     
     if (formats.empty() || presentModes.empty()) {
         TE_LOG_ERROR("Surface has no formats or present modes");
-        throw std::runtime_error("Invalid surface capabilities");
+        return;
     }
     
     // 选择格式

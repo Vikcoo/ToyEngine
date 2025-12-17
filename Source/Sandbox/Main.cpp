@@ -102,6 +102,22 @@ int main()
                 presentQueue->GetFamilyIndex(),
                 presentQueue->GetQueueIndex());
 
+    // 9. 创建交换链
+    TE::SwapChainConfig swapChainConfig{
+        vk::Format::eB8G8R8A8Srgb,
+        vk::ColorSpaceKHR::eSrgbNonlinear,
+        vk::PresentModeKHR::eMailbox,
+        3,
+        vk::ImageUsageFlagBits::eColorAttachment
+    };
+
+    auto swapChain = device->CreateSwapChain(surface, swapChainConfig, window->GetWidth(), window->GetHeight());
+    if (!swapChain) {
+        TE_LOG_ERROR("Failed to create swap chain");
+        return -1;
+    }
+    TE_LOG_INFO(" Swap chain created:");
+
 
     while (!window->ShouldClose())
     {
@@ -123,27 +139,7 @@ int main()
     //     TE_LOG_INFO(" Command pool created: QueueFamily={}",
     //                 commandPool->GetQueueFamilyIndex());
     //
-    //     // 9. 创建交换链（需要在分配命令缓冲区之前，因为需要知道图像数量）
-    //     TE_LOG_INFO("[9] Creating swap chain...");
-    //     TE::SwapChainConfig swapChainConfig;
-    //     swapChainConfig.preferredFormat = vk::Format::eB8G8R8A8Srgb;
-    //     swapChainConfig.preferredPresentMode = vk::PresentModeKHR::eMailbox;
-    //     swapChainConfig.imageCount = 3;
     //
-    //     auto swapChain = device->CreateSwapChain(
-    //         surface,  // 现在接受shared_ptr，直接传递
-    //         swapChainConfig,
-    //         window->GetWidth(),
-    //         window->GetHeight()
-    //     );
-    //     if (!swapChain) {
-    //         TE_LOG_ERROR("Failed to create swap chain");
-    //         return -1;
-    //     }
-    //     TE_LOG_INFO(" Swap chain created:");
-    //     TE_LOG_INFO("  Format: {}", vk::to_string(swapChain->GetFormat()));
-    //     TE_LOG_INFO("  Extent: {}x{}", swapChain->GetExtent().width, swapChain->GetExtent().height);
-    //     TE_LOG_INFO("  Image Count: {}", swapChain->GetImageCount());
     //
     //     // 10. 分配命令缓冲（根据交换链图像数量分配）
     //     TE_LOG_INFO("[10] Allocating command buffers...");
