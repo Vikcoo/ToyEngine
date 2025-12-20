@@ -219,12 +219,14 @@ std::unique_ptr<VulkanCommandPool> VulkanDevice::CreateCommandPool(
     );
 }
 
-vk::raii::Semaphore VulkanDevice::CreateSemaphore() {
+vk::raii::Semaphore VulkanDevice::CreateVulkanSemaphore() const
+{
     vk::SemaphoreCreateInfo createInfo;
     return m_device.createSemaphore(createInfo);
 }
 
-vk::raii::Fence VulkanDevice::CreateFence(const bool signaled) {
+vk::raii::Fence VulkanDevice::CreateFence(const bool signaled) const
+{
     vk::FenceCreateInfo createInfo;
     if (signaled) {
         createInfo.setFlags(vk::FenceCreateFlagBits::eSignaled);

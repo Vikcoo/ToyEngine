@@ -18,16 +18,11 @@ VulkanShader::VulkanShader(PrivateTag,
     vk::ShaderModuleCreateInfo createInfo;
     createInfo.setCode(shaderCode);
 
-    try {
-        m_shaderModule = m_device->GetHandle().createShaderModule(createInfo);
-        TE_LOG_DEBUG("Shader module created: {} ({})", 
-                    shaderFilePath, 
-                    vk::to_string(m_stage));
+    m_shaderModule = m_device->GetHandle().createShaderModule(createInfo);
+    if (m_shaderModule == nullptr){
+        TE_LOG_ERROR("Failed to create shader module");
     }
-    catch (const vk::SystemError& e) {
-        TE_LOG_ERROR("Failed to create shader module from {}: {}", shaderFilePath, e.what());
-        throw;
-    }
+    TE_LOG_DEBUG("Shader module created: {} ({})", shaderFilePath, vk::to_string(m_stage));
 }
 
 VulkanShader::~VulkanShader() {

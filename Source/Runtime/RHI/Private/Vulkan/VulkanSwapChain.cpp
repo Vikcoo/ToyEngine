@@ -14,11 +14,12 @@ VulkanSwapChain::VulkanSwapChain(PrivateTag,
                                  std::shared_ptr<VulkanSurface> surface,
                                  const SwapChainConfig& config,
                                  const uint32_t desiredWidth,
-                                 const uint32_t desiredHeight)
+                                 const uint32_t desiredHeight,
+                                 vk::SwapchainKHR oldSwapchain)
     : m_device(std::move(device))
     , m_surface(std::move(surface))
 {
-    Initialize(config, desiredWidth, desiredHeight);
+    Initialize(config, desiredWidth, desiredHeight, oldSwapchain);
 }
 
 VulkanSwapChain::~VulkanSwapChain() {
@@ -27,7 +28,8 @@ VulkanSwapChain::~VulkanSwapChain() {
 
 void VulkanSwapChain::Initialize(const SwapChainConfig& config, 
                                  const uint32_t desiredWidth, 
-                                 const uint32_t desiredHeight) {
+                                 const uint32_t desiredHeight,
+                                 vk::SwapchainKHR oldSwapchain) {
     if (!m_surface) {
         TE_LOG_ERROR("Surface is null during initialization");
         return;
@@ -107,6 +109,12 @@ void VulkanSwapChain::Initialize(const SwapChainConfig& config,
               .setPresentMode(presentMode)
               .setClipped(VK_TRUE);
     
+    // 如果提供了旧交换链，设置 oldSwapchain（关键修复：避免 ErrorNativeWindowInUseKHR）
+    // 这允许 Vulkan 驱动优雅地处理交换链过渡，无需显式销毁旧交换链
+    if (oldSwapchain) {
+        createInfo.setOldSwapchain(oldSwapchain);
+    }
+    
     try {
         m_swapchain = m_device->GetHandle().createSwapchainKHR(createInfo);
         m_images = m_swapchain.getImages();
@@ -123,19 +131,29 @@ void VulkanSwapChain::Initialize(const SwapChainConfig& config,
     }
 }
 
-std::unique_ptr<VulkanSwapChain> VulkanSwapChain::Recreate(const SwapChainConfig& config) const {
+std::unique_ptr<VulkanSwapChain> VulkanSwapChain::Recreate(
+    const SwapChainConfig& config,
+    uint32_t desiredWidth,
+    uint32_t desiredHeight) const {
     if (!m_surface) {
         TE_LOG_ERROR("Cannot recreate swap chain: surface is null");
         return nullptr;
     }
     
+    // 获取旧交换链的句柄（在创建新交换链之前保存）
+    // 使用 *m_swapchain 从 raii 对象获取原始 VkSwapchainKHR 句柄
+    vk::SwapchainKHR oldSwapchainHandle = *m_swapchain;
+    
+    // 使用新的窗口尺寸重建交换链，传递旧交换链句柄
+    // Vulkan 会在新交换链创建成功后自动处理旧交换链的销毁
     return std::make_unique<VulkanSwapChain>(
         PrivateTag{},
         m_device,
         m_surface,  // 共享同一个surface
         config,
-        m_extent.width,
-        m_extent.height
+        desiredWidth,   // 使用新的窗口宽度
+        desiredHeight,  // 使用新的窗口高度
+        oldSwapchainHandle  // 传递旧交换链句柄，避免 ErrorNativeWindowInUseKHR
     );
 }
 

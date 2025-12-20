@@ -16,7 +16,7 @@ VulkanFramebuffer::VulkanFramebuffer(PrivateTag,
 {
     if (attachments.empty()) {
         TE_LOG_ERROR("Framebuffer requires at least one attachment");
-        throw std::runtime_error("Invalid attachment count");
+        return;
     }
     
     vk::FramebufferCreateInfo createInfo;
@@ -26,15 +26,13 @@ VulkanFramebuffer::VulkanFramebuffer(PrivateTag,
               .setHeight(extent.height)
               .setLayers(1);
     
-    try {
-        m_framebuffer = m_device->GetHandle().createFramebuffer(createInfo);
-        TE_LOG_DEBUG("Framebuffer created: {}x{} with {} attachment(s)", 
-                    extent.width, extent.height, attachments.size());
+
+    m_framebuffer = m_device->GetHandle().createFramebuffer(createInfo);
+    if (m_framebuffer == nullptr){
+        TE_LOG_ERROR("Failed to create framebuffer");
     }
-    catch (const vk::SystemError& e) {
-        TE_LOG_ERROR("Failed to create framebuffer: {}", e.what());
-        throw;
-    }
+    TE_LOG_DEBUG("Framebuffer created: {}x{} with {} attachment(s)",
+                extent.width, extent.height, attachments.size());
 }
 
 VulkanFramebuffer::~VulkanFramebuffer() {

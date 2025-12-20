@@ -32,14 +32,13 @@ VulkanImageView::VulkanImageView(PrivateTag,
               .setComponents(components)
               .setSubresourceRange(subresourceRange);
 
-    try {
-        m_imageView = m_device->GetHandle().createImageView(createInfo);
-        TE_LOG_DEBUG("Image view created: Format={}", vk::to_string(format));
+
+    m_imageView = m_device->GetHandle().createImageView(createInfo);
+    if (m_imageView == nullptr)
+    {
+        TE_LOG_ERROR("Failed to create image view: {}");
     }
-    catch (const vk::SystemError& e) {
-        TE_LOG_ERROR("Failed to create image view: {}", e.what());
-        throw;
-    }
+    TE_LOG_DEBUG("Image view created: Format={}", vk::to_string(format));
 }
 
 VulkanImageView::~VulkanImageView() {

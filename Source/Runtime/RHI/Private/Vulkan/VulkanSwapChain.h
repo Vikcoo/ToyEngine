@@ -44,7 +44,8 @@ public:
                             std::shared_ptr<VulkanSurface> surface,
                             const SwapChainConfig& config,
                             uint32_t desiredWidth = 1280,
-                            uint32_t desiredHeight = 720);
+                            uint32_t desiredHeight = 720,
+                            vk::SwapchainKHR oldSwapchain = nullptr);
 
     ~VulkanSwapChain();
 
@@ -55,7 +56,12 @@ public:
     VulkanSwapChain& operator=(VulkanSwapChain&&) noexcept = default;
 
     // 重建交换链（返回新对象）
-    [[nodiscard]] std::unique_ptr<VulkanSwapChain> Recreate(const SwapChainConfig& config) const;
+    // desiredWidth 和 desiredHeight 用于指定新的窗口尺寸
+    [[nodiscard]] std::unique_ptr<VulkanSwapChain> Recreate(
+        const SwapChainConfig& config,
+        uint32_t desiredWidth,
+        uint32_t desiredHeight
+    ) const;
 
     // 获取图像
     [[nodiscard]] SwapChainAcquireResult AcquireNextImage(
@@ -83,7 +89,10 @@ public:
     [[nodiscard]] const vk::raii::SwapchainKHR& GetHandle() const { return m_swapchain; }
 
 private:
-    void Initialize(const SwapChainConfig& config, uint32_t desiredWidth, uint32_t desiredHeight);
+    void Initialize(const SwapChainConfig& config, 
+                   uint32_t desiredWidth, 
+                   uint32_t desiredHeight,
+                   vk::SwapchainKHR oldSwapchain = nullptr);
 
 private:
     std::shared_ptr<VulkanDevice> m_device;

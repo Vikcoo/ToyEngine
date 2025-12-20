@@ -92,8 +92,8 @@ public:
     );
 
     // 创建同步对象
-    [[nodiscard]] vk::raii::Semaphore CreateSemaphore();
-    [[nodiscard]] vk::raii::Fence CreateFence(bool signaled = true);
+    [[nodiscard]] vk::raii::Semaphore CreateVulkanSemaphore() const;
+    [[nodiscard]] vk::raii::Fence CreateFence(bool signaled = true) const;
 
     // 等待设备空闲
     void WaitIdle();

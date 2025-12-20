@@ -17,14 +17,12 @@ VulkanCommandPool::VulkanCommandPool(PrivateTag,
     createInfo.setQueueFamilyIndex(queueFamilyIndex)
               .setFlags(flags);
 
-    try {
-        m_pool = m_device->GetHandle().createCommandPool(createInfo);
-        TE_LOG_DEBUG("Command pool created: QueueFamily={}", queueFamilyIndex);
+
+    m_pool = m_device->GetHandle().createCommandPool(createInfo);
+    if (m_pool == nullptr){
+        TE_LOG_ERROR("Failed to create command pool");
     }
-    catch (const vk::SystemError& e) {
-        TE_LOG_ERROR("Failed to create command pool: {}", e.what());
-        throw;
-    }
+    TE_LOG_DEBUG("Command pool created: QueueFamily={}", queueFamilyIndex);
 }
 
 VulkanCommandPool::~VulkanCommandPool() {
