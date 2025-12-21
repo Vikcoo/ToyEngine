@@ -98,6 +98,17 @@ public:
         const BufferConfig& config
     );
 
+    // 使用 Staging Buffer 上传数据到设备本地缓冲区（显存）
+    // 这是一个辅助方法，用于将 CPU 数据上传到 GPU 显存
+    // deviceBuffer: 目标设备本地缓冲区（必须是 eDeviceLocal 内存）
+    // data: 要上传的数据
+    // size: 数据大小（字节）
+    void UploadToDeviceLocalBuffer(
+        VulkanBuffer& deviceBuffer,
+        const void* data,
+        size_t size
+    );
+
     // 创建同步对象
     [[nodiscard]] vk::raii::Semaphore CreateVulkanSemaphore() const;
     [[nodiscard]] vk::raii::Fence CreateFence(bool signaled = true) const;

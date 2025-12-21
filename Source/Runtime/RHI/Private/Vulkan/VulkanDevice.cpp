@@ -7,6 +7,7 @@
 #include "VulkanFramebuffer.h"
 #include "VulkanPipeline.h"
 #include "VulkanBuffer.h"
+#include "VulkanCommandBuffer.h"
 #include "VulkanUtils.h"
 #include "Log/Log.h"
 #include <set>
@@ -317,6 +318,93 @@ std::unique_ptr<VulkanBuffer> VulkanDevice::CreateBuffer(const BufferConfig& con
         shared_from_this(),
         config
     );
+}
+
+void VulkanDevice::UploadToDeviceLocalBuffer(
+    VulkanBuffer& deviceBuffer,
+    const void* data,
+    size_t size)
+{
+    if (!data || size == 0) {
+        TE_LOG_ERROR("Invalid data or size for UploadToDeviceLocalBuffer");
+        return;
+    }
+
+    // 1. 创建临时 Staging Buffer（主机可见内存，用于 CPU 上传数据）
+    BufferConfig stagingConfig;
+    stagingConfig.size = size;
+    stagingConfig.usage = vk::BufferUsageFlagBits::eTransferSrc;  // 作为传输源
+    stagingConfig.memoryProperties = 
+        vk::MemoryPropertyFlagBits::eHostVisible | 
+        vk::MemoryPropertyFlagBits::eHostCoherent;  // 主机可见且一致
+
+    auto stagingBuffer = CreateBuffer(stagingConfig);
+    if (!stagingBuffer) {
+        TE_LOG_ERROR("Failed to create staging buffer");
+        return;
+    }
+
+    // 2. 上传数据到 Staging Buffer（CPU 直接写入）
+    stagingBuffer->UploadData(data, size);
+    TE_LOG_DEBUG("Data uploaded to staging buffer: {} bytes", size);
+
+    // 3. 创建临时命令池和命令缓冲区（用于传输操作）
+    //    使用图形队列族（大多数设备图形队列也支持传输操作）
+    auto transferCommandPool = CreateCommandPool(
+        m_queueFamilies.graphics.value(),
+        vk::CommandPoolCreateFlagBits::eTransient  // 临时命令池，用完即弃
+    );
+    if (!transferCommandPool) {
+        TE_LOG_ERROR("Failed to create transfer command pool");
+        return;
+    }
+
+    auto transferCommandBuffers = transferCommandPool->AllocateCommandBuffers(1);
+    if (transferCommandBuffers.empty()) {
+        TE_LOG_ERROR("Failed to allocate transfer command buffer");
+        return;
+    }
+    auto& transferCmdBuffer = transferCommandBuffers[0];
+
+    // 4. 录制复制命令
+    {
+        auto recording = transferCmdBuffer->BeginRecording(
+            vk::CommandBufferUsageFlagBits::eOneTimeSubmit  // 一次性提交
+        );
+
+        // 复制：从 Staging Buffer 到 Device Buffer
+        transferCmdBuffer->CopyBuffer(
+            *stagingBuffer,
+            deviceBuffer,
+            size,
+            0,  // srcOffset
+            0   // dstOffset
+        );
+    }
+
+    // 5. 提交复制命令到图形队列并等待完成
+    //    注意：使用图形队列，因为大多数设备图形队列也支持传输操作
+    //    如果有专门的传输队列，可以使用传输队列以获得更好的性能
+    auto graphicsQueue = GetGraphicsQueue();
+    if (!graphicsQueue) {
+        TE_LOG_ERROR("Graphics queue is null");
+        return;
+    }
+
+    graphicsQueue->Submit(
+        {transferCmdBuffer->GetRawHandle()},
+        {},  // 无等待信号量
+        {},  // 无等待阶段
+        {},  // 无信号量
+        nullptr  // 无围栏
+    );
+
+    // 6. 等待复制完成（阻塞直到 GPU 完成复制）
+    graphicsQueue->WaitIdle();
+    TE_LOG_DEBUG("Data copied from staging buffer to device local buffer: {} bytes", size);
+
+    // 7. Staging Buffer 和命令缓冲区自动析构（RAII）
+    //    注意：命令池也会自动析构，但命令缓冲区会先析构
 }
 
 } // namespace TE

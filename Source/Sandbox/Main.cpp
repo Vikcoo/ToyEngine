@@ -138,7 +138,6 @@ int main()
     }
 
     /* 9.图像 */
-    // 使用变量而不是 const，因为重建后可能会变化
     uint32_t actualImageCount = swapChain->GetImageCount();
     std::vector<std::unique_ptr<TE::VulkanImageView>> imageViews;
     imageViews.reserve(actualImageCount);
@@ -248,25 +247,30 @@ int main()
         {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}   // 左上，蓝色
     };
 
-    // 创建顶点缓冲区配置
+    // 创建顶点缓冲区配置（使用设备本地内存 - 显存）
+    // 这是最佳实践：静态顶点数据应该存储在 GPU 显存中，以获得最快的访问速度
     TE::BufferConfig vertexBufferConfig;
     vertexBufferConfig.size = sizeof(Vertex) * vertices.size();
-    vertexBufferConfig.usage = vk::BufferUsageFlagBits::eVertexBuffer;
-    vertexBufferConfig.memoryProperties = 
-        vk::MemoryPropertyFlagBits::eHostVisible | 
-        vk::MemoryPropertyFlagBits::eHostCoherent;
+    vertexBufferConfig.usage = 
+        vk::BufferUsageFlagBits::eVertexBuffer |      // 顶点缓冲区用途
+        vk::BufferUsageFlagBits::eTransferDst;        // 允许作为传输目标（从 staging buffer 复制）
 
-    // 创建顶点缓冲区
+
+    // 创建顶点缓冲区（在显存中）
     auto vertexBuffer = device->CreateBuffer(vertexBufferConfig);
     if (!vertexBuffer) {
         TE_LOG_ERROR("Failed to create vertex buffer");
         return -1;
-
     }
 
-    // 上传顶点数据
-    vertexBuffer->UploadData(vertices.data(), vertexBufferConfig.size);
-    TE_LOG_INFO(" Vertex buffer created: {} vertices ({} bytes)", 
+    // 使用 Staging Buffer 上传数据到显存
+    // 这是 Vulkan 的最佳实践：CPU 数据 → Staging Buffer（主机可见）→ GPU 复制 → Device Buffer（显存）
+    device->UploadToDeviceLocalBuffer(
+        *vertexBuffer,
+        vertices.data(),
+        vertexBufferConfig.size
+    );
+    TE_LOG_INFO(" Vertex buffer created in device local memory: {} vertices ({} bytes)", 
                 vertices.size(), vertexBufferConfig.size);
 
     /* 命令池 */

@@ -86,6 +86,11 @@ public:
     void BindVertexBuffer(uint32_t firstBinding, 
                          const VulkanBuffer& buffer, 
                          size_t offset = 0);
+    void CopyBuffer(const VulkanBuffer& srcBuffer,
+                   const VulkanBuffer& dstBuffer,
+                   size_t size,
+                   size_t srcOffset = 0,
+                   size_t dstOffset = 0);
     void SetViewport(const vk::Viewport& viewport);
     void SetScissor(const vk::Rect2D& scissor);
     void Draw(uint32_t vertexCount, 

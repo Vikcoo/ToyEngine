@@ -107,6 +107,23 @@ void VulkanCommandBuffer::BindVertexBuffer(uint32_t firstBinding,
     m_commandBuffer.bindVertexBuffers(firstBinding, {vkBuffer}, {vkOffset});
 }
 
+void VulkanCommandBuffer::CopyBuffer(const VulkanBuffer& srcBuffer,
+                                    const VulkanBuffer& dstBuffer,
+                                    size_t size,
+                                    size_t srcOffset,
+                                    size_t dstOffset) {
+    vk::BufferCopy copyRegion;
+    copyRegion.setSrcOffset(static_cast<vk::DeviceSize>(srcOffset))
+              .setDstOffset(static_cast<vk::DeviceSize>(dstOffset))
+              .setSize(static_cast<vk::DeviceSize>(size));
+    
+    m_commandBuffer.copyBuffer(
+        srcBuffer.GetHandle(),
+        dstBuffer.GetHandle(),
+        {copyRegion}
+    );
+}
+
 void VulkanCommandBuffer::SetViewport(const vk::Viewport& viewport) {
     m_commandBuffer.setViewport(0, {viewport});
 }
