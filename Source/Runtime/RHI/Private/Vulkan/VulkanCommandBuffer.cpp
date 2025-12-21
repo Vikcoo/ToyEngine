@@ -4,6 +4,7 @@
 #include "VulkanRenderPass.h"
 #include "VulkanFramebuffer.h"
 #include "VulkanPipeline.h"
+#include "VulkanBuffer.h"
 #include "Log/Log.h"
 
 namespace TE {
@@ -96,6 +97,14 @@ RenderPassScope VulkanCommandBuffer::BeginRenderPass(
 
 void VulkanCommandBuffer::BindPipeline(const VulkanPipeline& pipeline) {
     m_commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.GetHandle());
+}
+
+void VulkanCommandBuffer::BindVertexBuffer(uint32_t firstBinding, 
+                                          const VulkanBuffer& buffer, 
+                                          size_t offset) {
+    vk::Buffer vkBuffer = buffer.GetHandle();
+    vk::DeviceSize vkOffset = static_cast<vk::DeviceSize>(offset);
+    m_commandBuffer.bindVertexBuffers(firstBinding, {vkBuffer}, {vkOffset});
 }
 
 void VulkanCommandBuffer::SetViewport(const vk::Viewport& viewport) {

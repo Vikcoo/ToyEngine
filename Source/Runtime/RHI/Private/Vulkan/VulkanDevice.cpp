@@ -6,6 +6,7 @@
 #include "VulkanRenderPass.h"
 #include "VulkanFramebuffer.h"
 #include "VulkanPipeline.h"
+#include "VulkanBuffer.h"
 #include "VulkanUtils.h"
 #include "Log/Log.h"
 #include <set>
@@ -305,6 +306,15 @@ std::unique_ptr<VulkanPipeline> VulkanDevice::CreateGraphicsPipeline(
         VulkanPipeline::PrivateTag{},
         std::const_pointer_cast<VulkanDevice>(shared_from_this()),
         renderPass,
+        config
+    );
+}
+
+std::unique_ptr<VulkanBuffer> VulkanDevice::CreateBuffer(const BufferConfig& config)
+{
+    return std::make_unique<VulkanBuffer>(
+        VulkanBuffer::PrivateTag{},
+        shared_from_this(),
         config
     );
 }

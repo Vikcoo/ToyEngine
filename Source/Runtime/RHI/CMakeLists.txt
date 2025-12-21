@@ -36,6 +36,8 @@ add_library(RHI STATIC
     Private/Vulkan/VulkanRenderPass.cpp
     Private/Vulkan/VulkanFramebuffer.h
     Private/Vulkan/VulkanFramebuffer.cpp
+    Private/Vulkan/VulkanBuffer.h
+    Private/Vulkan/VulkanBuffer.cpp
     
     # 层次4：命令和管线
     Private/Vulkan/VulkanShader.h

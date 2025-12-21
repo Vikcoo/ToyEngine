@@ -15,6 +15,7 @@ class VulkanDevice;
 class VulkanRenderPass;
 class VulkanFramebuffer;
 class VulkanPipeline;
+class VulkanBuffer;
 
 /// 命令缓冲录制 Scope - RAII 自动配对 begin/end
 class CommandBufferRecordingScope {
@@ -82,6 +83,9 @@ public:
 
     // 命令录制接口
     void BindPipeline(const VulkanPipeline& pipeline);
+    void BindVertexBuffer(uint32_t firstBinding, 
+                         const VulkanBuffer& buffer, 
+                         size_t offset = 0);
     void SetViewport(const vk::Viewport& viewport);
     void SetScissor(const vk::Rect2D& scissor);
     void Draw(uint32_t vertexCount, 

@@ -15,11 +15,13 @@ class VulkanRenderPass;
 class VulkanFramebuffer;
 class VulkanSurface;
 class VulkanPipeline;
+class VulkanBuffer;
 
 // 前向声明配置结构（定义在对应的头文件中）
 struct SwapChainConfig;
 struct AttachmentConfig;
 struct GraphicsPipelineConfig;
+struct BufferConfig;
 
 /// 设备配置
 struct DeviceConfig {
@@ -89,6 +91,11 @@ public:
     [[nodiscard]] std::unique_ptr<VulkanPipeline> CreateGraphicsPipeline(
         const VulkanRenderPass& renderPass,
         const GraphicsPipelineConfig& config
+    );
+
+    // 创建缓冲区
+    [[nodiscard]] std::unique_ptr<VulkanBuffer> CreateBuffer(
+        const BufferConfig& config
     );
 
     // 创建同步对象

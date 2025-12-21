@@ -13,10 +13,33 @@
 #include "VulkanImageView.h"
 #include "VulkanPipeline.h"
 #include "VulkanCommandBuffer.h"
+#include "VulkanBuffer.h"
+#include "VulkanVertexInput.h"
 #include <algorithm>
 #include <array>
 #include <atomic>
 #include <fstream>
+#include <glm/glm.hpp>
+#include <cstddef>
+#include <vector>
+
+// 定义顶点结构体
+struct Vertex {
+    glm::vec2 position;  // 位置 (location = 0)
+    glm::vec3 color;     // 颜色 (location = 1)
+};
+
+// 特化顶点输入辅助函数
+namespace TE {
+template<>
+std::vector<vk::VertexInputAttributeDescription> 
+VertexInputHelper<Vertex>::GetAttributeDescriptions(uint32_t binding) {
+    return {
+        {0, binding, vk::Format::eR32G32Sfloat, static_cast<uint32_t>(offsetof(Vertex, position))},
+        {1, binding, vk::Format::eR32G32B32Sfloat, static_cast<uint32_t>(offsetof(Vertex, color))}
+    };
+}
+}
 
 int main()
 {
@@ -201,9 +224,12 @@ int main()
     );
     pipelineConfig.scissor = vk::Rect2D({0, 0}, swapChain->GetExtent());
 
-    // 这个着色器不需要顶点输入（使用 gl_VertexIndex）
-    // pipelineConfig.vertexBindings = {};
-    // pipelineConfig.vertexAttributes = {};
+    // 配置顶点输入（使用辅助函数）
+    pipelineConfig.vertexBindings = {
+        TE::VertexInputHelper<Vertex>::GetBindingDescription()
+    };
+    pipelineConfig.vertexAttributes = 
+        TE::VertexInputHelper<Vertex>::GetAttributeDescriptions();
 
     auto pipeline = device->CreateGraphicsPipeline(*renderPass, pipelineConfig);
     if (!pipeline) {
@@ -213,6 +239,35 @@ int main()
     TE_LOG_INFO(" Graphics pipeline created");
     TE_LOG_INFO("  Viewport: {}x{}", swapChain->GetExtent().width, swapChain->GetExtent().height);
     TE_LOG_INFO("  Shaders: {} + {}", pipelineConfig.vertexShaderPath, pipelineConfig.fragmentShaderPath);
+
+    /* 顶点缓冲区 */
+    // 定义顶点数据
+    const std::vector<Vertex> vertices = {
+        {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},   // 底部中心，红色
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},    // 右上，绿色
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}   // 左上，蓝色
+    };
+
+    // 创建顶点缓冲区配置
+    TE::BufferConfig vertexBufferConfig;
+    vertexBufferConfig.size = sizeof(Vertex) * vertices.size();
+    vertexBufferConfig.usage = vk::BufferUsageFlagBits::eVertexBuffer;
+    vertexBufferConfig.memoryProperties = 
+        vk::MemoryPropertyFlagBits::eHostVisible | 
+        vk::MemoryPropertyFlagBits::eHostCoherent;
+
+    // 创建顶点缓冲区
+    auto vertexBuffer = device->CreateBuffer(vertexBufferConfig);
+    if (!vertexBuffer) {
+        TE_LOG_ERROR("Failed to create vertex buffer");
+        return -1;
+
+    }
+
+    // 上传顶点数据
+    vertexBuffer->UploadData(vertices.data(), vertexBufferConfig.size);
+    TE_LOG_INFO(" Vertex buffer created: {} vertices ({} bytes)", 
+                vertices.size(), vertexBufferConfig.size);
 
     /* 命令池 */
     auto commandPool = device->CreateCommandPool(
@@ -461,6 +516,10 @@ int main()
                 // 6. 绑定图形管线
                 //    这告诉 GPU 使用哪个着色器程序和渲染状态
                 commandBuffers[currentFrame]->BindPipeline(*pipeline);
+
+                // 6.5. 绑定顶点缓冲区
+                //      将顶点数据绑定到命令缓冲区，供 GPU 读取
+                commandBuffers[currentFrame]->BindVertexBuffer(0, *vertexBuffer, 0);
 
                 // 7. 设置视口（动态视口，会覆盖管线创建时的设置）
                 //    视口定义了渲染区域在窗口中的位置和大小

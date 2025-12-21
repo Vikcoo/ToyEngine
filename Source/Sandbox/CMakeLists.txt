@@ -1,8 +1,20 @@
 project(Sandbox)
 
+# 包含 Shader 编译脚本
+include(${CMAKE_SOURCE_DIR}/CMake/CompileShaders.cmake)
+
+# 编译 Shader
+compile_shaders(
+    OUTPUT_DIR "${CMAKE_SOURCE_DIR}/Content/Shaders/Common"
+    SHADERS
+        "${CMAKE_SOURCE_DIR}/Content/Shaders/Common/triangle.vert"
+        "${CMAKE_SOURCE_DIR}/Content/Shaders/Common/triangle.frag"
+)
+
 # 创建可执行文件
 add_executable(Sandbox
     Main.cpp
+    ${SHADER_OUTPUTS}  # 将编译后的 shader 添加到依赖中
 )
 
 # 链接Runtime模块
