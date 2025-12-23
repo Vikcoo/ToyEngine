@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 
+
 namespace TE {
 
 class VulkanQueue;
@@ -16,12 +17,16 @@ class VulkanFramebuffer;
 class VulkanSurface;
 class VulkanPipeline;
 class VulkanBuffer;
+class VulkanDescriptorSetLayout;
+class VulkanDescriptorPool;
+class DescriptorPoolSize;
 
 // 前向声明配置结构（定义在对应的头文件中）
 struct SwapChainConfig;
 struct AttachmentConfig;
 struct GraphicsPipelineConfig;
 struct BufferConfig;
+struct DescriptorSetLayoutBinding;
 
 /// 设备配置
 struct DeviceConfig {
@@ -107,6 +112,18 @@ public:
         VulkanBuffer& deviceBuffer,
         const void* data,
         size_t size
+    );
+
+    // 创建描述符集布局
+    [[nodiscard]] std::unique_ptr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(
+        const std::vector<DescriptorSetLayoutBinding>& bindings
+    );
+
+    // 创建描述符池
+    [[nodiscard]] std::unique_ptr<VulkanDescriptorPool> CreateDescriptorPool(
+        uint32_t maxSets,
+        const std::vector<DescriptorPoolSize>& poolSizes,
+        vk::DescriptorPoolCreateFlags flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
     );
 
     // 创建同步对象

@@ -8,6 +8,8 @@
 #include "VulkanPipeline.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
+#include "VulkanDescriptorSetLayout.h"
+#include "VulkanDescriptorPool.h"
 #include "VulkanUtils.h"
 #include "Log/Log.h"
 #include <set>
@@ -407,5 +409,14 @@ void VulkanDevice::UploadToDeviceLocalBuffer(
     //    注意：命令池也会自动析构，但命令缓冲区会先析构
 }
 
+std::unique_ptr<VulkanDescriptorSetLayout> VulkanDevice::CreateDescriptorSetLayout(
+    const std::vector<DescriptorSetLayoutBinding>& bindings){
+    return std::make_unique<VulkanDescriptorSetLayout>(VulkanDescriptorSetLayout::PrivateTag(), shared_from_this() ,bindings);
+}
+
+std::unique_ptr<VulkanDescriptorPool> VulkanDevice::CreateDescriptorPool(uint32_t maxSets,
+    const std::vector<DescriptorPoolSize>& poolSizes, vk::DescriptorPoolCreateFlags flags){
+    return std::make_unique<VulkanDescriptorPool>(VulkanDescriptorPool::PrivateTag(), shared_from_this(), maxSets, poolSizes, flags);
+}
 } // namespace TE
 

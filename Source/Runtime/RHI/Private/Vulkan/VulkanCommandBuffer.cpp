@@ -107,11 +107,33 @@ void VulkanCommandBuffer::BindVertexBuffer(uint32_t firstBinding,
     m_commandBuffer.bindVertexBuffers(firstBinding, {vkBuffer}, {vkOffset});
 }
 
+void VulkanCommandBuffer::BindIndexBuffer(const VulkanBuffer& buffer, uint64_t offset, vk::IndexType indexType){
+    vk::Buffer vkBuffer = buffer.GetHandle();
+    vk::DeviceSize vkOffset = static_cast<vk::DeviceSize>(offset);
+    m_commandBuffer.bindIndexBuffer(vkBuffer, 0, indexType);
+}
+
+void VulkanCommandBuffer::BindDescriptorSets(
+    vk::PipelineBindPoint bindPoint,
+    const vk::PipelineLayout& layout,
+    uint32_t firstSet,
+    const std::vector<vk::DescriptorSet>& descriptorSets,
+    const std::vector<uint32_t>& dynamicOffsets)
+{
+    m_commandBuffer.bindDescriptorSets(
+        bindPoint,
+        layout,
+        firstSet,
+        descriptorSets,
+        dynamicOffsets
+    );
+}
+
 void VulkanCommandBuffer::CopyBuffer(const VulkanBuffer& srcBuffer,
-                                    const VulkanBuffer& dstBuffer,
-                                    size_t size,
-                                    size_t srcOffset,
-                                    size_t dstOffset) {
+                                     const VulkanBuffer& dstBuffer,
+                                     size_t size,
+                                     size_t srcOffset,
+                                     size_t dstOffset) {
     vk::BufferCopy copyRegion;
     copyRegion.setSrcOffset(static_cast<vk::DeviceSize>(srcOffset))
               .setDstOffset(static_cast<vk::DeviceSize>(dstOffset))
@@ -137,6 +159,10 @@ void VulkanCommandBuffer::Draw(const uint32_t vertexCount,
                                const uint32_t firstVertex,
                                const uint32_t firstInstance) {
     m_commandBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void VulkanCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance){
+    m_commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void VulkanCommandBuffer::Begin(const vk::CommandBufferUsageFlags flags) {

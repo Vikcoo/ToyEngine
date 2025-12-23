@@ -26,7 +26,7 @@ VulkanPipeline::VulkanPipeline(PrivateTag,
         config.fragmentShaderPath
     );
     
-    CreatePipelineLayout();
+    CreatePipelineLayout(config);
     CreatePipeline(renderPass, config);
 }
 
@@ -34,13 +34,21 @@ VulkanPipeline::~VulkanPipeline() {
     TE_LOG_DEBUG("Pipeline destroyed");
 }
 
-void VulkanPipeline::CreatePipelineLayout() {
+void VulkanPipeline::CreatePipelineLayout(const GraphicsPipelineConfig& config) {
     vk::PipelineLayoutCreateInfo createInfo;
-    // 可以添加 DescriptorSetLayout 和 PushConstants
+    
+    // 设置描述符集布局（如果配置中提供了）
+    if (!config.descriptorSetLayouts.empty()) {
+        createInfo.setSetLayouts(config.descriptorSetLayouts);
+    }
+    
+    // 可以添加 PushConstants 支持
+    // createInfo.setPushConstantRanges(...);
     
     try {
         m_layout = m_device->GetHandle().createPipelineLayout(createInfo);
-        TE_LOG_DEBUG("Pipeline layout created");
+        TE_LOG_DEBUG("Pipeline layout created with {} descriptor set layout(s)", 
+                    config.descriptorSetLayouts.size());
     }
     catch (const vk::SystemError& e) {
         TE_LOG_ERROR("Failed to create pipeline layout: {}", e.what());

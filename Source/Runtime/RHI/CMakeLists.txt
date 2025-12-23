@@ -38,6 +38,10 @@ add_library(RHI STATIC
     Private/Vulkan/VulkanFramebuffer.cpp
     Private/Vulkan/VulkanBuffer.h
     Private/Vulkan/VulkanBuffer.cpp
+    Private/Vulkan/VulkanDescriptorSetLayout.h
+    Private/Vulkan/VulkanDescriptorSetLayout.cpp
+    Private/Vulkan/VulkanDescriptorPool.h
+    Private/Vulkan/VulkanDescriptorPool.cpp
     
     # 层次4：命令和管线
     Private/Vulkan/VulkanShader.h

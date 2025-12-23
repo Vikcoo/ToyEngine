@@ -57,6 +57,9 @@ struct GraphicsPipelineConfig {
         vk::DynamicState::eViewport,
         vk::DynamicState::eScissor
     };
+    
+    // 描述符集布局（用于 UBO、纹理等）
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 };
 
 /// Vulkan 图形管线
@@ -90,7 +93,7 @@ public:
     [[nodiscard]] const vk::raii::PipelineLayout& GetLayout() const { return m_layout; }
 
 private:
-    void CreatePipelineLayout();
+    void CreatePipelineLayout(const GraphicsPipelineConfig& config);
     void CreatePipeline(const VulkanRenderPass& renderPass, const GraphicsPipelineConfig& config);
 
 private:

@@ -86,6 +86,14 @@ public:
     void BindVertexBuffer(uint32_t firstBinding, 
                          const VulkanBuffer& buffer, 
                          size_t offset = 0);
+    void BindIndexBuffer(const VulkanBuffer& buffer, uint64_t offset = 0, vk::IndexType indexType = vk::IndexType::eUint32);
+    void BindDescriptorSets(
+        vk::PipelineBindPoint bindPoint,
+        const vk::PipelineLayout& layout,
+        uint32_t firstSet,
+        const std::vector<vk::DescriptorSet>& descriptorSets,
+        const std::vector<uint32_t>& dynamicOffsets = {}
+    );
     void CopyBuffer(const VulkanBuffer& srcBuffer,
                    const VulkanBuffer& dstBuffer,
                    size_t size,
@@ -97,6 +105,11 @@ public:
              uint32_t instanceCount = 1,
              uint32_t firstVertex = 0,
              uint32_t firstInstance = 0);
+    void DrawIndexed(uint32_t indexCount,
+        uint32_t instanceCount = 1,
+        uint32_t firstIndex = 0,
+        int32_t vertexOffset = 0,
+        uint32_t firstInstance = 0);
 
     // 获取底层句柄
     [[nodiscard]] const vk::raii::CommandBuffer& GetHandle() const { return m_commandBuffer; }

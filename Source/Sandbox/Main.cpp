@@ -3,7 +3,6 @@
 #include "Window.h"
 #include "VulkanContext.h"
 #include "VulkanDevice.h"
-#include "VulkanSurface.h"
 #include "VulkanPhysicalDevice.h"
 #include "VulkanQueue.h"
 #include "VulkanCommandPool.h"
@@ -15,18 +14,30 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanBuffer.h"
 #include "VulkanVertexInput.h"
+#include "VulkanDescriptorSetLayout.h"
+#include "VulkanDescriptorPool.h"
 #include <algorithm>
 #include <array>
 #include <atomic>
 #include <fstream>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <cstddef>
 #include <vector>
+
+#include "glfw-3.4/include/GLFW/glfw3.h"
 
 // 定义顶点结构体
 struct Vertex {
     glm::vec2 position;  // 位置 (location = 0)
     glm::vec3 color;     // 颜色 (location = 1)
+};
+
+struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
 };
 
 // 特化顶点输入辅助函数
@@ -230,6 +241,26 @@ int main()
     pipelineConfig.vertexAttributes = 
         TE::VertexInputHelper<Vertex>::GetAttributeDescriptions();
 
+    /* 描述符集布局（UBO） */
+    // 创建描述符集布局，定义 UBO 绑定（binding = 0）
+    std::vector<TE::DescriptorSetLayoutBinding> uboLayoutBindings;
+    uboLayoutBindings.push_back({
+        0,                                          // binding = 0（对应 shader 中的 layout(binding = 0)）
+        vk::DescriptorType::eUniformBuffer,        // UBO 类型
+        1,                                          // 数量
+        vk::ShaderStageFlagBits::eVertex         // 在顶点和片段着色器中使用
+    });
+
+    auto descriptorSetLayout = device->CreateDescriptorSetLayout(uboLayoutBindings);
+    if (!descriptorSetLayout) {
+        TE_LOG_ERROR("Failed to create descriptor set layout");
+        return -1;
+    }
+    TE_LOG_INFO(" Descriptor set layout created");
+
+    // 在管线配置中添加描述符集布局
+    pipelineConfig.descriptorSetLayouts = {*descriptorSetLayout->GetHandle()};
+
     auto pipeline = device->CreateGraphicsPipeline(*renderPass, pipelineConfig);
     if (!pipeline) {
         TE_LOG_ERROR("Failed to create graphics pipeline");
@@ -242,9 +273,13 @@ int main()
     /* 顶点缓冲区 */
     // 定义顶点数据
     const std::vector<Vertex> vertices = {
-        {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},   // 底部中心，红色
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},    // 右上，绿色
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}   // 左上，蓝色
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+    };
+    const std::vector<uint32_t> indices = {
+        0, 1, 2, 2, 3, 0
     };
 
     // 创建顶点缓冲区配置（使用设备本地内存 - 显存）
@@ -254,12 +289,21 @@ int main()
     vertexBufferConfig.usage = 
         vk::BufferUsageFlagBits::eVertexBuffer |      // 顶点缓冲区用途
         vk::BufferUsageFlagBits::eTransferDst;        // 允许作为传输目标（从 staging buffer 复制）
-
-
     // 创建顶点缓冲区（在显存中）
     auto vertexBuffer = device->CreateBuffer(vertexBufferConfig);
     if (!vertexBuffer) {
         TE_LOG_ERROR("Failed to create vertex buffer");
+        return -1;
+    }
+
+    TE::BufferConfig indexBufferConfig;
+    indexBufferConfig.size = sizeof(uint32_t) * indices.size();
+    indexBufferConfig.usage =
+        vk::BufferUsageFlagBits::eIndexBuffer |
+        vk::BufferUsageFlagBits::eTransferDst;
+    auto indexBuffer = device->CreateBuffer(indexBufferConfig);
+    if (!indexBuffer){
+        TE_LOG_ERROR("Failed to create index buffer");
         return -1;
     }
 
@@ -273,6 +317,90 @@ int main()
     TE_LOG_INFO(" Vertex buffer created in device local memory: {} vertices ({} bytes)", 
                 vertices.size(), vertexBufferConfig.size);
 
+    device->UploadToDeviceLocalBuffer(
+        *indexBuffer,
+        indices.data(),
+        indexBufferConfig.size
+    );
+    TE_LOG_INFO(" index buffer created in device local memory: {} vertices ({} bytes)",
+                indices.size(), indexBufferConfig.size);
+
+
+    constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+    uint32_t currentFrame = 0;
+
+
+    /* UBO（Uniform Buffer Object） */
+    // 为每个交换链图像创建一个 UBO 缓冲区（主机可见内存，每帧更新）
+    std::vector<std::unique_ptr<TE::VulkanBuffer>> uniformBuffers;
+    uniformBuffers.reserve(MAX_FRAMES_IN_FLIGHT);
+
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        TE::BufferConfig uboConfig;
+        uboConfig.size = sizeof(UniformBufferObject);
+        uboConfig.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+        uboConfig.memoryProperties = 
+            vk::MemoryPropertyFlagBits::eHostVisible |      // CPU 可访问（每帧更新）
+            vk::MemoryPropertyFlagBits::eHostCoherent;      // 主机一致（自动同步到 GPU）
+
+        uniformBuffers.push_back(device->CreateBuffer(uboConfig));
+        if (!uniformBuffers.back()) {
+            TE_LOG_ERROR("Failed to create uniform buffer {}", i);
+            return -1;
+        }
+    }
+    TE_LOG_INFO(" Created {} uniform buffer(s)", MAX_FRAMES_IN_FLIGHT);
+
+    /* 描述符池 */
+    // 创建描述符池，用于分配描述符集
+    std::vector<TE::DescriptorPoolSize> poolSizes;
+    poolSizes.push_back({
+        vk::DescriptorType::eUniformBuffer,
+        static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)  // 为每个交换链图像创建一个 UBO
+    });
+
+    auto descriptorPool = device->CreateDescriptorPool(
+        MAX_FRAMES_IN_FLIGHT,  // 最大描述符集数量
+        poolSizes
+    );
+    if (!descriptorPool) {
+        TE_LOG_ERROR("Failed to create descriptor pool");
+        return -1;
+    }
+    TE_LOG_INFO(" Descriptor pool created");
+
+    /* 描述符集 */
+    // 为每个交换链图像分配一个描述符集
+    std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT,
+                                                  *descriptorSetLayout->GetHandle());
+    std::vector<vk::raii::DescriptorSet> descriptorSets =
+        descriptorPool->AllocateDescriptorSets(layouts);
+    
+    if (descriptorSets.size() != MAX_FRAMES_IN_FLIGHT) {
+        TE_LOG_ERROR("Failed to allocate descriptor sets");
+        return -1;
+    }
+    TE_LOG_INFO(" Allocated {} descriptor set(s)", descriptorSets.size());
+
+    // 更新描述符集，将 UBO 绑定到描述符集
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        vk::DescriptorBufferInfo bufferInfo;
+        bufferInfo.setBuffer(uniformBuffers[i]->GetHandle())
+                  .setOffset(0)
+                  .setRange(sizeof(UniformBufferObject));
+
+        vk::WriteDescriptorSet descriptorWrite;
+        descriptorWrite.setDstSet(descriptorSets[i])
+                       .setDstBinding(0)                    // binding = 0
+                       .setDstArrayElement(0)
+                       .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                       .setDescriptorCount(1)
+                       .setBufferInfo({bufferInfo});
+
+        device->GetHandle().updateDescriptorSets({descriptorWrite}, {});
+    }
+    TE_LOG_INFO(" Descriptor sets updated");
+
     /* 命令池 */
     auto commandPool = device->CreateCommandPool(
         queueFamilies.graphics.value(),
@@ -285,8 +413,7 @@ int main()
     TE_LOG_INFO(" Command pool created: QueueFamily={}",
                 commandPool->GetQueueFamilyIndex());
 
-    constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-    uint32_t currentFrame = 0;
+
 
     /* 命令缓冲 */
     // 为每个实际创建的图像分配命令缓冲区
@@ -501,6 +628,29 @@ int main()
         // 重置围栏为未信号状态（准备下一帧）
         device->GetHandle().resetFences(*inFlightFences[currentFrame]);
 
+        // 3.5. 更新 UBO 数据（每帧更新）
+        //      注意：这里使用 glfwGetTime，需要确保 GLFW 已初始化
+        UniformBufferObject ubo{};
+        // 模型矩阵：绕 Z 轴旋转（使用时间作为旋转角度）
+        float time = static_cast<float>(glfwGetTime());
+        ubo.model = glm::rotate(glm::mat4(1.0f), 
+                                time * glm::radians(50.0f),
+                                glm::vec3(0.0f, 0.0f, 1.0f));
+        // 视图矩阵：从 (2, 2, 2) 看向原点
+        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
+                               glm::vec3(0.0f, 0.0f, 0.0f),
+                               glm::vec3(0.0f, 0.0f, 1.0f));
+        // 投影矩阵：透视投影
+        ubo.proj = glm::perspective(glm::radians(45.0f),
+                                    static_cast<float>(swapChain->GetExtent().width) / 
+                                    static_cast<float>(swapChain->GetExtent().height),
+                                    0.1f, 10.0f);
+        // Vulkan 使用 Y 轴向下，需要翻转投影矩阵的 Y 轴
+        ubo.proj[1][1] *= -1;
+
+        // 上传 UBO 数据到当前帧的缓冲区（主机可见内存，直接写入）
+        uniformBuffers[currentFrame]->UploadData(&ubo, sizeof(ubo));
+
         // 4. 录制命令缓冲区（使用 RAII Scope 自动管理 begin/end）
         {
             // 开始录制命令缓冲区
@@ -521,9 +671,19 @@ int main()
                 //    这告诉 GPU 使用哪个着色器程序和渲染状态
                 commandBuffers[currentFrame]->BindPipeline(*pipeline);
 
-                // 6.5. 绑定顶点缓冲区
+                // 6.5. 绑定描述符集（在绑定管线之后）
+                //      将 UBO 绑定到着色器，使着色器可以访问 uniform 数据
+                commandBuffers[currentFrame]->BindDescriptorSets(
+                    vk::PipelineBindPoint::eGraphics,
+                    pipeline->GetLayout().operator*(),  // 获取 PipelineLayout
+                    0,                                   // 第一个描述符集
+                    {descriptorSets[currentFrame]}      // 当前帧的描述符集
+                );
+
+                // 6.6. 绑定顶点缓冲区和索引缓冲区
                 //      将顶点数据绑定到命令缓冲区，供 GPU 读取
                 commandBuffers[currentFrame]->BindVertexBuffer(0, *vertexBuffer, 0);
+                commandBuffers[currentFrame]->BindIndexBuffer(*indexBuffer);
 
                 // 7. 设置视口（动态视口，会覆盖管线创建时的设置）
                 //    视口定义了渲染区域在窗口中的位置和大小
@@ -545,7 +705,8 @@ int main()
                 commandBuffers[currentFrame]->SetScissor(scissor);
 
                 // 9. 绘制三角形
-                commandBuffers[currentFrame]->Draw(3, 1, 0, 0);
+                //commandBuffers[currentFrame]->Draw(3, 1, 0, 0);
+                commandBuffers[currentFrame]->DrawIndexed(indices.size());
 
             }  // 自动调用 endRenderPass（RenderPassScope 析构）
         }  // 自动调用 end（CommandBufferRecordingScope 析构）
@@ -561,17 +722,17 @@ int main()
             {commandBuffers[currentFrame]->GetRawHandle()},      // 命令缓冲区（使用对应图像索引）
             {*imageAvailableSemaphores[currentFrame]},                          // 等待信号量：等待图像可用
             {vk::PipelineStageFlagBits::eColorAttachmentOutput}, // 等待阶段：在颜色附件输出阶段等待
-            {*renderFinishedSemaphores[acquireResult.imageIndex]},            // ✅ 使用对应图像索引的信号量
+            {*renderFinishedSemaphores[acquireResult.imageIndex]},            //  使用对应图像索引的信号量
             *inFlightFences[currentFrame]                                     // 围栏：用于 CPU 等待
         );
 
         // 11. 呈现图像到屏幕
         //     Present 会等待 renderFinishedSemaphore 信号，确保渲染完成后再呈现
-        // ✅ 使用对应图像索引的信号量，避免信号量重用冲突
+        //     使用对应图像索引的信号量，避免信号量重用冲突
         vk::Result presentResult = swapChain->Present(
             acquireResult.imageIndex,                              // 要呈现的图像索引
             *presentQueue,                           // 呈现队列
-            {*renderFinishedSemaphores[acquireResult.imageIndex]} // ✅ 使用对应图像索引的信号量
+            {*renderFinishedSemaphores[acquireResult.imageIndex]} //  使用对应图像索引的信号量
         );
 
         // 检查呈现结果
