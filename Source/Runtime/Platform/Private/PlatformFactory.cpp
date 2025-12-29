@@ -9,9 +9,7 @@ namespace TE {
 
 std::unique_ptr<Window> Window::Create(const WindowConfig& config)
 {
-    // 目前只有GLFW实现
-    // 未来可以根据平台或配置选择不同的实现
-    // 例如：Windows原生窗口、SDL、Qt等
+    // 目前只有GLFW实现  todo Windows原生窗口、SDL、Qt等
     return std::make_unique<GLFWWindow>(config);
 }
 

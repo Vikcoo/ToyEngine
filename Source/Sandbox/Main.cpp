@@ -29,10 +29,12 @@
 #include "glfw-3.4/include/GLFW/glfw3.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb-master/stb_image.h>
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 // 定义顶点结构体
 struct Vertex {
-    glm::vec2 position;  // 位置 (location = 0)
+    glm::vec3 position;  // 位置 (location = 0)
     glm::vec3 color;     // 颜色 (location = 1)
     glm::vec2 texCoord;
 
@@ -45,24 +47,11 @@ struct Vertex {
         return bindingDescription;
     }
 
-    static std::array<vk::VertexInputAttributeDescription, 3>  getAttributeDescriptions() {
-        std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions;
-
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = vk::Format::eR32G32Sfloat;
-        attributeDescriptions[0].offset = offsetof(Vertex, position);
-
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-        attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = vk::Format::eR32G32Sfloat;
-        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
-
+    static std::vector<vk::VertexInputAttributeDescription>  getAttributeDescriptions() {
+        std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
+        attributeDescriptions.emplace_back(0 , 0 , vk::Format::eR32G32B32Sfloat, offsetof(Vertex, position));
+        attributeDescriptions.emplace_back(1 , 0 , vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color));
+        attributeDescriptions.emplace_back(2 , 0 , vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord));
         return attributeDescriptions;
     }
 };
@@ -72,19 +61,6 @@ struct UniformBufferObject {
     glm::mat4 view;
     glm::mat4 proj;
 };
-
-// 特化顶点输入辅助函数
-namespace TE {
-template<>
-std::vector<vk::VertexInputAttributeDescription> 
-VertexInputHelper<Vertex>::GetAttributeDescriptions(uint32_t binding) {
-    return {
-        {0, binding, vk::Format::eR32G32Sfloat, static_cast<uint32_t>(offsetof(Vertex, position))},
-        {1, binding, vk::Format::eR32G32B32Sfloat, static_cast<uint32_t>(offsetof(Vertex, color))},
-        {2, binding, vk::Format::eR32G32Sfloat, static_cast<uint32_t>(offsetof(Vertex, texCoord))}
-    };
-}
-}
 
 int main()
 {
@@ -270,10 +246,10 @@ int main()
 
     // 配置顶点输入（使用辅助函数）
     pipelineConfig.vertexBindings = {
-        TE::VertexInputHelper<Vertex>::GetBindingDescription()
+        Vertex::getBindingDescription()
     };
     pipelineConfig.vertexAttributes = 
-        TE::VertexInputHelper<Vertex>::GetAttributeDescriptions();
+        Vertex::getAttributeDescriptions();
 
     /* 描述符集布局（UBO） */
     // 创建描述符集布局，定义 UBO 绑定（binding = 0）
@@ -322,13 +298,19 @@ int main()
     /* 顶点缓冲区 */
     // 定义顶点数据
     const std::vector<Vertex> vertices = {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
     };
     const std::vector<uint32_t> indices = {
-        0, 1, 2, 2, 3, 0
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6, 7, 4
     };
 
     // 创建顶点缓冲区配置（使用设备本地内存 - 显存）
