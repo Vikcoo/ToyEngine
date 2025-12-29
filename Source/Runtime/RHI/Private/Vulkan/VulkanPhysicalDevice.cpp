@@ -199,5 +199,21 @@ void VulkanPhysicalDevice::PrintInfo() const {
     TE_LOG_INFO("====================================");
 }
 
+uint32_t VulkanPhysicalDevice::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const {
+    const vk::PhysicalDeviceMemoryProperties memProperties = m_device.getMemoryProperties();
+
+    // 查找合适的内存类型
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        // 检查内存类型是否支持所需属性
+        if ((typeFilter & (1 << i)) &&
+            (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+            }
+    }
+
+    TE_LOG_ERROR("Failed to find suitable memory type");
+    throw std::runtime_error("Failed to find suitable memory type");
+}
+
 } // namespace TE
 

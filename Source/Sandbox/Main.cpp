@@ -27,11 +27,44 @@
 #include <vector>
 
 #include "glfw-3.4/include/GLFW/glfw3.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb-master/stb_image.h>
 
 // 定义顶点结构体
 struct Vertex {
     glm::vec2 position;  // 位置 (location = 0)
     glm::vec3 color;     // 颜色 (location = 1)
+    glm::vec2 texCoord;
+
+    static vk::VertexInputBindingDescription getBindingDescription() {
+        vk::VertexInputBindingDescription bindingDescription;
+        bindingDescription.binding = 0;
+        bindingDescription.stride = sizeof(Vertex);
+        bindingDescription.inputRate = vk::VertexInputRate::eVertex;
+
+        return bindingDescription;
+    }
+
+    static std::array<vk::VertexInputAttributeDescription, 3>  getAttributeDescriptions() {
+        std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions;
+
+        attributeDescriptions[0].binding = 0;
+        attributeDescriptions[0].location = 0;
+        attributeDescriptions[0].format = vk::Format::eR32G32Sfloat;
+        attributeDescriptions[0].offset = offsetof(Vertex, position);
+
+        attributeDescriptions[1].binding = 0;
+        attributeDescriptions[1].location = 1;
+        attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
+        attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = vk::Format::eR32G32Sfloat;
+        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
+        return attributeDescriptions;
+    }
 };
 
 struct UniformBufferObject {
@@ -47,7 +80,8 @@ std::vector<vk::VertexInputAttributeDescription>
 VertexInputHelper<Vertex>::GetAttributeDescriptions(uint32_t binding) {
     return {
         {0, binding, vk::Format::eR32G32Sfloat, static_cast<uint32_t>(offsetof(Vertex, position))},
-        {1, binding, vk::Format::eR32G32B32Sfloat, static_cast<uint32_t>(offsetof(Vertex, color))}
+        {1, binding, vk::Format::eR32G32B32Sfloat, static_cast<uint32_t>(offsetof(Vertex, color))},
+        {2, binding, vk::Format::eR32G32Sfloat, static_cast<uint32_t>(offsetof(Vertex, texCoord))}
     };
 }
 }
@@ -243,24 +277,39 @@ int main()
 
     /* 描述符集布局（UBO） */
     // 创建描述符集布局，定义 UBO 绑定（binding = 0）
-    std::vector<TE::DescriptorSetLayoutBinding> uboLayoutBindings;
-    uboLayoutBindings.push_back({
+    std::vector<TE::DescriptorSetLayoutBinding> uboDescLayoutBindings;
+    uboDescLayoutBindings.push_back({
         0,                                          // binding = 0（对应 shader 中的 layout(binding = 0)）
         vk::DescriptorType::eUniformBuffer,        // UBO 类型
         1,                                          // 数量
-        vk::ShaderStageFlagBits::eVertex         // 在顶点和片段着色器中使用
+        vk::ShaderStageFlagBits::eVertex         // 在顶点着色器中使用
     });
 
-    auto descriptorSetLayout = device->CreateDescriptorSetLayout(uboLayoutBindings);
-    if (!descriptorSetLayout) {
+    auto uboDescSetLayout = device->CreateDescriptorSetLayout(uboDescLayoutBindings);
+    if (!uboDescSetLayout) {
         TE_LOG_ERROR("Failed to create descriptor set layout");
         return -1;
     }
-    TE_LOG_INFO(" Descriptor set layout created");
 
-    // 在管线配置中添加描述符集布局
-    pipelineConfig.descriptorSetLayouts = {*descriptorSetLayout->GetHandle()};
+    // 创建描述符集布局 纹理采样器（Combined Image Sampler）
+    std::vector<TE::DescriptorSetLayoutBinding> samplerLayoutBindings;
+    samplerLayoutBindings.push_back({
+        0,                                          // binding = 0（对应 shader 中的 layout(binding = 0) set = 1
+        vk::DescriptorType::eCombinedImageSampler,  // 组合图像采样器类型
+        1,                                          // 数量
+        vk::ShaderStageFlagBits::eFragment         // 在片段着色器中使用
+    });
 
+    auto samplerDescSetLayout = device->CreateDescriptorSetLayout(samplerLayoutBindings);
+    if (!samplerDescSetLayout) {
+        TE_LOG_ERROR("Failed to create sampler descriptor set layout");
+        return -1;
+    }
+
+    pipelineConfig.descriptorSetLayouts = {
+        *uboDescSetLayout->GetHandle(),      // set = 0
+        *samplerDescSetLayout->GetHandle()    // set = 1
+    };
     auto pipeline = device->CreateGraphicsPipeline(*renderPass, pipelineConfig);
     if (!pipeline) {
         TE_LOG_ERROR("Failed to create graphics pipeline");
@@ -273,22 +322,20 @@ int main()
     /* 顶点缓冲区 */
     // 定义顶点数据
     const std::vector<Vertex> vertices = {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
     };
     const std::vector<uint32_t> indices = {
         0, 1, 2, 2, 3, 0
     };
 
     // 创建顶点缓冲区配置（使用设备本地内存 - 显存）
-    // 这是最佳实践：静态顶点数据应该存储在 GPU 显存中，以获得最快的访问速度
+    // 这是最佳实践：静态顶点数据应该存储在 GPU 显存中，以获得最快访问速度
     TE::BufferConfig vertexBufferConfig;
     vertexBufferConfig.size = sizeof(Vertex) * vertices.size();
-    vertexBufferConfig.usage = 
-        vk::BufferUsageFlagBits::eVertexBuffer |      // 顶点缓冲区用途
-        vk::BufferUsageFlagBits::eTransferDst;        // 允许作为传输目标（从 staging buffer 复制）
+    vertexBufferConfig.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
     // 创建顶点缓冲区（在显存中）
     auto vertexBuffer = device->CreateBuffer(vertexBufferConfig);
     if (!vertexBuffer) {
@@ -298,9 +345,7 @@ int main()
 
     TE::BufferConfig indexBufferConfig;
     indexBufferConfig.size = sizeof(uint32_t) * indices.size();
-    indexBufferConfig.usage =
-        vk::BufferUsageFlagBits::eIndexBuffer |
-        vk::BufferUsageFlagBits::eTransferDst;
+    indexBufferConfig.usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
     auto indexBuffer = device->CreateBuffer(indexBufferConfig);
     if (!indexBuffer){
         TE_LOG_ERROR("Failed to create index buffer");
@@ -309,19 +354,11 @@ int main()
 
     // 使用 Staging Buffer 上传数据到显存
     // 这是 Vulkan 的最佳实践：CPU 数据 → Staging Buffer（主机可见）→ GPU 复制 → Device Buffer（显存）
-    device->UploadToDeviceLocalBuffer(
-        *vertexBuffer,
-        vertices.data(),
-        vertexBufferConfig.size
-    );
+    device->UploadToDeviceLocalBuffer(*vertexBuffer, vertices.data(), vertexBufferConfig.size);
     TE_LOG_INFO(" Vertex buffer created in device local memory: {} vertices ({} bytes)", 
                 vertices.size(), vertexBufferConfig.size);
 
-    device->UploadToDeviceLocalBuffer(
-        *indexBuffer,
-        indices.data(),
-        indexBufferConfig.size
-    );
+    device->UploadToDeviceLocalBuffer(*indexBuffer, indices.data(), indexBufferConfig.size);
     TE_LOG_INFO(" index buffer created in device local memory: {} vertices ({} bytes)",
                 indices.size(), indexBufferConfig.size);
 
@@ -354,15 +391,10 @@ int main()
     /* 描述符池 */
     // 创建描述符池，用于分配描述符集
     std::vector<TE::DescriptorPoolSize> poolSizes;
-    poolSizes.push_back({
-        vk::DescriptorType::eUniformBuffer,
-        static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)  // 为每个交换链图像创建一个 UBO
-    });
+    poolSizes.push_back({vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)});
+    poolSizes.push_back({vk::DescriptorType::eCombinedImageSampler,static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)});
 
-    auto descriptorPool = device->CreateDescriptorPool(
-        MAX_FRAMES_IN_FLIGHT,  // 最大描述符集数量
-        poolSizes
-    );
+    auto descriptorPool = device->CreateDescriptorPool(MAX_FRAMES_IN_FLIGHT * 2, poolSizes);
     if (!descriptorPool) {
         TE_LOG_ERROR("Failed to create descriptor pool");
         return -1;
@@ -371,16 +403,28 @@ int main()
 
     /* 描述符集 */
     // 为每个交换链图像分配一个描述符集
-    std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT,
-                                                  *descriptorSetLayout->GetHandle());
-    std::vector<vk::raii::DescriptorSet> descriptorSets =
-        descriptorPool->AllocateDescriptorSets(layouts);
+    std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, *uboDescSetLayout->GetHandle());
+    std::vector<vk::raii::DescriptorSet> uboDescriptorSets = descriptorPool->AllocateDescriptorSets(layouts);
     
-    if (descriptorSets.size() != MAX_FRAMES_IN_FLIGHT) {
+    if (uboDescriptorSets.size() != MAX_FRAMES_IN_FLIGHT) {
         TE_LOG_ERROR("Failed to allocate descriptor sets");
         return -1;
     }
-    TE_LOG_INFO(" Allocated {} descriptor set(s)", descriptorSets.size());
+    TE_LOG_INFO(" Allocated {} descriptor set(s)", uboDescriptorSets.size());
+
+    // 分配纹理采样器描述符集（每个帧一个，但纹理是共享的）
+    std::vector<vk::DescriptorSetLayout> samplerLayouts(MAX_FRAMES_IN_FLIGHT, *samplerDescSetLayout->GetHandle());
+    std::vector<vk::raii::DescriptorSet> samplerDescriptorSets = descriptorPool->AllocateDescriptorSets(samplerLayouts);
+    if (samplerDescriptorSets.size() != MAX_FRAMES_IN_FLIGHT) {
+        TE_LOG_ERROR("Failed to allocate sampler descriptor sets");
+        return -1;
+    }
+
+    auto texture = device->CreateTexture2DFromfile("C:/Project Files/ToyEngine/Content/Textures/rust_cpp.png");
+    if (!texture) {
+        TE_LOG_ERROR("Failed to load texture");
+        return -1;
+    }
 
     // 更新描述符集，将 UBO 绑定到描述符集
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
@@ -390,14 +434,28 @@ int main()
                   .setRange(sizeof(UniformBufferObject));
 
         vk::WriteDescriptorSet descriptorWrite;
-        descriptorWrite.setDstSet(descriptorSets[i])
+        descriptorWrite.setDstSet(uboDescriptorSets[i])
                        .setDstBinding(0)                    // binding = 0
                        .setDstArrayElement(0)
                        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
                        .setDescriptorCount(1)
                        .setBufferInfo({bufferInfo});
 
-        device->GetHandle().updateDescriptorSets({descriptorWrite}, {});
+        // 更新纹理采样器描述符集（set 1）
+        vk::DescriptorImageInfo imageInfo;
+        imageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                 .setImageView(*texture->GetImageView().GetHandle())  // 需要添加 GetImageView 方法
+                 .setSampler(*texture->GetSampler());                  // 需要添加 GetSampler 方法
+
+        vk::WriteDescriptorSet samplerWrite;
+        samplerWrite.setDstSet(*samplerDescriptorSets[i])  // ✅ 修复：使用解引用
+                    .setDstBinding(0)
+                    .setDstArrayElement(0)
+                    .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                    .setDescriptorCount(1)
+                    .setImageInfo({imageInfo});
+
+        device->GetHandle().updateDescriptorSets({descriptorWrite, samplerWrite}, {});
     }
     TE_LOG_INFO(" Descriptor sets updated");
 
@@ -445,7 +503,6 @@ int main()
     }
 
     /* 清除颜色值 */
-    // 定义清除颜色（深灰色背景，这样三角形会更明显）
     vk::ClearValue clearColor;
     clearColor.setColor(vk::ClearColorValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}));
 
@@ -554,7 +611,8 @@ int main()
 
         // 9. 更新视口和剪裁配置（用于管线，虽然使用动态视口，但保持配置同步）
         pipelineConfig.viewport = vk::Viewport(
-            0.0f, 0.0f,
+            0.0f,
+            0.0f,
             static_cast<float>(swapChain->GetExtent().width),
             static_cast<float>(swapChain->GetExtent().height),
             0.0f, 1.0f
@@ -628,13 +686,12 @@ int main()
         // 重置围栏为未信号状态（准备下一帧）
         device->GetHandle().resetFences(*inFlightFences[currentFrame]);
 
-        // 3.5. 更新 UBO 数据（每帧更新）
-        //      注意：这里使用 glfwGetTime，需要确保 GLFW 已初始化
+        // 更新UBO（每帧更新）
         UniformBufferObject ubo{};
         // 模型矩阵：绕 Z 轴旋转（使用时间作为旋转角度）
         float time = static_cast<float>(glfwGetTime());
         ubo.model = glm::rotate(glm::mat4(1.0f), 
-                                time * glm::radians(50.0f),
+                                time * glm::radians(90.0f),
                                 glm::vec3(0.0f, 0.0f, 1.0f));
         // 视图矩阵：从 (2, 2, 2) 看向原点
         ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
@@ -654,45 +711,42 @@ int main()
         // 4. 录制命令缓冲区（使用 RAII Scope 自动管理 begin/end）
         {
             // 开始录制命令缓冲区
-            // eOneTimeSubmit 表示这个命令缓冲区只提交一次
             auto recording = commandBuffers[currentFrame]->BeginRecording(
-                vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+                vk::CommandBufferUsageFlagBits::eOneTimeSubmit  // eOneTimeSubmit 表示这个命令缓冲区只提交一次
             );
 
-            // 5. 开始渲染通道（使用 RAII Scope 自动管理 beginRenderPass/endRenderPass）
+            // 开始渲染通道（使用 RAII Scope 自动管理 beginRenderPass/endRenderPass）
             {
                 auto renderPassScope = commandBuffers[currentFrame]->BeginRenderPass(
-                    *renderPass,                    // 渲染通道
-                    *framebuffers[acquireResult.imageIndex],      // 帧缓冲区（使用对应图像索引）
-                    {clearColor}                    // 清除颜色值
+                    *renderPass,                                    // 渲染通道
+                    *framebuffers[acquireResult.imageIndex],        // 帧缓冲区（使用对应图像索引）
+                    {clearColor}                                 // 清除颜色值
                 );
 
-                // 6. 绑定图形管线
-                //    这告诉 GPU 使用哪个着色器程序和渲染状态
+                // 绑定图形管线 这告诉 GPU 使用哪个着色器程序和渲染状态
                 commandBuffers[currentFrame]->BindPipeline(*pipeline);
 
-                // 6.5. 绑定描述符集（在绑定管线之后）
-                //      将 UBO 绑定到着色器，使着色器可以访问 uniform 数据
+                // 绑定描述符集（在绑定管线之后） 将 UBO 绑定到着色器，使着色器可以访问 uniform 数据
                 commandBuffers[currentFrame]->BindDescriptorSets(
                     vk::PipelineBindPoint::eGraphics,
                     pipeline->GetLayout().operator*(),  // 获取 PipelineLayout
                     0,                                   // 第一个描述符集
-                    {descriptorSets[currentFrame]}      // 当前帧的描述符集
+                    {uboDescriptorSets[currentFrame], samplerDescriptorSets[currentFrame]}      // 当前帧的描述符集
                 );
 
-                // 6.6. 绑定顶点缓冲区和索引缓冲区
-                //      将顶点数据绑定到命令缓冲区，供 GPU 读取
+                // 绑定顶点缓冲区和索引缓冲区 ，供 GPU 读取
                 commandBuffers[currentFrame]->BindVertexBuffer(0, *vertexBuffer, 0);
                 commandBuffers[currentFrame]->BindIndexBuffer(*indexBuffer);
 
-                // 7. 设置视口（动态视口，会覆盖管线创建时的设置）
-                //    视口定义了渲染区域在窗口中的位置和大小
+                // 设置视口（动态视口，会覆盖管线创建时的设置）视口定义了渲染区域在窗口中的位置和大小
                 //    注意：Vulkan的Y轴默认从底部开始，需要翻转Y轴以匹配OpenGL风格
                 vk::Viewport viewport;
                 viewport.x = 0.0f;
-                viewport.y = static_cast<float>(swapChain->GetExtent().height);  // Y坐标从底部开始
+                //viewport.y = static_cast<float>(swapChain->GetExtent().height);  // Y坐标从底部开始
+                viewport.y = 0.0f,
                 viewport.width = static_cast<float>(swapChain->GetExtent().width);
-                viewport.height = -static_cast<float>(swapChain->GetExtent().height);  // 负高度翻转Y轴
+                //viewport.height = -static_cast<float>(swapChain->GetExtent().height);  // 负高度翻转Y轴
+                viewport.height = static_cast<float>(swapChain->GetExtent().height);  // 负高度翻转Y轴
                 viewport.minDepth = 0.0f;
                 viewport.maxDepth = 1.0f;
                 commandBuffers[currentFrame]->SetViewport(viewport);

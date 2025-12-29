@@ -37,7 +37,8 @@ VulkanBuffer::VulkanBuffer(PrivateTag,
     // 分配内存
     vk::MemoryAllocateInfo allocInfo;
     allocInfo.setAllocationSize(memRequirements.size)
-             .setMemoryTypeIndex(FindMemoryType(
+             .setMemoryTypeIndex(
+                 m_device->GetPhysicalDevice().FindMemoryType(
                  memRequirements.memoryTypeBits,
                  config.memoryProperties
              ));
@@ -95,22 +96,7 @@ void VulkanBuffer::UploadData(const void* data, size_t size, size_t offset) {
     m_memory.unmapMemory();
 }
 
-uint32_t VulkanBuffer::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
-    const auto& physicalDevice = m_device->GetPhysicalDevice();
-    vk::PhysicalDeviceMemoryProperties memProperties = physicalDevice.GetHandle().getMemoryProperties();
 
-    // 查找合适的内存类型
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        // 检查内存类型是否支持所需属性
-        if ((typeFilter & (1 << i)) && 
-            (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    TE_LOG_ERROR("Failed to find suitable memory type");
-    throw std::runtime_error("Failed to find suitable memory type");
-}
 
 } // namespace TE
 

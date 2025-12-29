@@ -34,7 +34,7 @@ struct GraphicsPipelineConfig {
     
     // 光栅化
     vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
-    vk::CullModeFlags cullMode = vk::CullModeFlagBits::eNone;
+    vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
     vk::FrontFace frontFace = vk::FrontFace::eCounterClockwise;
     float lineWidth = 1.0f;
     

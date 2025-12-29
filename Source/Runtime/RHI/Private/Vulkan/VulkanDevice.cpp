@@ -238,6 +238,16 @@ vk::raii::Fence VulkanDevice::CreateFence(const bool signaled) const
     return m_device.createFence(createInfo);
 }
 
+std::unique_ptr<VulkanTexture2D> VulkanDevice::CreateTexture2DFromfile(const std::string& filePath)
+{
+    return VulkanTexture2D::CreateFromFile(shared_from_this(), filePath);
+}
+
+std::unique_ptr<VulkanImage> VulkanDevice::CreateImage(const VulkanImageConfig& config)
+{
+    return VulkanImage::Create(shared_from_this(), config);
+}
+
 // ============================================================================
 // 设备操作
 // ============================================================================

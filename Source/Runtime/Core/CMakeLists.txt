@@ -9,12 +9,12 @@ add_library(Core STATIC
     Private/Log.cpp
 )
 
-# 公共包含目录（Public接口）
+# 公共包含目录
 target_include_directories(Core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Public
 )
 
-# 私有包含目录（Private实现）
+# 私有包含目录
 target_include_directories(Core PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Private
 )

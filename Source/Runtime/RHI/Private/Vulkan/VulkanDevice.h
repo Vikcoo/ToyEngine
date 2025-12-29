@@ -6,6 +6,9 @@
 #include <memory>
 #include <vector>
 
+#include "VulkanImage.h"
+#include "VulkanTexture2D.h"
+
 
 namespace TE {
 
@@ -129,6 +132,12 @@ public:
     // 创建同步对象
     [[nodiscard]] vk::raii::Semaphore CreateVulkanSemaphore() const;
     [[nodiscard]] vk::raii::Fence CreateFence(bool signaled = true) const;
+
+    // 创建纹理
+    [[nodiscard]] std::unique_ptr<VulkanTexture2D> CreateTexture2DFromfile(const std::string& filePath);
+
+    // 创建图像
+    [[nodiscard]] std::unique_ptr<VulkanImage> CreateImage(const VulkanImageConfig& config);
 
     // 等待设备空闲
     void WaitIdle();

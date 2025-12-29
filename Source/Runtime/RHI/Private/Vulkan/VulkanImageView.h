@@ -17,6 +17,7 @@ public:
         explicit PrivateTag() = default;
         friend class VulkanDevice;
         friend class VulkanSwapChain;
+        friend class VulkanTexture2D;
     };
 
     explicit VulkanImageView(PrivateTag,

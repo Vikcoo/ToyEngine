@@ -51,8 +51,7 @@ public:
     [[nodiscard]] const vk::raii::Buffer& GetRAIIHandle() const { return m_buffer; }
     [[nodiscard]] size_t GetSize() const { return m_size; }
 
-private:
-    uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+
 
 private:
     std::shared_ptr<VulkanDevice> m_device;

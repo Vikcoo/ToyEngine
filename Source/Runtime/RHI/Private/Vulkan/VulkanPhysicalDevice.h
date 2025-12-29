@@ -77,6 +77,9 @@ public:
     // 获取底层句柄
     [[nodiscard]] const vk::raii::PhysicalDevice& GetHandle() const { return m_device; }
 
+    // 查询符合要求的内存类型索引
+    uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+
 private:
     std::weak_ptr<VulkanContext> m_context;
     vk::raii::PhysicalDevice m_device;
