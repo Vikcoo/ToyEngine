@@ -30,9 +30,9 @@ public:
         friend class VulkanDevice;
     };
 
-    explicit VulkanRenderPass(PrivateTag,
-                             std::shared_ptr<VulkanDevice> device,
-                             const std::vector<AttachmentConfig>& attachments);
+    VulkanRenderPass(PrivateTag,
+                     std::shared_ptr<VulkanDevice> device,
+                     const std::vector<AttachmentConfig>& attachments);
 
     ~VulkanRenderPass();
 

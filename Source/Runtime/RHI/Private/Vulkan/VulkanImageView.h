@@ -18,9 +18,10 @@ public:
         friend class VulkanDevice;
         friend class VulkanSwapChain;
         friend class VulkanTexture2D;
+        friend class VulkanImage;
     };
 
-    explicit VulkanImageView(PrivateTag,
+    VulkanImageView(PrivateTag,
                             std::shared_ptr<VulkanDevice> device,
                             vk::Image image,
                             vk::Format format,

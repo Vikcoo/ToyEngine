@@ -273,12 +273,12 @@ std::unique_ptr<VulkanSwapChain> VulkanDevice::CreateSwapChain(
 }
 
 std::unique_ptr<VulkanRenderPass> VulkanDevice::CreateRenderPass(
-    const std::vector<AttachmentConfig>& attachments)
+    const std::vector<AttachmentConfig>& configs)
 {
     return std::make_unique<VulkanRenderPass>(
         VulkanRenderPass::PrivateTag{},
         shared_from_this(),
-        attachments
+        configs
     );
 }
 

@@ -71,15 +71,17 @@ public:
     // 扩展检查
     [[nodiscard]] bool CheckExtensionSupport(const std::vector<const char*>& extensions) const;
 
-    // 调试信息
-    void PrintInfo() const;
+    // 查询符合要求的内存类型索引
+    uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+
+    // 查询深度图像格式
+    vk::Format FindDepthFormat( const std::vector<vk::Format>& candidates ) const;
 
     // 获取底层句柄
     [[nodiscard]] const vk::raii::PhysicalDevice& GetHandle() const { return m_device; }
 
-    // 查询符合要求的内存类型索引
-    uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
-
+    // 调试信息
+    void PrintInfo() const;
 private:
     std::weak_ptr<VulkanContext> m_context;
     vk::raii::PhysicalDevice m_device;

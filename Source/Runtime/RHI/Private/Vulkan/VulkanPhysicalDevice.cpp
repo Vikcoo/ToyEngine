@@ -129,7 +129,7 @@ uint32_t VulkanPhysicalDevice::CalculateScore() const {
     if (features.geometryShader) score += 100;
     if (features.tessellationShader) score += 100;
     if (features.samplerAnisotropy) score += 50;
-    
+
     return score;
 }
 
@@ -202,5 +202,15 @@ uint32_t VulkanPhysicalDevice::FindMemoryType(uint32_t typeFilter, vk::MemoryPro
     throw std::runtime_error("Failed to find suitable memory type");
 }
 
+vk::Format VulkanPhysicalDevice::FindDepthFormat(const std::vector<vk::Format>& candidates) const
+{
+    for(const auto& format : candidates) {
+        const auto props = m_device.getFormatProperties(format);
+        if(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment){
+            return format;
+        }
+    }
+    throw std::runtime_error("failed to find supported format!");
+}
 } // namespace TE
 

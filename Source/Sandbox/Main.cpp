@@ -13,7 +13,6 @@
 #include "VulkanPipeline.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanBuffer.h"
-#include "VulkanVertexInput.h"
 #include "VulkanDescriptorSetLayout.h"
 #include "VulkanDescriptorPool.h"
 #include <algorithm>
@@ -139,7 +138,7 @@ int main()
     TE_LOG_INFO("Graphics Queue: Family={}, Index={}", graphicsQueue->GetFamilyIndex(), graphicsQueue->GetQueueIndex());
     TE_LOG_INFO("Present Queue: Family={}, Index={}", presentQueue->GetFamilyIndex(), presentQueue->GetQueueIndex());
 
-    /* 8.交换链 */
+    /* 8.交换链  包含images和对应的imageViews */
     TE::SwapChainConfig swapChainConfig{
         vk::Format::eB8G8R8A8Srgb,
         vk::ColorSpaceKHR::eSrgbNonlinear,
@@ -152,21 +151,6 @@ int main()
         TE_LOG_ERROR("Failed to create swap chain");
         return -1;
     }
-
-    /* 9.图像 */
-    uint32_t actualImageCount = swapChain->GetImageCount();
-    std::vector<std::unique_ptr<TE::VulkanImageView>> imageViews;
-    imageViews.reserve(actualImageCount);
-    for (uint32_t i = 0; i < actualImageCount; ++i) {
-        auto imageView = swapChain->CreateImageView(i);
-        if (!imageView) {
-            TE_LOG_ERROR("Failed to create image view {}", i);
-            return -1;
-        }
-        imageViews.push_back(std::move(imageView));
-    }
-    TE_LOG_INFO(" Created {} image view(s) (actual swap chain image count: {})",
-                actualImageCount, actualImageCount);
 
     /* 10. RenderPass */
     std::vector<TE::AttachmentConfig> attachments;
@@ -185,12 +169,12 @@ int main()
     }
     TE_LOG_INFO("Render pass created with {} attachment(s)", attachments.size());
 
-    /* 11. FrameBuffer */
-    // 为每个实际创建的图像创建对应的 Framebuffer
+    /* 11. FrameBuffer 为每个交换链图图像创建fb */
+    uint32_t actualImageCount = swapChain->GetImageCount();
     std::vector<std::unique_ptr<TE::VulkanFramebuffer>> framebuffers;
     framebuffers.reserve(actualImageCount);
     for (uint32_t i = 0; i < actualImageCount; ++i) {
-        std::vector<vk::ImageView> fbAttachments = {*imageViews[i]->GetHandle()};
+        std::vector<vk::ImageView> fbAttachments = {swapChain->GetImageView(i)->GetHandle()};
         auto framebuffer = device->CreateFramebuffer(
             *renderPass,
             fbAttachments,
@@ -523,7 +507,6 @@ int main()
         device->WaitIdle();
 
         // 2. 清理旧资源（自动析构）
-        imageViews.clear();
         framebuffers.clear();
         commandBuffers.clear();
         renderFinishedSemaphores.clear();
@@ -544,22 +527,12 @@ int main()
         actualImageCount = swapChain->GetImageCount();
 
         // 5. 重新创建 ImageView
-        imageViews.clear();
-        imageViews.reserve(actualImageCount);
-        for (uint32_t i = 0; i < actualImageCount; ++i) {
-            auto imageView = swapChain->CreateImageView(i);
-            if (!imageView) {
-                TE_LOG_ERROR("Failed to create image view {}", i);
-                return false;
-            }
-            imageViews.push_back(std::move(imageView));
-        }
 
         // 6. 重新创建 Framebuffer
         framebuffers.clear();
         framebuffers.reserve(actualImageCount);
         for (uint32_t i = 0; i < actualImageCount; ++i) {
-            std::vector<vk::ImageView> fbAttachments = {*imageViews[i]->GetHandle()};
+            std::vector<vk::ImageView> fbAttachments = {swapChain->GetImageView(i)->GetHandle()};
             auto framebuffer = device->CreateFramebuffer(
                 *renderPass,
                 fbAttachments,

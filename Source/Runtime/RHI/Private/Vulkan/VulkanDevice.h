@@ -88,7 +88,7 @@ public:
     );
 
     [[nodiscard]] std::unique_ptr<VulkanRenderPass> CreateRenderPass(
-        const std::vector<AttachmentConfig>& attachments
+        const std::vector<AttachmentConfig>& configs
     );
 
     [[nodiscard]] std::unique_ptr<VulkanFramebuffer> CreateFramebuffer(

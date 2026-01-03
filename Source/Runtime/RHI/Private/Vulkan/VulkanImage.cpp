@@ -9,8 +9,8 @@
 
 namespace TE
 {
-    VulkanImage::VulkanImage(PrivateTag, std::shared_ptr<VulkanDevice> device, const VulkanImageConfig& config):
-    m_device(device)
+    VulkanImage::VulkanImage(PrivateTag, const std::shared_ptr<VulkanDevice>& device, const VulkanImageConfig& config):
+    m_device(device), m_format(config.format)
     {
         vk::ImageCreateInfo imageCreateInfo {};
         imageCreateInfo.imageType = vk::ImageType::e2D;
@@ -52,5 +52,10 @@ namespace TE
     {
         auto vulkanImage = std::make_unique<VulkanImage>(PrivateTag{}, device, config);
         return std::move(vulkanImage);
+    }
+
+   std::unique_ptr<VulkanImageView> VulkanImage::CreateImageView(vk::ImageAspectFlags aspectFlags)
+    {
+        return std::move(std::make_unique<VulkanImageView>(VulkanImageView::PrivateTag{}, m_device, m_image, m_format, aspectFlags));
     }
 } // TE

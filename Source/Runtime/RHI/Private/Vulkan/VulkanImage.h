@@ -34,15 +34,21 @@ public:
     VulkanImage(VulkanImage&&) = delete;
     VulkanImage& operator=(VulkanImage&&) = delete;
 
-    VulkanImage(PrivateTag , std::shared_ptr<VulkanDevice> device, const VulkanImageConfig& config);
+    VulkanImage(PrivateTag , const std::shared_ptr<VulkanDevice>& device, const VulkanImageConfig& config);
 
     static std::unique_ptr<VulkanImage>Create(std::shared_ptr<VulkanDevice> device, const VulkanImageConfig& config);
+    std::unique_ptr<VulkanImageView> CreateImageView(vk::ImageAspectFlags aspectFlags);
 
     const vk::raii::Image& GetHandle(){ return m_image;}
 private:
-    vk::raii::Image m_image{nullptr};
-    vk::raii::DeviceMemory m_memory{nullptr};
     std::shared_ptr<VulkanDevice> m_device;
+    /* 图像和视图总是成对存在 */
+    vk::raii::Image m_image{nullptr};
+    std::unique_ptr<VulkanImageView> m_imageView{nullptr};
+
+    vk::raii::DeviceMemory m_memory{nullptr};
+
+    vk::Format m_format;
 };
 
 } // TE

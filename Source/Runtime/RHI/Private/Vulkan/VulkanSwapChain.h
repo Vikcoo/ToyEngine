@@ -40,12 +40,12 @@ public:
     };
 
     VulkanSwapChain(PrivateTag,
-                            std::shared_ptr<VulkanDevice> device,
-                            std::shared_ptr<VulkanSurface> surface,
-                            const SwapChainConfig& config,
-                            uint32_t desiredWidth = 1280,
-                            uint32_t desiredHeight = 720,
-                            vk::SwapchainKHR oldSwapChain = nullptr);
+                    std::shared_ptr<VulkanDevice> device,
+                    std::shared_ptr<VulkanSurface> surface,
+                    const SwapChainConfig& config,
+                    uint32_t desiredWidth = 1280,
+                    uint32_t desiredHeight = 720,
+                    vk::SwapchainKHR oldSwapChain = nullptr);
 
     ~VulkanSwapChain();
 
@@ -73,33 +73,35 @@ public:
     // 呈现图像
     [[nodiscard]] vk::Result Present(
         uint32_t imageIndex,
-        VulkanQueue& presentQueue,
+        const VulkanQueue& presentQueue,
         const std::vector<vk::Semaphore>& waitSemaphores = {}
     ) const;
 
     // 创建 ImageView（为交换链图像创建视图）
-    [[nodiscard]] std::unique_ptr<VulkanImageView> CreateImageView(uint32_t imageIndex) const;
+    [[nodiscard]] std::vector<std::unique_ptr<VulkanImageView>> CreateImageViews() const;
 
     // 获取信息
     [[nodiscard]] vk::Format GetFormat() const { return m_format; }
     [[nodiscard]] vk::Extent2D GetExtent() const { return m_extent; }
     [[nodiscard]] uint32_t GetImageCount() const { return static_cast<uint32_t>(m_images.size()); }
-    [[nodiscard]] vk::Image GetImage(uint32_t index) const { return m_images[index]; }
+    [[nodiscard]] vk::Image GetImage(const uint32_t index) const { return m_images[index]; }
+    [[nodiscard]] const std::unique_ptr<VulkanImageView>& GetImageView(const uint32_t index) const{ return m_imageViews[index]; }
     [[nodiscard]] const std::vector<vk::Image>& GetImages() const { return m_images; }
-    [[nodiscard]] const vk::raii::SwapchainKHR& GetHandle() const { return m_swapchain; }
+    [[nodiscard]] const vk::raii::SwapchainKHR& GetHandle() const { return m_swapChain; }
 
 private:
     void Initialize(const SwapChainConfig& config, 
                    uint32_t desiredWidth, 
                    uint32_t desiredHeight,
-                   vk::SwapchainKHR oldSwapchain = nullptr);
+                   vk::SwapchainKHR oldSwapChain = nullptr);
 
 private:
     std::shared_ptr<VulkanDevice> m_device;
-    std::shared_ptr<VulkanSurface> m_surface;  // 持有shared_ptr确保生命周期安全
+    std::shared_ptr<VulkanSurface> m_surface;
     
-    vk::raii::SwapchainKHR m_swapchain{nullptr};
-    std::vector<vk::Image> m_images;  // 不拥有，由 swapchain 管理
+    vk::raii::SwapchainKHR m_swapChain{nullptr};
+    std::vector<vk::Image> m_images;
+    std::vector<std::unique_ptr<VulkanImageView>> m_imageViews;
     vk::Format m_format;
     vk::ColorSpaceKHR m_colorSpace;
     vk::Extent2D m_extent;
