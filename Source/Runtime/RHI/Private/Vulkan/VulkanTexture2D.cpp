@@ -1,8 +1,10 @@
 //
 // Created by yukai on 2025/12/30.
 //
-
+#define STB_IMAGE_IMPLEMENTATION
 #include "VulkanTexture2D.h"
+
+#include "Texture2D.h"
 #include "VulkanDevice.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommandPool.h"
@@ -10,42 +12,41 @@
 #include "VulkanQueue.h"
 #include "stb-master/stb_image.h"
 #include "Log/Log.h"
+#include "Loaders/TextureLoader.h"
+
 
 namespace TE
 {
 
+
 std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromFile(const std::shared_ptr<VulkanDevice>& device, const std::string& path)
 {
-    int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(
-        path.c_str(),
-        &texWidth,
-        &texHeight,
-        &texChannels,
-        STBI_rgb_alpha);
-    if (!pixels){
-        TE_LOG_ERROR("create texture2D failed");
-        return nullptr;
-    };
+    auto rawData = TextureLoader::LoadFromFile(path);
 
-
-    auto tex = CreateFromData(device, pixels, texWidth, texHeight, STBI_rgb_alpha, vk::Format::eR8G8B8A8Srgb);
-
-    stbi_image_free(pixels);
+    auto tex = CreateFromData(device, rawData, vk::Format::eR8G8B8A8Srgb);
 
     return tex;
 }
 
-std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr<VulkanDevice> device, const void* data,
-    uint32_t width, uint32_t height, uint32_t channels, vk::Format format)
+std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr<VulkanDevice> device, std::shared_ptr<RawTextureData> rawTextureData , vk::Format format)
 {
     auto texture = std::make_unique<VulkanTexture2D>();
-    texture->m_height = height;
-    texture->m_width = width;
+    texture->m_width = rawTextureData->m_width;
+    texture->m_height = rawTextureData->m_height;
+    texture->m_channels = rawTextureData->m_channelCount;
     texture->m_format = format;
 
-    // 1. 计算图像大小
-    const vk::DeviceSize imageSize = width * height * 4;
+    const vk::DeviceSize imageSize = rawTextureData->m_dataSize;
+
+
+    // 创建像素数据的副本（因为原始数据可能被其他地方使用）
+    std::vector<uint8_t> pixelDataCopy = rawTextureData->m_pixelData;
+
+    // 翻转 Y 坐标
+    FlipImageVerticallyInPlace(pixelDataCopy,
+                               rawTextureData->m_width,
+                               rawTextureData->m_height,
+                               rawTextureData->m_channelCount);
 
     // 2. 创建 Staging Buffer（临时缓冲区，用于上传）
     BufferConfig stagingConfig;
@@ -53,20 +54,20 @@ std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr
     stagingConfig.usage = vk::BufferUsageFlagBits::eTransferSrc;
     stagingConfig.memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
 
+    // 上传翻转后的数据
     auto stagingBuffer = device->CreateBuffer(stagingConfig);
-    stagingBuffer->UploadData(data, imageSize);
+    stagingBuffer->UploadData(pixelDataCopy.data(), imageSize);
 
     // 3. 创建图像
     VulkanImageConfig imageConfig;
-    imageConfig.width = width;
-    imageConfig.height = height;
+    imageConfig.width = rawTextureData->m_width;
+    imageConfig.height = rawTextureData->m_height;
     imageConfig.format = format;
     imageConfig.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
     imageConfig.properties = vk::MemoryPropertyFlagBits::eDeviceLocal;
     imageConfig.tiling = vk::ImageTiling::eOptimal;
     texture->m_image = device->CreateImage(imageConfig);
 
-    // 命令缓冲的记录与执行
     // 5. 创建临时命令池和命令缓冲区（用于传输操作）
     auto commandPool = device->CreateCommandPool(
         device->GetQueueFamilies().graphics.value(),
@@ -95,8 +96,8 @@ std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr
             cmdBuffer.get(),
             stagingBuffer->GetHandle(),
             texture->m_image->GetHandle(),  // 获取原始 vk::Image
-            width,
-            height
+            texture->m_width,
+            texture->m_height
         );
 
         // 6.3 转换布局：eTransferDstOptimal -> eShaderReadOnlyOptimal
@@ -219,6 +220,27 @@ void VulkanTexture2D::CopyBufferToImage(const VulkanCommandBuffer* cmdBuffer, vk
         vk::ImageLayout::eTransferDstOptimal,
         {region}
     );
+}
+
+void VulkanTexture2D::FlipImageVerticallyInPlace(std::vector<uint8_t>& pixelData, uint32_t width, uint32_t height,
+    uint32_t channels)
+{
+    const size_t rowSize = width * channels;
+    const size_t halfHeight = height / 2;
+
+    // 只交换上半部分和下半部分的行
+    for (uint32_t y = 0; y < halfHeight; ++y) {
+        const uint32_t srcRow = y;
+        const uint32_t dstRow = height - 1 - y;
+
+        uint8_t* srcPtr = pixelData.data() + srcRow * rowSize;
+        uint8_t* dstPtr = pixelData.data() + dstRow * rowSize;
+
+        // 交换两行
+        for (size_t i = 0; i < rowSize; ++i) {
+            std::swap(srcPtr[i], dstPtr[i]);
+        }
+    }
 }
 }
 

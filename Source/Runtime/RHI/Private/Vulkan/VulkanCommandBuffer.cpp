@@ -110,7 +110,7 @@ void VulkanCommandBuffer::BindVertexBuffer(uint32_t firstBinding,
 void VulkanCommandBuffer::BindIndexBuffer(const VulkanBuffer& buffer, uint64_t offset, vk::IndexType indexType){
     vk::Buffer vkBuffer = buffer.GetHandle();
     vk::DeviceSize vkOffset = static_cast<vk::DeviceSize>(offset);
-    m_commandBuffer.bindIndexBuffer(vkBuffer, 0, indexType);
+    m_commandBuffer.bindIndexBuffer(vkBuffer, vkOffset, indexType);
 }
 
 void VulkanCommandBuffer::BindDescriptorSets(

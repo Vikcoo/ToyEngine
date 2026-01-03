@@ -54,6 +54,7 @@ add_library(RHI STATIC
         Private/Vulkan/VulkanTexture2D.h
         Private/Vulkan/VulkanImage.cpp
         Private/Vulkan/VulkanImage.h
+    Public/Resources/RHITexture.h
 )
 
 # 包含目录
@@ -75,6 +76,7 @@ target_link_libraries(RHI
     PRIVATE
         Vulkan::Vulkan
         glfw
+        Asset
 )
 
 # 编译定义

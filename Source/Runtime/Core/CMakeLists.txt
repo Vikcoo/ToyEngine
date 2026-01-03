@@ -4,8 +4,7 @@ project(Core)
 add_library(Core STATIC
     # Public接口
     Public/Log/Log.h
-    
-    # Private实现
+	# Private实现
     Private/Log.cpp
 )
 

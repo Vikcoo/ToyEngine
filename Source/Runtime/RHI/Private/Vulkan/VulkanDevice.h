@@ -22,7 +22,7 @@ class VulkanPipeline;
 class VulkanBuffer;
 class VulkanDescriptorSetLayout;
 class VulkanDescriptorPool;
-class DescriptorPoolSize;
+
 
 // 前向声明配置结构（定义在对应的头文件中）
 struct SwapChainConfig;
@@ -30,6 +30,8 @@ struct AttachmentConfig;
 struct GraphicsPipelineConfig;
 struct BufferConfig;
 struct DescriptorSetLayoutBinding;
+struct DescriptorPoolSize;
+
 
 /// 设备配置
 struct DeviceConfig {

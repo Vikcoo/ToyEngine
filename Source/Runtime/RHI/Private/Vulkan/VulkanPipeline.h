@@ -42,8 +42,8 @@ struct GraphicsPipelineConfig {
     vk::SampleCountFlagBits rasterizationSamples = vk::SampleCountFlagBits::e1;
     
     // 深度测试
-    vk::Bool32 depthTestEnable = VK_FALSE;
-    vk::Bool32 depthWriteEnable = VK_FALSE;
+    vk::Bool32 depthTestEnable = VK_TRUE;
+    vk::Bool32 depthWriteEnable = VK_TRUE;
     vk::CompareOp depthCompareOp = vk::CompareOp::eLess;
     
     // 颜色混合

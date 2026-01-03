@@ -16,44 +16,22 @@
 #include "VulkanDescriptorSetLayout.h"
 #include "VulkanDescriptorPool.h"
 #include <algorithm>
-#include <array>
 #include <atomic>
 #include <fstream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <cstddef>
 #include <vector>
 
 #include "glfw-3.4/include/GLFW/glfw3.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb-master/stb_image.h>
+#include "Mesh.h"
+#include "AssetManager.h"
+
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-// 定义顶点结构体
-struct Vertex {
-    glm::vec3 position;  // 位置 (location = 0)
-    glm::vec3 color;     // 颜色 (location = 1)
-    glm::vec2 texCoord;
 
-    static vk::VertexInputBindingDescription getBindingDescription() {
-        vk::VertexInputBindingDescription bindingDescription;
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = vk::VertexInputRate::eVertex;
-
-        return bindingDescription;
-    }
-
-    static std::vector<vk::VertexInputAttributeDescription>  getAttributeDescriptions() {
-        std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
-        attributeDescriptions.emplace_back(0 , 0 , vk::Format::eR32G32B32Sfloat, offsetof(Vertex, position));
-        attributeDescriptions.emplace_back(1 , 0 , vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color));
-        attributeDescriptions.emplace_back(2 , 0 , vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord));
-        return attributeDescriptions;
-    }
-};
 
 struct UniformBufferObject {
     glm::mat4 model;
@@ -139,18 +117,26 @@ int main()
     TE_LOG_INFO("Present Queue: Family={}, Index={}", presentQueue->GetFamilyIndex(), presentQueue->GetQueueIndex());
 
     /* 8.交换链  包含images和对应的imageViews */
-    TE::SwapChainConfig swapChainConfig{
-        vk::Format::eB8G8R8A8Srgb,
-        vk::ColorSpaceKHR::eSrgbNonlinear,
-        vk::PresentModeKHR::eMailbox,
-        3,
-        vk::ImageUsageFlagBits::eColorAttachment
-    };
-    auto swapChain = device->CreateSwapChain(surface, swapChainConfig, window->GetWidth(), window->GetHeight());
+    auto swapChain = device->CreateSwapChain(surface, TE::SwapChainConfig{}, window->GetWidth(), window->GetHeight());
     if (!swapChain) {
         TE_LOG_ERROR("Failed to create swap chain");
         return -1;
     }
+
+    /*  深度相关  */
+    std::vector<vk::Format> candidates{vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint};
+    auto depthFormat = bestDevice->FindDepthFormat(candidates);
+
+    TE::VulkanImageConfig depthImageConfig{
+        swapChain->GetExtent().width,
+        swapChain->GetExtent().height,
+        depthFormat,
+        vk::ImageTiling::eOptimal,
+        vk::ImageUsageFlagBits::eDepthStencilAttachment,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+    auto depthImage = TE::VulkanImage::Create(device, depthImageConfig);
+    auto depthImageView = depthImage->CreateImageView(vk::ImageAspectFlagBits::eDepth);
 
     /* 10. RenderPass */
     std::vector<TE::AttachmentConfig> attachments;
@@ -162,6 +148,15 @@ int main()
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::ePresentSrcKHR
     });
+    attachments.push_back({
+        depthFormat,
+        vk::SampleCountFlagBits::e1,
+        vk::AttachmentLoadOp::eClear,
+        vk::AttachmentStoreOp::eDontCare,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eDepthStencilAttachmentOptimal
+    });
+
     auto renderPass = device->CreateRenderPass(attachments);
     if (!renderPass) {
         TE_LOG_ERROR("Failed to create render pass");
@@ -174,12 +169,8 @@ int main()
     std::vector<std::unique_ptr<TE::VulkanFramebuffer>> framebuffers;
     framebuffers.reserve(actualImageCount);
     for (uint32_t i = 0; i < actualImageCount; ++i) {
-        std::vector<vk::ImageView> fbAttachments = {swapChain->GetImageView(i)->GetHandle()};
-        auto framebuffer = device->CreateFramebuffer(
-            *renderPass,
-            fbAttachments,
-            swapChain->GetExtent()
-        );
+        std::vector<vk::ImageView> fbAttachments = {swapChain->GetImageView(i)->GetHandle(), depthImageView->GetHandle()};
+        auto framebuffer = device->CreateFramebuffer(*renderPass,fbAttachments,swapChain->GetExtent());
         if (!framebuffer) {
             TE_LOG_ERROR("Failed to create framebuffer {}", i);
             return -1;
@@ -193,12 +184,8 @@ int main()
 
     std::string vertexShaderPath = "Content/Shaders/Common/triangle.vert.spv";
     std::string fragmentShaderPath = "Content/Shaders/Common/triangle.frag.spv";
-    std::string projectRoot = TE_PROJECT_ROOT_DIR;
-    if (projectRoot.back() != '/' && projectRoot.back() != '\\') {
-        projectRoot += "/";
-    }
-    std::string absVertexPath = projectRoot + vertexShaderPath;
-    std::string absFragmentPath = projectRoot + fragmentShaderPath;
+    std::string absVertexPath = TE_PROJECT_ROOT_DIR + vertexShaderPath;
+    std::string absFragmentPath = TE_PROJECT_ROOT_DIR + fragmentShaderPath;
 
     // 检查文件是否存在
     std::ifstream testFile(absVertexPath);
@@ -225,10 +212,10 @@ int main()
 
     // 配置顶点输入（使用辅助函数）
     pipelineConfig.vertexBindings = {
-        Vertex::getBindingDescription()
+        TE::Vertex::getBindingDescription()
     };
-    pipelineConfig.vertexAttributes = 
-        Vertex::getAttributeDescriptions();
+    pipelineConfig.vertexAttributes =
+        TE::Vertex::getAttributeDescriptions();
 
     /* 描述符集布局（UBO） */
     // 创建描述符集布局，定义 UBO 绑定（binding = 0）
@@ -274,28 +261,14 @@ int main()
     TE_LOG_INFO("  Viewport: {}x{}", swapChain->GetExtent().width, swapChain->GetExtent().height);
     TE_LOG_INFO("  Shaders: {} + {}", pipelineConfig.vertexShaderPath, pipelineConfig.fragmentShaderPath);
 
-    /* 顶点缓冲区 */
-    // 定义顶点数据
-    const std::vector<Vertex> vertices = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-    };
-    const std::vector<uint32_t> indices = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4
-    };
+    std::string modelSubPath = "Content/Models/viking_room.obj";
+    std::string modelPath = TE_PROJECT_ROOT_DIR + modelSubPath;
+    auto model = TE::AssetManager::GetInstance()->Load<TE::Mesh>(modelPath);
 
     // 创建顶点缓冲区配置（使用设备本地内存 - 显存）
     // 这是最佳实践：静态顶点数据应该存储在 GPU 显存中，以获得最快访问速度
     TE::BufferConfig vertexBufferConfig;
-    vertexBufferConfig.size = sizeof(Vertex) * vertices.size();
+    vertexBufferConfig.size = sizeof(TE::Vertex) * model->m_vertices.size();
     vertexBufferConfig.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
     // 创建顶点缓冲区（在显存中）
     auto vertexBuffer = device->CreateBuffer(vertexBufferConfig);
@@ -305,7 +278,7 @@ int main()
     }
 
     TE::BufferConfig indexBufferConfig;
-    indexBufferConfig.size = sizeof(uint32_t) * indices.size();
+    indexBufferConfig.size = sizeof(uint32_t) * model->m_indices.size();
     indexBufferConfig.usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
     auto indexBuffer = device->CreateBuffer(indexBufferConfig);
     if (!indexBuffer){
@@ -315,13 +288,13 @@ int main()
 
     // 使用 Staging Buffer 上传数据到显存
     // 这是 Vulkan 的最佳实践：CPU 数据 → Staging Buffer（主机可见）→ GPU 复制 → Device Buffer（显存）
-    device->UploadToDeviceLocalBuffer(*vertexBuffer, vertices.data(), vertexBufferConfig.size);
+    device->UploadToDeviceLocalBuffer(*vertexBuffer, model->m_vertices.data(), vertexBufferConfig.size);
     TE_LOG_INFO(" Vertex buffer created in device local memory: {} vertices ({} bytes)", 
-                vertices.size(), vertexBufferConfig.size);
+                model->m_vertices.size(), vertexBufferConfig.size);
 
-    device->UploadToDeviceLocalBuffer(*indexBuffer, indices.data(), indexBufferConfig.size);
+    device->UploadToDeviceLocalBuffer(*indexBuffer, model->m_indices.data(), indexBufferConfig.size);
     TE_LOG_INFO(" index buffer created in device local memory: {} vertices ({} bytes)",
-                indices.size(), indexBufferConfig.size);
+                model->m_indices.size(), indexBufferConfig.size);
 
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -381,11 +354,13 @@ int main()
         return -1;
     }
 
-    auto texture = device->CreateTexture2DFromfile("C:/Project Files/ToyEngine/Content/Textures/rust_cpp.png");
+    auto texture = device->CreateTexture2DFromfile("C:/Project Files/ToyEngine/Content/Textures/viking_room.png");
     if (!texture) {
         TE_LOG_ERROR("Failed to load texture");
         return -1;
     }
+
+
 
     // 更新描述符集，将 UBO 绑定到描述符集
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
@@ -464,8 +439,9 @@ int main()
     }
 
     /* 清除颜色值 */
-    vk::ClearValue clearColor;
-    clearColor.setColor(vk::ClearColorValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}));
+    std::vector<vk::ClearValue>  clearColors;
+    clearColors.emplace_back(vk::ClearColorValue(0.1f, 0.1f, 0.1f, 1.0f));
+    clearColors.emplace_back(vk::ClearDepthStencilValue{1.0f, 0});
 
     /* 窗口状态管理 */
     // 用于标记窗口大小改变和窗口最小化状态（事件驱动，最优雅的方式）
@@ -513,7 +489,7 @@ int main()
 
         // 3. 重建交换链（使用新的窗口尺寸）
         auto newSwapChain = swapChain->Recreate(
-            swapChainConfig,
+            TE::SwapChainConfig{},
             window->GetWidth(),   // 使用新的窗口宽度
             window->GetHeight()  // 使用新的窗口高度
         );
@@ -527,12 +503,16 @@ int main()
         actualImageCount = swapChain->GetImageCount();
 
         // 5. 重新创建 ImageView
+        depthImageConfig.width = swapChain->GetExtent().width;
+        depthImageConfig.height = swapChain->GetExtent().height;
+        depthImage = TE::VulkanImage::Create(device, depthImageConfig);
+        depthImageView = depthImage->CreateImageView(vk::ImageAspectFlagBits::eDepth);
 
         // 6. 重新创建 Framebuffer
         framebuffers.clear();
         framebuffers.reserve(actualImageCount);
         for (uint32_t i = 0; i < actualImageCount; ++i) {
-            std::vector<vk::ImageView> fbAttachments = {swapChain->GetImageView(i)->GetHandle()};
+            std::vector<vk::ImageView> fbAttachments = {swapChain->GetImageView(i)->GetHandle(), depthImageView->GetHandle()};
             auto framebuffer = device->CreateFramebuffer(
                 *renderPass,
                 fbAttachments,
@@ -670,7 +650,7 @@ int main()
                 auto renderPassScope = commandBuffers[currentFrame]->BeginRenderPass(
                     *renderPass,                                    // 渲染通道
                     *framebuffers[acquireResult.imageIndex],        // 帧缓冲区（使用对应图像索引）
-                    {clearColor}                                 // 清除颜色值
+                    {clearColors[0],clearColors[1]}                                 // 清除颜色值
                 );
 
                 // 绑定图形管线 这告诉 GPU 使用哪个着色器程序和渲染状态
@@ -710,7 +690,7 @@ int main()
 
                 // 9. 绘制三角形
                 //commandBuffers[currentFrame]->Draw(3, 1, 0, 0);
-                commandBuffers[currentFrame]->DrawIndexed(indices.size());
+                commandBuffers[currentFrame]->DrawIndexed(static_cast<uint32_t>(model->m_indices.size()));
 
             }  // 自动调用 endRenderPass（RenderPassScope 析构）
         }  // 自动调用 end（CommandBufferRecordingScope 析构）

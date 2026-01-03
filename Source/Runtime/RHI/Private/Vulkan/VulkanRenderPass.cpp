@@ -36,11 +36,16 @@ VulkanRenderPass::VulkanRenderPass(PrivateTag,
     vk::AttachmentReference colorAttachmentRef;
     colorAttachmentRef.setAttachment(0);
     colorAttachmentRef.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+    vk::AttachmentReference depthAttachmentRef;
+    depthAttachmentRef.setAttachment(1);
+    depthAttachmentRef.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
     
     // 创建子通道
     vk::SubpassDescription subpass;
     subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
     subpass.setColorAttachments(colorAttachmentRef);
+    subpass.setPDepthStencilAttachment(&depthAttachmentRef);
     
     // 创建子通道依赖
     // 这个依赖确保：
@@ -49,10 +54,10 @@ VulkanRenderPass::VulkanRenderPass(PrivateTag,
     vk::SubpassDependency dependency;
     dependency.setSrcSubpass(VK_SUBPASS_EXTERNAL);  // 外部子通道（Present 操作）
     dependency.setDstSubpass(0);                    // 我们的子通道
-    dependency.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);  // Present 阶段
+    dependency.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests);
     dependency.setSrcAccessMask(vk::AccessFlags{});  // Present 不需要访问标志
-    dependency.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);  // 颜色附件输出阶段
-    dependency.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);  // 允许写入颜色附件
+    dependency.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests);
+    dependency.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite);
     
     // 创建 RenderPass
     vk::RenderPassCreateInfo createInfo;
