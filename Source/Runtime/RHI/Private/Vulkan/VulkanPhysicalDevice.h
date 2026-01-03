@@ -39,8 +39,8 @@ public:
         friend class VulkanContext;
     };
 
-    explicit VulkanPhysicalDevice(PrivateTag, std::weak_ptr<VulkanContext> context, 
-                                  vk::raii::PhysicalDevice device);
+    VulkanPhysicalDevice(PrivateTag, std::weak_ptr<VulkanContext> context, vk::raii::PhysicalDevice device)
+    : m_context(std::move(context)), m_device(std::move(device)) {}
 
     // 允许移动，禁用拷贝
     VulkanPhysicalDevice(const VulkanPhysicalDevice&) = delete;

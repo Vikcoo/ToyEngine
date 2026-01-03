@@ -39,13 +39,13 @@ public:
         friend class VulkanSwapChain;
     };
 
-    explicit VulkanSwapChain(PrivateTag,
+    VulkanSwapChain(PrivateTag,
                             std::shared_ptr<VulkanDevice> device,
                             std::shared_ptr<VulkanSurface> surface,
                             const SwapChainConfig& config,
                             uint32_t desiredWidth = 1280,
                             uint32_t desiredHeight = 720,
-                            vk::SwapchainKHR oldSwapchain = nullptr);
+                            vk::SwapchainKHR oldSwapChain = nullptr);
 
     ~VulkanSwapChain();
 

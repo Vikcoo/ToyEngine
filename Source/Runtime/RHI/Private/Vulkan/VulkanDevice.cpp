@@ -25,12 +25,7 @@ std::shared_ptr<VulkanDevice> VulkanDevice::Create(
     const QueueFamilyIndices& queueFamilies,
     const DeviceConfig& config)
 {
-    auto device = std::make_shared<VulkanDevice>(
-        PrivateTag{},
-        std::move(physicalDevice),
-        queueFamilies,
-        config
-    );
+    auto device = std::make_shared<VulkanDevice>(PrivateTag{}, std::move(physicalDevice), queueFamilies, config);
 
     if (!device->Initialize(config)) {
         TE_LOG_ERROR("Failed to initialize Vulkan device");
@@ -39,16 +34,6 @@ std::shared_ptr<VulkanDevice> VulkanDevice::Create(
 
     TE_LOG_INFO("Vulkan Logical device create successfully");
     return device;
-}
-
-VulkanDevice::VulkanDevice(PrivateTag,
-                           std::shared_ptr<VulkanPhysicalDevice> physicalDevice,
-                           const QueueFamilyIndices& queueFamilies,
-                           [[maybe_unused]] const DeviceConfig& config)
-    : m_physicalDevice(std::move(physicalDevice))
-    , m_queueFamilies(queueFamilies)
-{
-    TE_LOG_INFO("Initializing Vulkan Device");
 }
 
 VulkanDevice::~VulkanDevice() {
@@ -115,14 +100,13 @@ void VulkanDevice::CreateLogicalDevice(const DeviceConfig& config) {
         uniqueQueueFamilies.insert(m_queueFamilies.transfer.value());
     }
 
-    // 创建队列创建信息
+    // 创建队列创建信息 每个队列族取一个队列用
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-    const float queuePriority = 1.0f;
-
     for (const uint32_t queueFamily : uniqueQueueFamilies) {
+        constexpr float queuePriority = 1.0f;
         vk::DeviceQueueCreateInfo queueCreateInfo;
         queueCreateInfo.setQueueFamilyIndex(queueFamily);
-        queueCreateInfo.setQueueCount(1);
+        queueCreateInfo.setQueueCount(1);   // todo:
         queueCreateInfo.setQueuePriorities(queuePriority);
         queueCreateInfos.push_back(queueCreateInfo);
     }
@@ -143,7 +127,8 @@ void VulkanDevice::CreateLogicalDevice(const DeviceConfig& config) {
 
 void VulkanDevice::CreateQueues() {
     // 创建图形队列
-    if (m_queueFamilies.graphics.has_value()) {
+    if (m_queueFamilies.graphics.has_value()) {\
+        // 之前只申请创建一个queue() todo:
         auto queue = m_device.getQueue(m_queueFamilies.graphics.value(), 0);
         m_graphicsQueue = std::make_shared<VulkanQueue>(
             VulkanQueue::PrivateTag{},

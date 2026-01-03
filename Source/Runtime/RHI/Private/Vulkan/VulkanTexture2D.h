@@ -50,8 +50,8 @@ private:
     std::unique_ptr<VulkanImage> m_image;
     std::unique_ptr<VulkanImageView> m_imageView;
     vk::raii::Sampler m_sampler{nullptr};
-    uint32_t m_width = -1;
-    uint32_t m_height = -1;
+    uint32_t m_width = 0;
+    uint32_t m_height = 0;
     vk::Format m_format = vk::Format::eUndefined;
 };
 

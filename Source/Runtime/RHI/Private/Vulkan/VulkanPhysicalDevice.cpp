@@ -6,19 +6,6 @@
 #include "Log/Log.h"
 
 namespace TE {
-
-// ============================================================================
-// 构造函数
-// ============================================================================
-
-VulkanPhysicalDevice::VulkanPhysicalDevice(PrivateTag, std::weak_ptr<VulkanContext> context,
-                                           vk::raii::PhysicalDevice device)
-    : m_context(std::move(context))
-    , m_device(std::move(device))
-{
-    TE_LOG_DEBUG("Physical Device: {}", GetDeviceName());
-}
-
 // ============================================================================
 // 属性查询（带缓存）
 // ============================================================================

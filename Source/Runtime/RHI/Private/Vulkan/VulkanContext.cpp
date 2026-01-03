@@ -27,10 +27,6 @@ std::shared_ptr<VulkanContext> VulkanContext::Create(const VulkanContextConfig& 
     return context;
 }
 
-VulkanContext::VulkanContext(PrivateTag, VulkanContextConfig  config)
-    : m_config(std::move(config))
-{}
-
 VulkanContext::~VulkanContext() {
     TE_LOG_INFO("Destroying Vulkan Context");
     m_debugMessenger.clear();
@@ -74,7 +70,6 @@ bool VulkanContext::CreateInstance() {
     std::vector<const char*> layers;
     if (m_config.enableValidation) {
         layers = {"VK_LAYER_KHRONOS_validation"};
-        
         if (!CheckValidationLayerSupport(layers)) {
             TE_LOG_WARN("Validation layers requested but not available");
             layers.clear();
@@ -83,8 +78,8 @@ bool VulkanContext::CreateInstance() {
 
     vk::InstanceCreateInfo createInfo;
     createInfo.setPApplicationInfo(&appInfo)
-              .setPEnabledExtensionNames(extensions)  // vulkan-hpp API：传递 vector<const char*>
-              .setPEnabledLayerNames(layers);        // vulkan-hpp API：传递 vector<const char*>
+              .setPEnabledExtensionNames(extensions)
+              .setPEnabledLayerNames(layers);
 
     // Debugger
     vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo;
@@ -175,13 +170,12 @@ VkBool32 VulkanContext::DebugCallbackCpp(
 // ============================================================================
 
 std::vector<std::shared_ptr<VulkanPhysicalDevice>> VulkanContext::EnumeratePhysicalDevices() {
-    vk::raii::PhysicalDevices physicalDevices(m_instance);
-    
+    vk::raii::PhysicalDevices physicalDevices(m_instance); // 枚举物理设备的另一种语法
+
     if (physicalDevices.empty()) {
         TE_LOG_ERROR("No physical devices found");
         return {};
     }
-    
     TE_LOG_INFO("Found {} physical device(s)", physicalDevices.size());
     
     std::vector<std::shared_ptr<VulkanPhysicalDevice>> devices;
@@ -193,6 +187,7 @@ std::vector<std::shared_ptr<VulkanPhysicalDevice>> VulkanContext::EnumeratePhysi
             weak_from_this(),
             std::move(device)
         );
+        TE_LOG_DEBUG("Physical Device: {}", wrapped->GetDeviceName());
         devices.push_back(std::move(wrapped));
     }
     

@@ -8,17 +8,6 @@
 #include <limits>
 
 namespace TE {
-
-// ============================================================================
-// 构造/析构
-// ============================================================================
-
-VulkanSurface::VulkanSurface(PrivateTag, std::weak_ptr<VulkanContext> context,
-                             vk::raii::SurfaceKHR surface)
-    : m_context(std::move(context))
-    , m_surface(std::move(surface))
-{}
-
 VulkanSurface::~VulkanSurface() {
     TE_LOG_DEBUG("Surface destroyed");
 }
@@ -26,7 +15,6 @@ VulkanSurface::~VulkanSurface() {
 // ============================================================================
 // 能力查询
 // ============================================================================
-
 SurfaceCapabilities VulkanSurface::QueryCapabilities(const VulkanPhysicalDevice& device) const {
     SurfaceCapabilities caps;
     caps.capabilities = device.GetHandle().getSurfaceCapabilitiesKHR(*m_surface);
@@ -135,9 +123,7 @@ vk::Extent2D VulkanSurface::ChooseExtent(
     
     // 如果 currentExtent 不是特殊值，直接使用
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-        TE_LOG_DEBUG("Extent: {}x{} (from surface)", 
-                    capabilities.currentExtent.width,
-                    capabilities.currentExtent.height);
+        TE_LOG_DEBUG("Extent:{}x{}(from surface)", capabilities.currentExtent.width, capabilities.currentExtent.height);
         return capabilities.currentExtent;
     }
     
@@ -156,9 +142,7 @@ vk::Extent2D VulkanSurface::ChooseExtent(
         capabilities.maxImageExtent.height
     );
     
-    TE_LOG_DEBUG("Extent: {}x{} (clamped from {}x{})",
-                extent.width, extent.height,
-                desiredWidth, desiredHeight);
+    TE_LOG_DEBUG("Extent: {}x{} (clamped from {}x{})", extent.width, extent.height, desiredWidth, desiredHeight);
     
     return extent;
 }

@@ -66,10 +66,9 @@ int main()
 {
     // 初始化日志系统
     TE::Log::Init();
-    TE_LOG_INFO("=== ToyEngine Sandbox - Full Rendering Pipeline ===");
 
     /* 1. 创建窗口 */
-    const TE::WindowConfig config{"ToyEngine - Layer 2 Test", 1280, 720, true};
+    const TE::WindowConfig config{"ToyEngine", 1280, 720, true};
     const auto window = TE::Window::Create(config);
     if (!window) {
         TE_LOG_ERROR("Failed to create window");
@@ -102,14 +101,14 @@ int main()
         });
     bestDevice->PrintInfo();
 
-    /* 5. 队列族 */
+    /* 5. 队列族 找到一个支持图形绘制和呈现的队列族 */
     auto queueFamilies = bestDevice->FindQueueFamilies(surface.get());
     if (!queueFamilies.IsComplete()) {
         TE_LOG_ERROR("Required queue families not found");
         return -1;
     }
-    TE_LOG_INFO("  Graphics Queue Family: {}", queueFamilies.graphics.value());
-    TE_LOG_INFO("  Present Queue Family: {}", queueFamilies.present.value());
+    TE_LOG_INFO("Graphics Queue Family: {}", queueFamilies.graphics.value());
+    TE_LOG_INFO("Present Queue Family: {}", queueFamilies.present.value());
     if (queueFamilies.compute.has_value()) {
         TE_LOG_INFO("  Compute Queue Family: {}", queueFamilies.compute.value());
     }
@@ -126,7 +125,7 @@ int main()
         return -1;
     }
 
-    /* 7. 队列 */
+    /* 7. 队列  取出逻辑设备创建时创建的队列并检查 */
     auto graphicsQueue = device->GetGraphicsQueue();
     auto presentQueue = device->GetPresentQueue();
     if (!graphicsQueue) {
@@ -137,12 +136,8 @@ int main()
         TE_LOG_ERROR("Present queue is null");
         return -1;
     }
-    TE_LOG_INFO("  Graphics Queue: Family={}, Index={}",
-                graphicsQueue->GetFamilyIndex(),
-                graphicsQueue->GetQueueIndex());
-    TE_LOG_INFO("  Present Queue: Family={}, Index={}",
-                presentQueue->GetFamilyIndex(),
-                presentQueue->GetQueueIndex());
+    TE_LOG_INFO("Graphics Queue: Family={}, Index={}", graphicsQueue->GetFamilyIndex(), graphicsQueue->GetQueueIndex());
+    TE_LOG_INFO("Present Queue: Family={}, Index={}", presentQueue->GetFamilyIndex(), presentQueue->GetQueueIndex());
 
     /* 8.交换链 */
     TE::SwapChainConfig swapChainConfig{

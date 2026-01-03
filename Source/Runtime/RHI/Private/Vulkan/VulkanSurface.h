@@ -27,8 +27,8 @@ public:
         friend class VulkanContext;
     };
 
-    explicit VulkanSurface(PrivateTag, std::weak_ptr<VulkanContext> context,
-                          vk::raii::SurfaceKHR surface);
+    VulkanSurface(PrivateTag, std::weak_ptr<VulkanContext> context, vk::raii::SurfaceKHR surface)
+    : m_context(std::move(context)), m_surface(std::move(surface)) {}
 
     ~VulkanSurface();
 

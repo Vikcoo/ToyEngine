@@ -54,10 +54,11 @@ public:
         const DeviceConfig& config = {}
     );
 
-    explicit VulkanDevice(PrivateTag,
-                         std::shared_ptr<VulkanPhysicalDevice> physicalDevice,
-                         const QueueFamilyIndices& queueFamilies,
-                         [[maybe_unused]] const DeviceConfig& config);
+    VulkanDevice(PrivateTag,
+                 std::shared_ptr<VulkanPhysicalDevice> physicalDevice,
+                 const QueueFamilyIndices& queueFamilies,
+                 [[maybe_unused]] const DeviceConfig& config)
+    : m_physicalDevice(std::move(physicalDevice)), m_queueFamilies(queueFamilies) {}
 
     ~VulkanDevice();
 
