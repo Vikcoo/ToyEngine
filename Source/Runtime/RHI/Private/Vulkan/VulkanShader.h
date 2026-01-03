@@ -21,9 +21,9 @@ public:
         friend class VulkanPipeline;
     };
 
-    explicit VulkanShader(PrivateTag,
-                         std::shared_ptr<VulkanDevice> device,
-                         const std::string& shaderFilePath);
+    VulkanShader(PrivateTag,
+                 std::shared_ptr<VulkanDevice> device,
+                 const std::string& shaderFilePath);
 
     ~VulkanShader();
 
@@ -38,7 +38,7 @@ public:
     [[nodiscard]] vk::ShaderStageFlagBits GetStage() const { return m_stage; }
 
 private:
-    vk::ShaderStageFlagBits DetermineShaderStage(const std::string& filePath);
+    static vk::ShaderStageFlagBits DetermineShaderStage(const std::string& filePath);
     std::vector<uint32_t> ReadShaderFile(const std::string& filePath);
 
 private:

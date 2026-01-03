@@ -9,7 +9,7 @@ add_library(Asset STATIC
         Private/Texture2D.cpp
 	Private/Loaders/ModelLoader.cpp
 	Private/Loaders/ModelLoader.h
-	Public/Mesh.cpp
+	Private/Mesh.cpp
 	Public/Mesh.h
 	Private/AssetManager.cpp
 	Public/AssetManager.h
@@ -21,9 +21,9 @@ target_include_directories(Asset
 	PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}/Public
 		${Vulkan_INCLUDE_DIRS}
-		${CMAKE_CURRENT_SOURCE_DIR}/Private
-	PRIVATE
 
+	PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/Private
 		${CMAKE_SOURCE_DIR}/ThirdParty
 
 )

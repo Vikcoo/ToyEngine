@@ -1,12 +1,11 @@
 //
 // Created by yukai on 2026/1/3.
 //
-
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb-master/stb_image.h"
 #include "TextureLoader.h"
-
 #include "Texture2D.h"
 #include "Log/Log.h"
-#include "stb-master/stb_image.h"
 
 namespace TE
 {

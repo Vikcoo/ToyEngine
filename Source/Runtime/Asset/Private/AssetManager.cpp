@@ -6,6 +6,7 @@
 #include "Loaders/ModelLoader.h"
 #include "Log/Log.h"
 #include "Mesh.h"
+#include "Loaders/TextureLoader.h"
 
 TE::AssetManager* TE::AssetManager::m_instance = nullptr;
 namespace TE
@@ -38,6 +39,18 @@ namespace TE
             TE_LOG_ERROR("Failed to load model");
         }
         return loadedMesh;
+    }
+
+    template <>
+    std::shared_ptr<RawTextureData> AssetManager::Load<RawTextureData>(const std::string& AssetPath)
+    {
+        std::shared_ptr<RawTextureData> loadedRawTextureData = TextureLoader::LoadFromFile(AssetPath);
+
+        if (loadedRawTextureData == nullptr)
+        {
+            TE_LOG_ERROR("Failed to load model");
+        }
+        return loadedRawTextureData;
     }
 
 } // TE

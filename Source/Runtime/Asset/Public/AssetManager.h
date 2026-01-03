@@ -8,6 +8,7 @@
 
 namespace TE
 {
+    struct RawTextureData;
     class Mesh;
     class AssetManager
 {
@@ -18,7 +19,7 @@ public:
     static AssetManager* GetInstance();
 
     template<typename T>
-    std::shared_ptr<T> Load(const std::string& AssetPath);
+    static std::shared_ptr<T> Load(const std::string& AssetPath);
 
 private:
     static AssetManager* m_instance;
@@ -26,5 +27,8 @@ private:
 
 template<>
 std::shared_ptr<Mesh> AssetManager::Load<Mesh>(const std::string& AssetPath);
+
+template<>
+std::shared_ptr<RawTextureData> AssetManager::Load<RawTextureData>(const std::string& AssetPath);
 
 } // TE

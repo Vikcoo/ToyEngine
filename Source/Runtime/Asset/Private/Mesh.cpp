@@ -2,7 +2,7 @@
 // Created by yukai on 2026/1/3.
 //
 
-#include "Mesh.h"
+#include "../Public/Mesh.h"
 
 namespace TE
 {

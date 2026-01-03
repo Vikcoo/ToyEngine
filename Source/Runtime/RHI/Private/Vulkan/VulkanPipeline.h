@@ -72,10 +72,10 @@ public:
         friend class VulkanDevice;
     };
 
-    explicit VulkanPipeline(PrivateTag,
-                           std::shared_ptr<VulkanDevice> device,
-                           const VulkanRenderPass& renderPass,
-                           const GraphicsPipelineConfig& config);
+    VulkanPipeline(PrivateTag,
+                   std::shared_ptr<VulkanDevice> device,
+                   const VulkanRenderPass& renderPass,
+                   const GraphicsPipelineConfig& config);
 
     ~VulkanPipeline();
 

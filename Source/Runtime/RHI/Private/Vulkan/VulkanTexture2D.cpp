@@ -1,7 +1,7 @@
 //
 // Created by yukai on 2025/12/30.
 //
-#define STB_IMAGE_IMPLEMENTATION
+
 #include "VulkanTexture2D.h"
 
 #include "Texture2D.h"
@@ -10,9 +10,8 @@
 #include "VulkanCommandPool.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanQueue.h"
-#include "stb-master/stb_image.h"
 #include "Log/Log.h"
-#include "Loaders/TextureLoader.h"
+#include "AssetManager.h"
 
 
 namespace TE
@@ -21,7 +20,7 @@ namespace TE
 
 std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromFile(const std::shared_ptr<VulkanDevice>& device, const std::string& path)
 {
-    auto rawData = TextureLoader::LoadFromFile(path);
+    auto rawData = AssetManager::Load<RawTextureData>(path);
 
     auto tex = CreateFromData(device, rawData, vk::Format::eR8G8B8A8Srgb);
 

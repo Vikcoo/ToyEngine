@@ -50,10 +50,10 @@ add_library(RHI STATIC
     Private/Vulkan/VulkanPipeline.cpp
     Private/Vulkan/VulkanCommandBuffer.h
     Private/Vulkan/VulkanCommandBuffer.cpp
-        Private/Vulkan/VulkanTexture2D.cpp
-        Private/Vulkan/VulkanTexture2D.h
-        Private/Vulkan/VulkanImage.cpp
-        Private/Vulkan/VulkanImage.h
+    Private/Vulkan/VulkanTexture2D.cpp
+    Private/Vulkan/VulkanTexture2D.h
+    Private/Vulkan/VulkanImage.cpp
+    Private/Vulkan/VulkanImage.h
     Public/Resources/RHITexture.h
 )
 
