@@ -1,8 +1,8 @@
 # Shader编译辅助脚本
 
-# 查找glslc编译器（Vulkan SDK）
+# 在Vulkan SDK路径中查找glslc编译器
 find_program(GLSLC_EXECUTABLE
-    NAMES glslc
+    NAMES glslc                 # 可执行文件可能叫的名字列表
     HINTS
         $ENV{VULKAN_SDK}/Bin
         $ENV{VULKAN_SDK}/bin

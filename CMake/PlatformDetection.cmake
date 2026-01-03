@@ -2,46 +2,36 @@
 
 # 检测操作系统
 if(WIN32)
-    message(STATUS "Platform: Windows")
-    add_definitions(-DTE_PLATFORM_WINDOWS)
-    set(TE_PLATFORM_NAME "Windows")
+    message(STATUS "[PlatformDetection] Platform: Windows")
 elseif(UNIX AND NOT APPLE)
-    message(STATUS "Platform: Linux")
-    add_definitions(-DTE_PLATFORM_LINUX)
-    set(TE_PLATFORM_NAME "Linux")
+    message(STATUS "[PlatformDetection] Platform: Linux")
 elseif(APPLE)
-    message(STATUS "Platform: macOS")
-    add_definitions(-DTE_PLATFORM_MACOS)
-    set(TE_PLATFORM_NAME "macOS")
+    message(STATUS "[PlatformDetection] Platform: macOS")
 else()
-    message(FATAL_ERROR "Unsupported platform!")
+    message(FATAL_ERROR "[PlatformDetection] Unsupported platform!")
 endif()
 
 # 检测编译器
 if(MSVC)
-    message(STATUS "Compiler: MSVC")
-    add_definitions(-DTE_COMPILER_MSVC)
+    message(STATUS "[CompilerDetection] Compiler: MSVC")
     # MSVC特定编译选项
-    add_compile_options(/W4)
+    add_compile_options(/utf-8)     # 使用UTF-8编码（spdlog需要）
+    add_compile_options(/W4)        # 设置警告级别
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    message(STATUS "Compiler: GCC")
-    add_definitions(-DTE_COMPILER_GCC)
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    message(STATUS "[CompilerDetection] Compiler: GCC")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    message(STATUS "Compiler: Clang")
-    add_definitions(-DTE_COMPILER_CLANG)
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    message(STATUS "[CompilerDetection] Compiler: Clang")
 endif()
 
 # 检测构建类型
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    message(STATUS "Build Type: Debug")
+    message(STATUS "[CompilerDetection] Build Type: Debug")
     add_definitions(-DTE_DEBUG)
 elseif(CMAKE_BUILD_TYPE MATCHES Release)
-    message(STATUS "Build Type: Release")
+    message(STATUS "[CompilerDetection] Build Type: Release")
     add_definitions(-DTE_RELEASE)
 elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
-    message(STATUS "Build Type: RelWithDebInfo")
+    message(STATUS "[CompilerDetection] Build Type: RelWithDebInfo")
     add_definitions(-DTE_RELEASE -DTE_DEBUG_INFO)
 endif()
 
