@@ -11,7 +11,7 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanQueue.h"
 #include "Log/Log.h"
-#include "AssetManager.h"
+#include "AssetLoader.h"
 
 
 namespace TE
@@ -20,7 +20,7 @@ namespace TE
 
 std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromFile(const std::shared_ptr<VulkanDevice>& device, const std::string& path)
 {
-    auto rawData = AssetManager::Load<RawTextureData>(path);
+    auto rawData = AssetLoader::Load<RawTextureData>(path);
 
     auto tex = CreateFromData(device, rawData, vk::Format::eR8G8B8A8Srgb);
 

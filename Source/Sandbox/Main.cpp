@@ -25,7 +25,7 @@
 
 #include "glfw-3.4/include/GLFW/glfw3.h"
 #include "Mesh.h"
-#include "AssetManager.h"
+#include "AssetLoader.h"
 
 
 #define GLM_FORCE_RADIANS
@@ -263,7 +263,7 @@ int main()
 
     std::string modelSubPath = "Content/Models/viking_room.obj";
     std::string modelPath = TE_PROJECT_ROOT_DIR + modelSubPath;
-    auto model = TE::AssetManager::GetInstance()->Load<TE::Mesh>(modelPath);
+    auto model = TE::AssetLoader::Load<TE::Mesh>(modelPath);
 
     // 创建顶点缓冲区配置（使用设备本地内存 - 显存）
     // 这是最佳实践：静态顶点数据应该存储在 GPU 显存中，以获得最快访问速度

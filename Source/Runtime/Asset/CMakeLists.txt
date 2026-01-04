@@ -11,8 +11,8 @@ add_library(Asset STATIC
 	Private/Loaders/ModelLoader.h
 	Private/Mesh.cpp
 	Public/Mesh.h
-	Private/AssetManager.cpp
-	Public/AssetManager.h
+	Private/AssetLoader.cpp
+	Public/AssetLoader.h
 	Private/Loaders/TextureLoader.cpp
 	Private/Loaders/TextureLoader.h
 )
