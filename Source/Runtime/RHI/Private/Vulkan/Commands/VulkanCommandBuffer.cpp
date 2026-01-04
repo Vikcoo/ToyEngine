@@ -1,10 +1,10 @@
 // Vulkan Command Buffer 实现
-#include "VulkanCommandBuffer.h"
-#include "VulkanDevice.h"
-#include "VulkanRenderPass.h"
-#include "VulkanFramebuffer.h"
-#include "VulkanPipeline.h"
-#include "VulkanBuffer.h"
+#include "Commands/VulkanCommandBuffer.h"
+#include "Core/VulkanDevice.h"
+#include "Pipeline/VulkanRenderPass.h"
+#include "Pipeline/VulkanFramebuffer.h"
+#include "Pipeline/VulkanPipeline.h"
+#include "Resources/VulkanBuffer.h"
 #include "Log/Log.h"
 
 namespace TE {

@@ -10,50 +10,50 @@ endif()
 # 创建 RHI 静态库
 add_library(RHI STATIC
     # Vulkan 实现 - 层次1：初始化
-    Private/Vulkan/VulkanUtils.h
-    Private/Vulkan/VulkanUtils.cpp
-    Private/Vulkan/VulkanContext.h
-    Private/Vulkan/VulkanContext.cpp
-    Private/Vulkan/VulkanPhysicalDevice.h
-    Private/Vulkan/VulkanPhysicalDevice.cpp
-    Private/Vulkan/VulkanSurface.h
-    Private/Vulkan/VulkanSurface.cpp
+    Private/Vulkan/Core/VulkanUtils.h
+    Private/Vulkan/Core/VulkanUtils.cpp
+    Private/Vulkan/Core/VulkanContext.h
+    Private/Vulkan/Core/VulkanContext.cpp
+    Private/Vulkan/Core/VulkanPhysicalDevice.h
+    Private/Vulkan/Core/VulkanPhysicalDevice.cpp
+    Private/Vulkan/Core/VulkanSurface.h
+    Private/Vulkan/Core/VulkanSurface.cpp
     
     # 层次2：设备和队列
-    Private/Vulkan/VulkanDevice.h
-    Private/Vulkan/VulkanDevice.cpp
-    Private/Vulkan/VulkanQueue.h
-    Private/Vulkan/VulkanQueue.cpp
-    Private/Vulkan/VulkanCommandPool.h
-    Private/Vulkan/VulkanCommandPool.cpp
+    Private/Vulkan/Core/VulkanDevice.h
+    Private/Vulkan/Core/VulkanDevice.cpp
+    Private/Vulkan/Core/VulkanQueue.h
+    Private/Vulkan/Core/VulkanQueue.cpp
+    Private/Vulkan/Commands/VulkanCommandPool.h
+    Private/Vulkan/Commands/VulkanCommandPool.cpp
     
     # 层次3：资源对象
-    Private/Vulkan/VulkanSwapChain.h
-    Private/Vulkan/VulkanSwapChain.cpp
-    Private/Vulkan/VulkanImageView.h
-    Private/Vulkan/VulkanImageView.cpp
-    Private/Vulkan/VulkanRenderPass.h
-    Private/Vulkan/VulkanRenderPass.cpp
-    Private/Vulkan/VulkanFramebuffer.h
-    Private/Vulkan/VulkanFramebuffer.cpp
-    Private/Vulkan/VulkanBuffer.h
-    Private/Vulkan/VulkanBuffer.cpp
-    Private/Vulkan/VulkanDescriptorSetLayout.h
-    Private/Vulkan/VulkanDescriptorSetLayout.cpp
-    Private/Vulkan/VulkanDescriptorPool.h
-    Private/Vulkan/VulkanDescriptorPool.cpp
+    Private/Vulkan/Resources/VulkanSwapChain.h
+    Private/Vulkan/Resources/VulkanSwapChain.cpp
+    Private/Vulkan/Resources/VulkanImageView.h
+    Private/Vulkan/Resources/VulkanImageView.cpp
+    Private/Vulkan/Pipeline/VulkanRenderPass.h
+    Private/Vulkan/Pipeline/VulkanRenderPass.cpp
+    Private/Vulkan/Pipeline/VulkanFramebuffer.h
+    Private/Vulkan/Pipeline/VulkanFramebuffer.cpp
+    Private/Vulkan/Resources/VulkanBuffer.h
+    Private/Vulkan/Resources/VulkanBuffer.cpp
+    Private/Vulkan/Descriptors/VulkanDescriptorSetLayout.h
+    Private/Vulkan/Descriptors/VulkanDescriptorSetLayout.cpp
+    Private/Vulkan/Descriptors/VulkanDescriptorPool.h
+    Private/Vulkan/Descriptors/VulkanDescriptorPool.cpp
     
     # 层次4：命令和管线
-    Private/Vulkan/VulkanShader.h
-    Private/Vulkan/VulkanShader.cpp
-    Private/Vulkan/VulkanPipeline.h
-    Private/Vulkan/VulkanPipeline.cpp
-    Private/Vulkan/VulkanCommandBuffer.h
-    Private/Vulkan/VulkanCommandBuffer.cpp
-    Private/Vulkan/VulkanTexture2D.cpp
-    Private/Vulkan/VulkanTexture2D.h
-    Private/Vulkan/VulkanImage.cpp
-    Private/Vulkan/VulkanImage.h
+    Private/Vulkan/Pipeline/VulkanShader.h
+    Private/Vulkan/Pipeline/VulkanShader.cpp
+    Private/Vulkan/Pipeline/VulkanPipeline.h
+    Private/Vulkan/Pipeline/VulkanPipeline.cpp
+    Private/Vulkan/Commands/VulkanCommandBuffer.h
+    Private/Vulkan/Commands/VulkanCommandBuffer.cpp
+    Private/Vulkan/Resources/VulkanTexture2D.cpp
+    Private/Vulkan/Resources/VulkanTexture2D.h
+    Private/Vulkan/Resources/VulkanImage.cpp
+    Private/Vulkan/Resources/VulkanImage.h
     Public/Resources/RHITexture.h
 )
 

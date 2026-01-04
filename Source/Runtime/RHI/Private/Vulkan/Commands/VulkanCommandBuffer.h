@@ -1,10 +1,10 @@
 // Vulkan Command Buffer - 命令缓冲（RAII Scope 模式）
 #pragma once
 
-#include "VulkanDevice.h"
-#include "VulkanRenderPass.h"
-#include "VulkanFramebuffer.h"
-#include "VulkanPipeline.h"
+#include "../Core/VulkanDevice.h"
+#include "../Pipeline/VulkanRenderPass.h"
+#include "../Pipeline/VulkanFramebuffer.h"
+#include "../Pipeline/VulkanPipeline.h"
 #include <vulkan/vulkan_raii.hpp>
 #include <memory>
 #include <vector>

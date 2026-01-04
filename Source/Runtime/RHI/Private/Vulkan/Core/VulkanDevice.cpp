@@ -1,18 +1,21 @@
 // Vulkan Device 实现
 #include "VulkanDevice.h"
 #include "VulkanQueue.h"
-#include "VulkanCommandPool.h"
-#include "VulkanSwapChain.h"
-#include "VulkanRenderPass.h"
-#include "VulkanFramebuffer.h"
-#include "VulkanPipeline.h"
-#include "VulkanBuffer.h"
-#include "VulkanCommandBuffer.h"
-#include "VulkanDescriptorSetLayout.h"
-#include "VulkanDescriptorPool.h"
+#include "Commands/VulkanCommandPool.h"
+#include "Resources/VulkanSwapChain.h"
+#include "Pipeline/VulkanRenderPass.h"
+#include "Pipeline/VulkanFramebuffer.h"
+#include "Pipeline/VulkanPipeline.h"
+#include "Resources/VulkanBuffer.h"
+#include "Commands/VulkanCommandBuffer.h"
+#include "Descriptors/VulkanDescriptorSetLayout.h"
+#include "Descriptors/VulkanDescriptorPool.h"
+#include "Core/VulkanPhysicalDevice.h"
 #include "VulkanUtils.h"
 #include "Log/Log.h"
 #include <set>
+
+
 
 namespace TE {
 

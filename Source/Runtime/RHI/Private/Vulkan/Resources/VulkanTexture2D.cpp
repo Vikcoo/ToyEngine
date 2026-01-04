@@ -2,14 +2,14 @@
 // Created by yukai on 2025/12/30.
 //
 
-#include "VulkanTexture2D.h"
+#include "Resources/VulkanTexture2D.h"
 
 #include "Texture2D.h"
-#include "VulkanDevice.h"
+#include "Core/VulkanDevice.h"
 #include "VulkanBuffer.h"
-#include "VulkanCommandPool.h"
-#include "VulkanCommandBuffer.h"
-#include "VulkanQueue.h"
+#include "Commands/VulkanCommandPool.h"
+#include "Commands/VulkanCommandBuffer.h"
+#include "Core/VulkanQueue.h"
 #include "Log/Log.h"
 #include "AssetLoader.h"
 

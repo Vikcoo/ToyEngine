@@ -4,7 +4,7 @@
 
 #include "VulkanImage.h"
 
-#include "VulkanDevice.h"
+#include "../Core/VulkanDevice.h"
 #include "Log/Log.h"
 
 namespace TE

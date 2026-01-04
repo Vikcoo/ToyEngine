@@ -1,13 +1,13 @@
 // Vulkan Device - 逻辑设备和资源工厂
 #pragma once
 
-#include "VulkanPhysicalDevice.h"
+#include "Core/VulkanPhysicalDevice.h"
 #include <vulkan/vulkan_raii.hpp>
 #include <memory>
 #include <vector>
 
-#include "VulkanImage.h"
-#include "VulkanTexture2D.h"
+#include "Resources/VulkanImage.h"
+#include "Resources/VulkanTexture2D.h"
 
 
 namespace TE {
