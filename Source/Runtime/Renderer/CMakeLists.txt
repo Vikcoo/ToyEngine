@@ -6,6 +6,8 @@ add_library(Renderer STATIC
 	Public/Renderer.h
 
 	Private/Renderer.cpp
+	Private/Camera.cpp
+	Public/Camera.h
 )
 
 # 包含目录

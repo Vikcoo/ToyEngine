@@ -9,7 +9,7 @@
 namespace TE {
 
 // 静态成员初始化
-int GLFWWindow::s_GLFWWindowCount = 0;
+int GLFWWindow::s_glfwWindowCount = 0;
 
 // GLFW错误回调
 static void GLFWErrorCallback(int error, const char* description)
@@ -19,7 +19,7 @@ static void GLFWErrorCallback(int error, const char* description)
 
 void GLFWWindow::InitializeGLFW()
 {
-    if (s_GLFWWindowCount == 0)
+    if (s_glfwWindowCount == 0)
     {
         TE_LOG_INFO("[Platform] Initializing GLFW...");
         
@@ -34,13 +34,13 @@ void GLFWWindow::InitializeGLFW()
         
         TE_LOG_INFO("[Platform] GLFW initialized successfully");
     }
-    s_GLFWWindowCount++;
+    s_glfwWindowCount++;
 }
 
 void GLFWWindow::ShutdownGLFW()
 {
-    s_GLFWWindowCount--;
-    if (s_GLFWWindowCount == 0)
+    s_glfwWindowCount--;
+    if (s_glfwWindowCount == 0)
     {
         TE_LOG_INFO("[Platform] Shutting down GLFW...");
         glfwTerminate();
@@ -48,9 +48,9 @@ void GLFWWindow::ShutdownGLFW()
 }
 
 GLFWWindow::GLFWWindow(const WindowConfig& config)
-    : m_Title(config.title)
-    , m_Width(config.width)
-    , m_Height(config.height)
+    : m_title(config.title)
+    , m_width(config.width)
+    , m_height(config.height)
 {
     InitializeGLFW();
 
@@ -59,63 +59,64 @@ GLFWWindow::GLFWWindow(const WindowConfig& config)
     glfwWindowHint(GLFW_RESIZABLE, config.resizable ? GLFW_TRUE : GLFW_FALSE);
 
     // 创建窗口
-    m_Window = glfwCreateWindow(
-        static_cast<int>(m_Width),
-        static_cast<int>(m_Height),
-        m_Title.c_str(),
+    m_window = glfwCreateWindow(
+        static_cast<int>(m_width),
+        static_cast<int>(m_height),
+        m_title.c_str(),
         nullptr,
         nullptr
     );
 
-    if (!m_Window)
+    if (!m_window)
     {
         ShutdownGLFW();
         TE_LOG_CRITICAL("[Platform] Failed to create GLFW window!");
         throw std::runtime_error("Failed to create GLFW window!");
     }
 
-    TE_LOG_INFO("[Platform] Window created: \"{}\" ({}x{})", m_Title, m_Width, m_Height);
+    TE_LOG_INFO("[Platform] Window created: \"{}\" ({}x{})", m_title, m_width, m_height);
 
     // 将this指针存储到GLFW窗口，以便在静态回调中访问
-    glfwSetWindowUserPointer(m_Window, this);
+    glfwSetWindowUserPointer(m_window, this);
 
     // 设置GLFW事件回调
-    glfwSetFramebufferSizeCallback(m_Window, GLFWFramebufferSizeCallback);
-    glfwSetWindowCloseCallback(m_Window, GLFWWindowCloseCallback);
-    glfwSetWindowFocusCallback(m_Window, GLFWWindowFocusCallback);
-    glfwSetWindowIconifyCallback(m_Window, GLFWWindowIconifyCallback);
+    glfwSetFramebufferSizeCallback(m_window, GLFWFramebufferSizeCallback);
+    glfwSetWindowCloseCallback(m_window, GLFWWindowCloseCallback);
+    glfwSetWindowFocusCallback(m_window, GLFWWindowFocusCallback);
+    glfwSetWindowIconifyCallback(m_window, GLFWWindowIconifyCallback);
+    glfwSetKeyCallback(m_window, GLFWKeyCallback);
 }
 
 GLFWWindow::~GLFWWindow()
 {
-    if (m_Window)
+    if (m_window)
     {
         TE_LOG_INFO("[Platform] Destroying window...");
-        glfwDestroyWindow(m_Window);
-        m_Window = nullptr;
+        glfwDestroyWindow(m_window);
+        m_window = nullptr;
     }
     ShutdownGLFW();
 }
 
 void GLFWWindow::Show()
 {
-    if (m_Window)
+    if (m_window)
     {
-        glfwShowWindow(m_Window);
+        glfwShowWindow(m_window);
     }
 }
 
 void GLFWWindow::Hide()
 {
-    if (m_Window)
+    if (m_window)
     {
-        glfwHideWindow(m_Window);
+        glfwHideWindow(m_window);
     }
 }
 
 bool GLFWWindow::ShouldClose() const
 {
-    return m_Window ? glfwWindowShouldClose(m_Window) : true;
+    return m_window ? glfwWindowShouldClose(m_window) : true;
 }
 
 void GLFWWindow::PollEvents()
@@ -125,13 +126,13 @@ void GLFWWindow::PollEvents()
 
 void* GLFWWindow::GetNativeHandle() const
 {
-    return m_Window;
+    return m_window;
 }
 
 // 实现用户回调设置
 void GLFWWindow::SetResizeCallback(WindowResizeCallback callback)
 {
-    m_ResizeCallback = std::move(callback);
+    m_resizeCallback = std::move(callback);
 }
 
 void GLFWWindow::SetCloseCallback(WindowCloseCallback callback)
@@ -146,7 +147,22 @@ void GLFWWindow::SetFocusCallback(WindowFocusCallback callback)
 
 void GLFWWindow::SetIconifyCallback(WindowIconifyCallback callback)
 {
-    m_IconifyCallback = std::move(callback);
+    m_iconifyCallback = std::move(callback);
+}
+
+void GLFWWindow::SetKeyCallback(KeyCallback callback)
+{
+    m_keyCallback = std::move(callback);
+}
+
+void GLFWWindow::SetCursorVisible(bool visible)
+{
+    if (visible){
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }else{
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+
 }
 
 // GLFW静态回调 -> 调用用户回调
@@ -155,15 +171,15 @@ void GLFWWindow::GLFWFramebufferSizeCallback(GLFWwindow* window, int width, int 
     if (auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window)))
     {
         // 更新内部尺寸
-        self->m_Width = static_cast<uint32_t>(width);
-        self->m_Height = static_cast<uint32_t>(height);
+        self->m_width = static_cast<uint32_t>(width);
+        self->m_height = static_cast<uint32_t>(height);
         
         TE_LOG_DEBUG("[Platform] Window resized: {}x{}", width, height);
         
         // 触发用户回调
-        if (self->m_ResizeCallback)
+        if (self->m_resizeCallback)
         {
-            self->m_ResizeCallback(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+            self->m_resizeCallback(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
         }
     }
 }
@@ -189,11 +205,20 @@ void GLFWWindow::GLFWWindowIconifyCallback(GLFWwindow* window, int iconified)
 {
     TE_LOG_DEBUG("[Platform] Window IconifyCallback");
     const auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
-    if (self && self->m_IconifyCallback)
+    if (self && self->m_iconifyCallback)
     {
-        self->m_IconifyCallback(iconified == GLFW_TRUE);
+        self->m_iconifyCallback(iconified == GLFW_TRUE);
     }
 }
 
+void GLFWWindow::GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    TE_LOG_DEBUG("[Platform] Window KeyCallback");
+    const auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+    if (self && self->m_keyCallback)
+    {
+        self->m_keyCallback(key, scancode, action, mods);
+    }
+}
 } // namespace TE
 

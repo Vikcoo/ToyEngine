@@ -26,12 +26,18 @@
 #include "glfw-3.4/include/GLFW/glfw3.h"
 #include "Mesh.h"
 #include "AssetLoader.h"
+#include "../Runtime/Platform/Private/GLFW/GLFWWindow.h"
+#include "../Runtime/Renderer/Public/Camera.h"
 
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 
+namespace TE
+{
+    class GLFWWindow;
+}
 
 struct UniformBufferObject {
     glm::mat4 model;
@@ -448,7 +454,17 @@ int main()
     std::atomic<bool> framebufferResized{false};
     std::atomic<bool> windowMinimized{false};
 
-    // 设置窗口大小改变回调（事件驱动，最优雅的方式）
+
+
+
+    TE::Camera camera;
+    camera.UpdateForce();
+    UniformBufferObject cameraUbo{}; // UBO每帧更新
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    static float deltaTime = 0;
+    static double s_lastMouseX = swapChain->GetExtent().width / 2;
+    static double s_lastMouseY =  swapChain->GetExtent().height / 2;
+    // 设置窗口大小改变回调
     window->SetResizeCallback([&framebufferResized, &windowMinimized](uint32_t width, uint32_t height) {
         // 窗口大小改变时，标记需要重建交换链
         framebufferResized = true;
@@ -457,7 +473,7 @@ int main()
         TE_LOG_DEBUG("Framebuffer resized: {}x{} (minimized: {})", width, height, windowMinimized.load());
     });
 
-    // 设置窗口图标化回调（正确处理最小化/恢复，这是最准确的方式）
+    // 设置窗口图标化回调
     window->SetIconifyCallback([&windowMinimized](bool iconified) {
         windowMinimized = iconified;
         if (iconified) {
@@ -466,6 +482,21 @@ int main()
             TE_LOG_DEBUG("Window restored from minimized (uniconified)");
         }
     });
+
+    // window->SetKeyCallback([&](int key, int scancode, int action, int mods) {
+    //     if (action == GLFW_PRESS)  TE_LOG_DEBUG("Key pressed: ");
+    //     if (action == GLFW_RELEASE)  TE_LOG_DEBUG("Key released: ");
+    //     if (key == GLFW_KEY_ESCAPE)  TE_LOG_DEBUG("Key is Escape ");
+    //
+    //     if ((action == GLFW_PRESS || action == GLFW_REPEAT) && key == GLFW_KEY_W)
+    //         camera.Move(TE::CameraMovement::Forward, deltaTime);
+    //     if ((action == GLFW_PRESS || action == GLFW_REPEAT) && key == GLFW_KEY_S)
+    //         camera.Move(TE::CameraMovement::Backward, deltaTime);
+    //     if ((action == GLFW_PRESS || action == GLFW_REPEAT) && key == GLFW_KEY_A)
+    //         camera.Move(TE::CameraMovement::Left, deltaTime);
+    //     if ((action == GLFW_PRESS || action == GLFW_REPEAT) && key == GLFW_KEY_D)
+    //         camera.Move(TE::CameraMovement::Right, deltaTime);
+    // });
 
     /* 封装交换链重建逻辑（优雅的函数封装，避免代码重复） */
     // 注意：使用 [&] 捕获所有引用，包括上面声明的变量
@@ -564,6 +595,12 @@ int main()
     {
         // 1. 处理窗口事件（必须每帧调用，否则窗口会无响应）
         window->PollEvents();
+        window->SetCursorVisible(false);
+
+        const auto currentTime = std::chrono::high_resolution_clock::now();
+        deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+        startTime = currentTime;
+
 
         // 2. 等待上一帧完成（CPU 等待 GPU）
         //    这确保我们不会提交超过 GPU 能处理的帧数，避免内存占用过高
@@ -585,7 +622,6 @@ int main()
             windowMinimized = true;
             continue;
         }
-
 
 
         // 3. 从交换链获取下一个可用的图像索引
@@ -616,27 +652,35 @@ int main()
         // 重置围栏为未信号状态（准备下一帧）
         device->GetHandle().resetFences(*inFlightFences[currentFrame]);
 
-        // 更新UBO（每帧更新）
-        UniformBufferObject ubo{};
-        // 模型矩阵：绕 Z 轴旋转（使用时间作为旋转角度）
-        float time = static_cast<float>(glfwGetTime());
-        ubo.model = glm::rotate(glm::mat4(1.0f), 
-                                time * glm::radians(90.0f),
-                                glm::vec3(0.0f, 0.0f, 1.0f));
-        // 视图矩阵：从 (2, 2, 2) 看向原点
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
-                               glm::vec3(0.0f, 0.0f, 0.0f),
-                               glm::vec3(0.0f, 0.0f, 1.0f));
+        GLFWwindow* glfwWindow = static_cast<GLFWwindow*>(window->GetNativeHandle());
+        if (glfwGetKey(glfwWindow, GLFW_KEY_W) == GLFW_PRESS)
+             camera.Move(TE::CameraMovement::Forward, deltaTime);
+        if (glfwGetKey(glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
+             camera.Move(TE::CameraMovement::Backward, deltaTime);
+        if (glfwGetKey(glfwWindow, GLFW_KEY_A) == GLFW_PRESS)
+             camera.Move(TE::CameraMovement::Left, deltaTime);
+        if (glfwGetKey(glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
+             camera.Move(TE::CameraMovement::Right, deltaTime);
+
+        double posX, posY;
+        glfwGetCursorPos(glfwWindow, &posX, &posY);
+        double deltaX = posX - s_lastMouseX;
+        double deltaY = s_lastMouseY - posY;
+        s_lastMouseX = posX;
+        s_lastMouseY = posY;
+        camera.Rotate(static_cast<float>(deltaX), static_cast<float>(deltaY));
+
+        camera.Update();
+
+        cameraUbo.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        cameraUbo.model *= glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        // 视图矩阵
+        cameraUbo.view = camera.GetViewMatrix();
         // 投影矩阵：透视投影
-        ubo.proj = glm::perspective(glm::radians(45.0f),
-                                    static_cast<float>(swapChain->GetExtent().width) / 
-                                    static_cast<float>(swapChain->GetExtent().height),
-                                    0.1f, 10.0f);
-        // Vulkan 使用 Y 轴向下，需要翻转投影矩阵的 Y 轴
-        ubo.proj[1][1] *= -1;
+        cameraUbo.proj = camera.GetProjectionMatrix();
 
         // 上传 UBO 数据到当前帧的缓冲区（主机可见内存，直接写入）
-        uniformBuffers[currentFrame]->UploadData(&ubo, sizeof(ubo));
+        uniformBuffers[currentFrame]->UploadData(&cameraUbo, sizeof(cameraUbo));
 
         // 4. 录制命令缓冲区（使用 RAII Scope 自动管理 begin/end）
         {

@@ -23,6 +23,7 @@ target_link_libraries(Sandbox PRIVATE
     Platform
     RHI
 	Asset
+	Renderer
 )
 
 # 设置工作目录为项目根目录（方便访问Content）

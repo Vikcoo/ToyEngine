@@ -23,6 +23,7 @@ using WindowResizeCallback = std::function<void(uint32_t width, uint32_t height)
 using WindowCloseCallback = std::function<void()>;
 using WindowFocusCallback = std::function<void(bool focused)>;
 using WindowIconifyCallback = std::function<void(bool iconified)>;
+using KeyCallback = std::function<void(int key, int scancode, int action, int mods)>;
 
 // 窗口抽象接口
 class Window {
@@ -48,6 +49,9 @@ public:
     virtual void SetCloseCallback(WindowCloseCallback callback) = 0;
     virtual void SetFocusCallback(WindowFocusCallback callback) = 0;
     virtual void SetIconifyCallback(WindowIconifyCallback callback) = 0;
+    virtual void SetKeyCallback(KeyCallback callback) = 0;
+
+    virtual void SetCursorVisible(bool visible) = 0;
 
     // 工厂方法 - 根据平台自动创建合适的窗口实现
     static std::unique_ptr<Window> Create(const WindowConfig& config = WindowConfig());
