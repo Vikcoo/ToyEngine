@@ -32,11 +32,13 @@ public:
         std::shared_ptr<RawTextureData> rawTextureData,
         vk::Format format
     );
-    static void TransitionImageLayout(const VulkanCommandBuffer* cmdBuffer, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+    static void TransitionImageLayout(const VulkanCommandBuffer* cmdBuffer, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 
-    static void CopyBufferToImage(const VulkanCommandBuffer* cmdBuffer,vk::Buffer buffer,vk::Image image,uint32_t width,uint32_t height);
+    static void CopyBufferToImage(const VulkanCommandBuffer* cmdBuffer,vk::Buffer buffer,vk::Image image, uint32_t width, uint32_t height);
 
     static void FlipImageVerticallyInPlace(std::vector<uint8_t>& pixelData, uint32_t width, uint32_t height, uint32_t channels);
+
+    void GenerateMipmaps(const VulkanCommandBuffer* cmdBuffer, vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels);
 
     // 获取 ImageView（用于描述符集）
     [[nodiscard]] const VulkanImageView& GetImageView() const { return *m_imageView; }
@@ -54,6 +56,7 @@ private:
     uint32_t m_height = 0;
     vk::Format m_format = vk::Format::eUndefined;
     uint32_t m_channels = 0;
+    uint32_t m_mipLevelCount = 0;
 };
 
 

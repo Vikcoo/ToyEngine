@@ -674,9 +674,9 @@ int main()
 
         cameraUbo.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         cameraUbo.model *= glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        // 视图矩阵
+
+
         cameraUbo.view = camera.GetViewMatrix();
-        // 投影矩阵：透视投影
         cameraUbo.proj = camera.GetProjectionMatrix();
 
         // 上传 UBO 数据到当前帧的缓冲区（主机可见内存，直接写入）

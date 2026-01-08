@@ -5,11 +5,7 @@
 
 namespace TE {
 
-VulkanImageView::VulkanImageView(PrivateTag,
-                                 std::shared_ptr<VulkanDevice> device,
-                                 const vk::Image image,
-                                 const vk::Format format,
-                                 const vk::ImageAspectFlags aspectFlags)
+VulkanImageView::VulkanImageView(PrivateTag, std::shared_ptr<VulkanDevice> device,const VulkanImageViewConfig& config)
     : m_device(std::move(device))
 {
     vk::ComponentMapping components;
@@ -19,16 +15,16 @@ VulkanImageView::VulkanImageView(PrivateTag,
               .setA(vk::ComponentSwizzle::eIdentity);
     
     vk::ImageSubresourceRange subresourceRange;
-    subresourceRange.setAspectMask(aspectFlags)
+    subresourceRange.setAspectMask(config.aspectFlags)
                      .setBaseMipLevel(0)
                      .setLevelCount(1)
                      .setBaseArrayLayer(0)
                      .setLayerCount(1);
     
     vk::ImageViewCreateInfo createInfo;
-    createInfo.setImage(image)
+    createInfo.setImage(config.image->GetHandle())
               .setViewType(vk::ImageViewType::e2D)
-              .setFormat(format)
+              .setFormat(config.format)
               .setComponents(components)
               .setSubresourceRange(subresourceRange);
 
@@ -38,7 +34,7 @@ VulkanImageView::VulkanImageView(PrivateTag,
     {
         TE_LOG_ERROR("Failed to create image view: {}");
     }
-    TE_LOG_DEBUG("Image view created: Format={}", vk::to_string(format));
+    TE_LOG_DEBUG("Image view created: Format={}", vk::to_string(config.format));
 }
 
 VulkanImageView::~VulkanImageView() {

@@ -7,6 +7,14 @@
 namespace TE {
 
 class VulkanDevice;
+class VulkanImage;
+
+struct VulkanImageViewConfig{
+    VulkanImage* image;
+    vk::Format format;
+    uint32_t mipLevelCount;
+    vk::ImageAspectFlags aspectFlags = vk::ImageAspectFlagBits::eColor;
+};
 
 /// Vulkan 图像视图 - 为 Image 创建视图
 class VulkanImageView {
@@ -21,11 +29,7 @@ public:
         friend class VulkanImage;
     };
 
-    VulkanImageView(PrivateTag,
-                            std::shared_ptr<VulkanDevice> device,
-                            vk::Image image,
-                            vk::Format format,
-                            vk::ImageAspectFlags aspectFlags = vk::ImageAspectFlagBits::eColor);
+    VulkanImageView(PrivateTag, std::shared_ptr<VulkanDevice> device,const VulkanImageViewConfig& config);
 
     ~VulkanImageView();
 

@@ -17,7 +17,7 @@ namespace TE
         imageCreateInfo.extent.width = config.width;
         imageCreateInfo.extent.height = config.height;
         imageCreateInfo.extent.depth = 1;
-        imageCreateInfo.mipLevels = 1;
+        imageCreateInfo.mipLevels = config.mipLevelCount;
         imageCreateInfo.arrayLayers = 1;
         imageCreateInfo.format = config.format;
         imageCreateInfo.usage = config.usage;

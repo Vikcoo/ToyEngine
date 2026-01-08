@@ -34,7 +34,7 @@ std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr
     texture->m_height = rawTextureData->m_height;
     texture->m_channels = rawTextureData->m_channelCount;
     texture->m_format = format;
-
+    texture->m_mipLevelCount = rawTextureData->m_mipLevelCount;
     const vk::DeviceSize imageSize = rawTextureData->m_dataSize;
 
 
@@ -62,10 +62,12 @@ std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr
     imageConfig.width = rawTextureData->m_width;
     imageConfig.height = rawTextureData->m_height;
     imageConfig.format = format;
-    imageConfig.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+    imageConfig.usage = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
     imageConfig.properties = vk::MemoryPropertyFlagBits::eDeviceLocal;
     imageConfig.tiling = vk::ImageTiling::eOptimal;
+    imageConfig.mipLevelCount = rawTextureData->m_mipLevelCount;
     texture->m_image = device->CreateImage(imageConfig);
+
 
     // 5. 创建临时命令池和命令缓冲区（用于传输操作）
     auto commandPool = device->CreateCommandPool(
@@ -87,7 +89,8 @@ std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr
             cmdBuffer.get(),
             texture->m_image->GetHandle(),  // 获取原始 vk::Image
             vk::ImageLayout::eUndefined,
-            vk::ImageLayout::eTransferDstOptimal
+            vk::ImageLayout::eTransferDstOptimal,
+            texture->m_mipLevelCount
         );
 
         // 6.2 从 Staging Buffer 复制到 Image
@@ -99,12 +102,17 @@ std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr
             texture->m_height
         );
 
+
+
+
+
         // 6.3 转换布局：eTransferDstOptimal -> eShaderReadOnlyOptimal
         TransitionImageLayout(
             cmdBuffer.get(),
             texture->m_image->GetHandle(),
             vk::ImageLayout::eTransferDstOptimal,
-            vk::ImageLayout::eShaderReadOnlyOptimal
+            vk::ImageLayout::eShaderReadOnlyOptimal,
+            texture->m_mipLevelCount
         );
     }
     // 7. 提交命令并等待完成
@@ -116,12 +124,14 @@ std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr
     graphicsQueue->WaitIdle();
 
     // 8. 创建 ImageView
+    VulkanImageViewConfig imageViewConfig;
+    imageViewConfig.mipLevelCount = texture->m_mipLevelCount;
+    imageViewConfig.format = format;
+    imageViewConfig.image = texture->m_image.get();
     texture->m_imageView = std::make_unique<VulkanImageView>(
         VulkanImageView::PrivateTag{},
         device,
-        texture->m_image->GetHandle(),
-        format,
-        vk::ImageAspectFlagBits::eColor
+        imageViewConfig
     );
 
     // 9 采样器
@@ -154,7 +164,12 @@ std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr
     return texture;
 }
 
-void VulkanTexture2D::TransitionImageLayout(const VulkanCommandBuffer* cmdBuffer, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+void VulkanTexture2D::TransitionImageLayout(
+    const VulkanCommandBuffer* cmdBuffer,
+    const vk::Image image,
+    const vk::ImageLayout oldLayout,
+    const vk::ImageLayout newLayout,
+    const uint32_t mipLevels)
 {
     vk::ImageMemoryBarrier barrier;
     barrier.setOldLayout(oldLayout)
@@ -165,7 +180,7 @@ void VulkanTexture2D::TransitionImageLayout(const VulkanCommandBuffer* cmdBuffer
            .setSubresourceRange({
                vk::ImageAspectFlagBits::eColor,
                0,  // baseMipLevel
-               1,  // levelCount
+               mipLevels,  // levelCount
                0,  // baseArrayLayer
                1   // layerCount
            });
@@ -240,6 +255,44 @@ void VulkanTexture2D::FlipImageVerticallyInPlace(std::vector<uint8_t>& pixelData
             std::swap(srcPtr[i], dstPtr[i]);
         }
     }
+}
+
+void VulkanTexture2D::GenerateMipmaps(const VulkanCommandBuffer* cmdBuffer, vk::Image image, uint32_t width,
+    uint32_t height, uint32_t mipLevels)
+{
+    vk::ImageMemoryBarrier barrier;
+    barrier.image = image;
+    barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+    barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+    barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.levelCount = 1;
+
+    int32_t mipWidth = width;
+    int32_t mipHeight = height;
+
+    for (uint32_t i = 1; i < mipLevels; ++i) {
+        barrier.subresourceRange.baseMipLevel = i - 1;
+        barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+        barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+        barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+        barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+        cmdBuffer->GetHandle().pipelineBarrier(
+            vk::PipelineStageFlagBits::eTransfer,
+            vk::PipelineStageFlagBits::eTransfer,
+            {},
+            nullptr,
+            nullptr,
+            barrier
+        );
+
+
+
+
+
+    }
+
 }
 }
 

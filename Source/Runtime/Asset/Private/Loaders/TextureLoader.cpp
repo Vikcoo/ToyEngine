@@ -29,6 +29,7 @@ namespace TE
         rawData->m_pixelData.assign(pixels, pixels + rawData->m_dataSize);
         rawData->m_type = RawTextureData::TextureType::Texture2D;
         rawData->m_needMipmap = true;
+        rawData->m_mipLevelCount = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 
         // 释放stb_image的临时内存
         stbi_image_free(pixels);
