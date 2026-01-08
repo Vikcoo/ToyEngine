@@ -17,12 +17,12 @@ VulkanImageView::VulkanImageView(PrivateTag, std::shared_ptr<VulkanDevice> devic
     vk::ImageSubresourceRange subresourceRange;
     subresourceRange.setAspectMask(config.aspectFlags)
                      .setBaseMipLevel(0)
-                     .setLevelCount(1)
+                     .setLevelCount(config.mipLevelCount)  // 修复：使用配置的 mip level 数量
                      .setBaseArrayLayer(0)
                      .setLayerCount(1);
     
     vk::ImageViewCreateInfo createInfo;
-    createInfo.setImage(config.image->GetHandle())
+    createInfo.setImage(config.image)
               .setViewType(vk::ImageViewType::e2D)
               .setFormat(config.format)
               .setComponents(components)

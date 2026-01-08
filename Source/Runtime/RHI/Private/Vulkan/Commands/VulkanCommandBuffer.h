@@ -114,6 +114,9 @@ public:
     // 获取底层句柄
     [[nodiscard]] const vk::raii::CommandBuffer& GetHandle() const { return m_commandBuffer; }
     [[nodiscard]] vk::CommandBuffer GetRawHandle() const { return *m_commandBuffer; }
+    
+    // 获取设备
+    [[nodiscard]] std::shared_ptr<VulkanDevice> GetDevice() const { return m_device; }
 
 private:
     void Begin(vk::CommandBufferUsageFlags flags);

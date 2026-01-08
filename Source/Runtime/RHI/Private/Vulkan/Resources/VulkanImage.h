@@ -38,9 +38,10 @@ public:
     VulkanImage(PrivateTag , const std::shared_ptr<VulkanDevice>& device, const VulkanImageConfig& config);
 
     static std::unique_ptr<VulkanImage>Create(std::shared_ptr<VulkanDevice> device, const VulkanImageConfig& config);
-    std::unique_ptr<VulkanImageView> CreateImageView(vk::ImageAspectFlags aspectFlags);
+    std::unique_ptr<VulkanImageView> CreateImageView(VulkanImageViewConfig config);
 
     const vk::raii::Image& GetHandle(){ return m_image;}
+    const vk::Format& GetFormat() const { return m_format;}
 private:
     std::shared_ptr<VulkanDevice> m_device;
     /* 图像和视图总是成对存在 */

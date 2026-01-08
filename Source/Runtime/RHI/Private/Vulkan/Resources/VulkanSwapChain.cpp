@@ -211,12 +211,14 @@ std::vector<std::unique_ptr<VulkanImageView>> VulkanSwapChain::CreateImageViews(
     imageViews.reserve(actualImageCount);
 
     for (uint32_t i = 0; i < actualImageCount; ++i) {
+        VulkanImageViewConfig imageViewConfig;
+        imageViewConfig.mipLevelCount = 1;
+        imageViewConfig.image = GetImage(i);
+        imageViewConfig.format = m_format;
         auto imageView = std::make_unique<VulkanImageView>(
                 VulkanImageView::PrivateTag{},
                 m_device,
-                GetImage(i),
-                m_format,
-                vk::ImageAspectFlagBits::eColor
+                imageViewConfig
             );
 
         if (!imageView) {

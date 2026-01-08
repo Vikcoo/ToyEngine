@@ -38,7 +38,7 @@ public:
 
     static void FlipImageVerticallyInPlace(std::vector<uint8_t>& pixelData, uint32_t width, uint32_t height, uint32_t channels);
 
-    void GenerateMipmaps(const VulkanCommandBuffer* cmdBuffer, vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels);
+    static void GenerateMipmaps(const VulkanCommandBuffer* cmdBuffer, vk::Format imageFormat, vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels);
 
     // 获取 ImageView（用于描述符集）
     [[nodiscard]] const VulkanImageView& GetImageView() const { return *m_imageView; }

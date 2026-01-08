@@ -10,7 +10,7 @@ class VulkanDevice;
 class VulkanImage;
 
 struct VulkanImageViewConfig{
-    VulkanImage* image;
+    vk::Image image;
     vk::Format format;
     uint32_t mipLevelCount;
     vk::ImageAspectFlags aspectFlags = vk::ImageAspectFlagBits::eColor;

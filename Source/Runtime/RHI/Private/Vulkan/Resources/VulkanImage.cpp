@@ -54,8 +54,8 @@ namespace TE
         return std::move(vulkanImage);
     }
 
-   std::unique_ptr<VulkanImageView> VulkanImage::CreateImageView(vk::ImageAspectFlags aspectFlags)
+   std::unique_ptr<VulkanImageView> VulkanImage::CreateImageView(VulkanImageViewConfig config)
     {
-        return std::move(std::make_unique<VulkanImageView>(VulkanImageView::PrivateTag{}, m_device, m_image, m_format, aspectFlags));
+        return std::move(std::make_unique<VulkanImageView>(VulkanImageView::PrivateTag{}, m_device, config));
     }
 } // TE

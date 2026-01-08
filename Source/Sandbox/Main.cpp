@@ -142,7 +142,13 @@ int main()
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
     auto depthImage = TE::VulkanImage::Create(device, depthImageConfig);
-    auto depthImageView = depthImage->CreateImageView(vk::ImageAspectFlagBits::eDepth);
+    TE::VulkanImageViewConfig depthImageViewConfig{
+        depthImage->GetHandle(),
+        depthImage->GetFormat(),
+        1,
+        vk::ImageAspectFlagBits::eDepth
+    };
+    auto depthImageView = depthImage->CreateImageView(depthImageViewConfig);
 
     /* 10. RenderPass */
     std::vector<TE::AttachmentConfig> attachments;
@@ -537,7 +543,13 @@ int main()
         depthImageConfig.width = swapChain->GetExtent().width;
         depthImageConfig.height = swapChain->GetExtent().height;
         depthImage = TE::VulkanImage::Create(device, depthImageConfig);
-        depthImageView = depthImage->CreateImageView(vk::ImageAspectFlagBits::eDepth);
+        depthImageViewConfig = {
+            depthImage->GetHandle(),
+            depthImage->GetFormat(),
+            1,
+            vk::ImageAspectFlagBits::eDepth
+        };
+        depthImageView = depthImage->CreateImageView(depthImageViewConfig);
 
         // 6. 重新创建 Framebuffer
         framebuffers.clear();
