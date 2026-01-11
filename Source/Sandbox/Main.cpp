@@ -26,8 +26,8 @@
 #include "glfw-3.4/include/GLFW/glfw3.h"
 #include "Mesh.h"
 #include "AssetLoader.h"
-#include "../Runtime/Platform/Private/GLFW/GLFWWindow.h"
-#include "../Runtime/Renderer/Public/Camera.h"
+#include "Camera.h"
+
 
 
 #define GLM_FORCE_RADIANS
@@ -37,10 +37,14 @@
 namespace TE
 {
     class GLFWWindow;
+
+    struct InstanceData {
+        glm::mat4 model;  // 每个实例的模型矩阵
+        // 可以添加其他实例数据，如颜色、缩放等
+    };
 }
 
 struct UniformBufferObject {
-    glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
 };
@@ -129,6 +133,75 @@ int main()
         return -1;
     }
 
+
+    constexpr uint32_t INSTANCE_COUNT = 5;  // 渲染 1000 个实例
+    std::vector<TE::InstanceData> instanceData(INSTANCE_COUNT);
+    for (uint32_t i = 0; i < INSTANCE_COUNT; ++i) {
+        // 为每个实例设置不同的位置/旋转/缩放
+        float angle = i * 0.1f;
+        instanceData[i].model = glm::rotate(
+            glm::translate(glm::mat4(1.0f), glm::vec3(i * 5.0f, 0.0f, 0.0f)),
+            angle,
+            glm::vec3(0.0f, 1.0f, 0.0f)
+        );
+    }
+    // 创建实例数据缓冲区
+    TE::BufferConfig instanceBufferConfig;
+    instanceBufferConfig.size = sizeof(TE::InstanceData) * INSTANCE_COUNT;
+    instanceBufferConfig.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+    instanceBufferConfig.memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal;
+    auto instanceBuffer = device->CreateBuffer(instanceBufferConfig);
+
+    // 上传实例数据（使用 staging buffer）
+    TE::BufferConfig stagingConfig;
+    stagingConfig.size = sizeof(TE::InstanceData) * INSTANCE_COUNT;
+    stagingConfig.usage = vk::BufferUsageFlagBits::eTransferSrc;
+    stagingConfig.memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
+                                     vk::MemoryPropertyFlagBits::eHostCoherent;
+
+    auto stagingBuffer = device->CreateBuffer(stagingConfig);
+    stagingBuffer->UploadData(instanceData.data(), sizeof(TE::InstanceData) * INSTANCE_COUNT);
+
+
+    // 复制到设备本地缓冲区（需要命令缓冲区）
+    auto cmdPool = device->CreateCommandPool(
+        device->GetQueueFamilies().graphics.value(),
+        vk::CommandPoolCreateFlagBits::eTransient
+    );
+    auto cmdBuffers = cmdPool->AllocateCommandBuffers(1);
+    auto& cmdBuffer = cmdBuffers[0];
+
+    {
+        auto recording = cmdBuffer->BeginRecording(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+        cmdBuffer->CopyBuffer(*stagingBuffer, *instanceBuffer, sizeof(TE::InstanceData) * INSTANCE_COUNT);
+    }
+    graphicsQueue->Submit({cmdBuffer->GetRawHandle()}, {}, {}, {}, nullptr);
+    graphicsQueue->WaitIdle();
+
+
+    auto maxSampleCount = bestDevice->GetMaxUsableSampleCount();
+    TE_LOG_DEBUG("maxSampleCount: {}",static_cast<int>(maxSampleCount));
+    /* 多重采样 */
+    auto samples = vk::SampleCountFlagBits::e8;
+    TE::VulkanImageConfig sampleImageConfig{
+        swapChain->GetExtent().width,
+        swapChain->GetExtent().height,
+        swapChain->GetFormat(),
+        vk::ImageTiling::eOptimal,
+        vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
+        1,
+        samples
+    };
+    auto msaaSampleImage = TE::VulkanImage::Create(device, sampleImageConfig);
+    TE::VulkanImageViewConfig msaaSampleImageViewConfig{
+        msaaSampleImage->GetHandle(),
+        msaaSampleImage->GetFormat(),
+        1,
+        vk::ImageAspectFlagBits::eColor
+    };
+    auto msaaSampleImageView = msaaSampleImage->CreateImageView(msaaSampleImageViewConfig);
+
     /*  深度相关  */
     std::vector<vk::Format> candidates{vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint};
     auto depthFormat = bestDevice->FindDepthFormat(candidates);
@@ -139,7 +212,9 @@ int main()
         depthFormat,
         vk::ImageTiling::eOptimal,
         vk::ImageUsageFlagBits::eDepthStencilAttachment,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
+        1,
+        samples
     };
     auto depthImage = TE::VulkanImage::Create(device, depthImageConfig);
     TE::VulkanImageViewConfig depthImageViewConfig{
@@ -150,23 +225,33 @@ int main()
     };
     auto depthImageView = depthImage->CreateImageView(depthImageViewConfig);
 
+
+
     /* 10. RenderPass */
     std::vector<TE::AttachmentConfig> attachments;
     attachments.push_back({
         swapChain->GetFormat(),
-        vk::SampleCountFlagBits::e1,
+        samples,
         vk::AttachmentLoadOp::eClear,
         vk::AttachmentStoreOp::eStore,
         vk::ImageLayout::eUndefined,
-        vk::ImageLayout::ePresentSrcKHR
+        vk::ImageLayout::eColorAttachmentOptimal
     });
     attachments.push_back({
         depthFormat,
-        vk::SampleCountFlagBits::e1,
+        samples,
         vk::AttachmentLoadOp::eClear,
         vk::AttachmentStoreOp::eDontCare,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eDepthStencilAttachmentOptimal
+    });
+    attachments.push_back({
+        swapChain->GetFormat(),
+        vk::SampleCountFlagBits::e1,
+        vk::AttachmentLoadOp::eDontCare,
+        vk::AttachmentStoreOp::eStore,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::ePresentSrcKHR
     });
 
     auto renderPass = device->CreateRenderPass(attachments);
@@ -181,7 +266,7 @@ int main()
     std::vector<std::unique_ptr<TE::VulkanFramebuffer>> framebuffers;
     framebuffers.reserve(actualImageCount);
     for (uint32_t i = 0; i < actualImageCount; ++i) {
-        std::vector<vk::ImageView> fbAttachments = {swapChain->GetImageView(i)->GetHandle(), depthImageView->GetHandle()};
+        std::vector<vk::ImageView> fbAttachments = {msaaSampleImageView->GetHandle(), depthImageView->GetHandle(), swapChain->GetImageView(i)->GetHandle()};
         auto framebuffer = device->CreateFramebuffer(*renderPass,fbAttachments,swapChain->GetExtent());
         if (!framebuffer) {
             TE_LOG_ERROR("Failed to create framebuffer {}", i);
@@ -193,7 +278,7 @@ int main()
 
     /* 图形管线 */
     TE::GraphicsPipelineConfig pipelineConfig;
-
+    pipelineConfig.rasterizationSamples = samples;
     std::string vertexShaderPath = "Content/Shaders/Common/triangle.vert.spv";
     std::string fragmentShaderPath = "Content/Shaders/Common/triangle.frag.spv";
     std::string absVertexPath = TE_PROJECT_ROOT_DIR + vertexShaderPath;
@@ -222,12 +307,28 @@ int main()
     );
     pipelineConfig.scissor = vk::Rect2D({0, 0}, swapChain->GetExtent());
 
+    // 添加实例数据 binding（binding = 1）
+    vk::VertexInputBindingDescription instanceBinding;
+    instanceBinding.binding = 1;
+    instanceBinding.stride = sizeof(TE::InstanceData);
+    instanceBinding.inputRate = vk::VertexInputRate::eInstance;  // 关键：使用 eInstance
+
+    // 添加实例数据的 attributes
+    // mat4 需要拆分成 4 个 vec4（location 3, 4, 5, 6）
+    std::vector<vk::VertexInputAttributeDescription> instanceAttributes;
+    instanceAttributes.emplace_back(3, 1, vk::Format::eR32G32B32A32Sfloat, offsetof(TE::InstanceData, model) + 0 * sizeof(glm::vec4));   // mat4 第 0 列
+    instanceAttributes.emplace_back(4, 1, vk::Format::eR32G32B32A32Sfloat, offsetof(TE::InstanceData, model) + 1 * sizeof(glm::vec4));   // mat4 第 1 列
+    instanceAttributes.emplace_back(5, 1, vk::Format::eR32G32B32A32Sfloat, offsetof(TE::InstanceData, model) + 2 * sizeof(glm::vec4));   // mat4 第 2 列
+    instanceAttributes.emplace_back(6, 1, vk::Format::eR32G32B32A32Sfloat, offsetof(TE::InstanceData, model) + 3 * sizeof(glm::vec4));   // mat4 第 3 列
+
     // 配置顶点输入（使用辅助函数）
     pipelineConfig.vertexBindings = {
-        TE::Vertex::getBindingDescription()
+        TE::Vertex::getBindingDescription(),
+        instanceBinding,
     };
-    pipelineConfig.vertexAttributes =
-        TE::Vertex::getAttributeDescriptions();
+    pipelineConfig.vertexAttributes = TE::Vertex::getAttributeDescriptions();
+    pipelineConfig.vertexAttributes.insert(pipelineConfig.vertexAttributes.end(), instanceAttributes.begin(), instanceAttributes.end());
+
 
     /* 描述符集布局（UBO） */
     // 创建描述符集布局，定义 UBO 绑定（binding = 0）
@@ -462,7 +563,7 @@ int main()
 
 
 
-
+    bool isFirstFrame = true;
     TE::Camera camera;
     camera.UpdateForce();
     UniformBufferObject cameraUbo{}; // UBO每帧更新
@@ -551,11 +652,24 @@ int main()
         };
         depthImageView = depthImage->CreateImageView(depthImageViewConfig);
 
+        // 重建采样
+        sampleImageConfig.width = swapChain->GetExtent().width;
+        sampleImageConfig.height = swapChain->GetExtent().height;
+        msaaSampleImage = TE::VulkanImage::Create(device, sampleImageConfig);
+        msaaSampleImageViewConfig = {
+            msaaSampleImage->GetHandle(),
+            msaaSampleImage->GetFormat(),
+            1,
+            vk::ImageAspectFlagBits::eColor
+        };
+        msaaSampleImageView = msaaSampleImage->CreateImageView(msaaSampleImageViewConfig);
+
+
         // 6. 重新创建 Framebuffer
         framebuffers.clear();
         framebuffers.reserve(actualImageCount);
         for (uint32_t i = 0; i < actualImageCount; ++i) {
-            std::vector<vk::ImageView> fbAttachments = {swapChain->GetImageView(i)->GetHandle(), depthImageView->GetHandle()};
+            std::vector<vk::ImageView> fbAttachments = {msaaSampleImageView->GetHandle(), depthImageView->GetHandle(), swapChain->GetImageView(i)->GetHandle()};
             auto framebuffer = device->CreateFramebuffer(
                 *renderPass,
                 fbAttachments,
@@ -674,8 +788,16 @@ int main()
         if (glfwGetKey(glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
              camera.Move(TE::CameraMovement::Right, deltaTime);
 
+
         double posX, posY;
         glfwGetCursorPos(glfwWindow, &posX, &posY);
+        if (isFirstFrame)
+        {
+            posX = swapChain->GetExtent().width / 2;
+            posY = swapChain->GetExtent().height / 2;
+            glfwSetCursorPos(static_cast<GLFWwindow*>(window->GetNativeHandle()) , posX, posY);
+            isFirstFrame = false;
+        }
         double deltaX = posX - s_lastMouseX;
         double deltaY = s_lastMouseY - posY;
         s_lastMouseX = posX;
@@ -684,8 +806,8 @@ int main()
 
         camera.Update();
 
-        cameraUbo.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        cameraUbo.model *= glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        //cameraUbo.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        //cameraUbo.model *= glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 
         cameraUbo.view = camera.GetViewMatrix();
@@ -722,7 +844,12 @@ int main()
 
                 // 绑定顶点缓冲区和索引缓冲区 ，供 GPU 读取
                 commandBuffers[currentFrame]->BindVertexBuffer(0, *vertexBuffer, 0);
+                // 绑定实例缓冲区（binding 1）
+                commandBuffers[currentFrame]->BindVertexBuffer(1, *instanceBuffer, 0);
+                // 绑定索引缓冲区
                 commandBuffers[currentFrame]->BindIndexBuffer(*indexBuffer);
+
+
 
                 // 设置视口（动态视口，会覆盖管线创建时的设置）视口定义了渲染区域在窗口中的位置和大小
                 //    注意：Vulkan的Y轴默认从底部开始，需要翻转Y轴以匹配OpenGL风格
@@ -746,7 +873,7 @@ int main()
 
                 // 9. 绘制三角形
                 //commandBuffers[currentFrame]->Draw(3, 1, 0, 0);
-                commandBuffers[currentFrame]->DrawIndexed(static_cast<uint32_t>(model->m_indices.size()));
+                commandBuffers[currentFrame]->DrawIndexed(static_cast<uint32_t>(model->m_indices.size()),INSTANCE_COUNT,0,0,0);
 
             }  // 自动调用 endRenderPass（RenderPassScope 析构）
         }  // 自动调用 end（CommandBufferRecordingScope 析构）

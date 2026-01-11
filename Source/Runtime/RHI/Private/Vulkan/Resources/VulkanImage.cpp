@@ -23,7 +23,7 @@ namespace TE
         imageCreateInfo.usage = config.usage;
         imageCreateInfo.tiling = config.tiling;
         imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
-        imageCreateInfo.samples = vk::SampleCountFlagBits::e1;
+        imageCreateInfo.samples = config.samples;
         imageCreateInfo.sharingMode = vk::SharingMode::eExclusive;
 
         m_image = m_device->GetHandle().createImage(imageCreateInfo);

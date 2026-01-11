@@ -77,6 +77,9 @@ public:
     // 查询深度图像格式
     vk::Format FindDepthFormat( const std::vector<vk::Format>& candidates ) const;
 
+    // 查询采样数
+    vk::SampleCountFlagBits GetMaxUsableSampleCount() const;
+
     // 获取底层句柄
     [[nodiscard]] const vk::raii::PhysicalDevice& GetHandle() const { return m_device; }
 

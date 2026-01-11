@@ -40,13 +40,19 @@ VulkanRenderPass::VulkanRenderPass(PrivateTag,
     vk::AttachmentReference depthAttachmentRef;
     depthAttachmentRef.setAttachment(1);
     depthAttachmentRef.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+    vk::AttachmentReference colorAttachmentResolveRef;
+    colorAttachmentResolveRef.setAttachment(2);
+    colorAttachmentResolveRef.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
     
     // 创建子通道
     vk::SubpassDescription subpass;
     subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
-    subpass.setColorAttachments(colorAttachmentRef);
-    subpass.setPDepthStencilAttachment(&depthAttachmentRef);
-    
+    subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+    subpass.pResolveAttachments = &colorAttachmentResolveRef;
+    subpass.colorAttachmentCount = 1;
+
     // 创建子通道依赖
     // 这个依赖确保：
     // 1. 在开始渲染通道前，图像布局从初始布局转换到颜色附件最优布局
@@ -58,7 +64,7 @@ VulkanRenderPass::VulkanRenderPass(PrivateTag,
     dependency.setSrcAccessMask(vk::AccessFlags{});  // Present 不需要访问标志
     dependency.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests);
     dependency.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite);
-    
+
     // 创建 RenderPass
     vk::RenderPassCreateInfo createInfo;
     createInfo.setAttachments(attachmentDescriptions)

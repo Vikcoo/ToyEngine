@@ -18,7 +18,8 @@ namespace TE
         vk::ImageTiling tiling;
         vk::ImageUsageFlags usage;
         vk::MemoryPropertyFlags properties;
-        uint32_t mipLevelCount;
+        uint32_t mipLevelCount = 1;
+        vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1;
     };
 
 class VulkanImage

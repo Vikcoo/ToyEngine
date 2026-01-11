@@ -171,7 +171,8 @@ std::unique_ptr<VulkanTexture2D> VulkanTexture2D::CreateFromData(std::shared_ptr
     samplerInfo.compareOp = vk::CompareOp::eAlways;
     samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
     samplerInfo.mipLodBias = 0.0f;
-    samplerInfo.minLod = static_cast<float>(texture->m_mipLevelCount / 2); //0.0f;
+    //samplerInfo.minLod = static_cast<float>(texture->m_mipLevelCount / 2); //0.0f;
+    samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = static_cast<float>(texture->m_mipLevelCount - 1);  // 使用实际的 mip level 数量
 
     texture->m_sampler = device->GetHandle().createSampler(samplerInfo);
