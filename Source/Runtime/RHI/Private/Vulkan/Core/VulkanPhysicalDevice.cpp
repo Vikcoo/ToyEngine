@@ -230,5 +230,10 @@ vk::SampleCountFlagBits VulkanPhysicalDevice::GetMaxUsableSampleCount() const
     if(counts & vk::SampleCountFlagBits::e2) return vk::SampleCountFlagBits::e2;
     return vk::SampleCountFlagBits::e1;
 }
+
+uint32_t VulkanPhysicalDevice::GetMaxPushConstantsSize() const
+{
+    return m_device.getProperties().limits.maxPushConstantsSize;
+}
 } // namespace TE
 

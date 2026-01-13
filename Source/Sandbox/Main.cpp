@@ -365,6 +365,12 @@ int main()
         *uboDescSetLayout->GetHandle(),      // set = 0
         *samplerDescSetLayout->GetHandle()    // set = 1
     };
+
+    pipelineConfig.pushConstantRange = {
+        vk::ShaderStageFlagBits::eFragment,
+        0,
+        sizeof(uint32_t)
+    };
     auto pipeline = device->CreateGraphicsPipeline(*renderPass, pipelineConfig);
     if (!pipeline) {
         TE_LOG_ERROR("Failed to create graphics pipeline");
@@ -871,6 +877,13 @@ int main()
                 scissor.extent = swapChain->GetExtent();
                 commandBuffers[currentFrame]->SetScissor(scissor);
 
+
+                commandBuffers[currentFrame].pushConstants<uint32_t>(
+                    m_pipelineLayout,
+                    vk::ShaderStageFlagBits::eFragment,
+                    0,              // offset
+                    enableTexture   // value
+                );
                 // 9. 绘制三角形
                 //commandBuffers[currentFrame]->Draw(3, 1, 0, 0);
                 commandBuffers[currentFrame]->DrawIndexed(static_cast<uint32_t>(model->m_indices.size()),INSTANCE_COUNT,0,0,0);

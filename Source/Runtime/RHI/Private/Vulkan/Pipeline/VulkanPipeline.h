@@ -60,6 +60,9 @@ struct GraphicsPipelineConfig {
     
     // 描述符集布局（用于 UBO、纹理等）
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+
+    // 推送常量
+    vk::PushConstantRange pushConstantRange;
 };
 
 /// Vulkan 图形管线

@@ -80,6 +80,9 @@ public:
     // 查询采样数
     vk::SampleCountFlagBits GetMaxUsableSampleCount() const;
 
+    // 查询支持最大推送常量
+    uint32_t GetMaxPushConstantsSize() const;
+
     // 获取底层句柄
     [[nodiscard]] const vk::raii::PhysicalDevice& GetHandle() const { return m_device; }
 
