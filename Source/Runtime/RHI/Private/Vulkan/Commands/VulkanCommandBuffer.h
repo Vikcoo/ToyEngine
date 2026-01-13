@@ -94,6 +94,16 @@ public:
         const std::vector<vk::DescriptorSet>& descriptorSets,
         const std::vector<uint32_t>& dynamicOffsets = {}
     );
+    
+    // 重载：接受 vk::raii::DescriptorSet
+    void BindDescriptorSets(
+        vk::PipelineBindPoint bindPoint,
+        const vk::PipelineLayout& layout,
+        uint32_t firstSet,
+        const std::vector<vk::raii::DescriptorSet>& descriptorSets,
+        const std::vector<uint32_t>& dynamicOffsets = {}
+    );
+    
     void CopyBuffer(const VulkanBuffer& srcBuffer,
                    const VulkanBuffer& dstBuffer,
                    size_t size,
@@ -110,6 +120,10 @@ public:
         uint32_t firstIndex = 0,
         int32_t vertexOffset = 0,
         uint32_t firstInstance = 0);
+    
+    // 推送常量
+    template<typename T>
+    void PushConstants(const vk::PipelineLayout& layout,vk::ShaderStageFlags stageFlags,uint32_t offset,const std::vector<T>& value);
 
     // 获取底层句柄
     [[nodiscard]] const vk::raii::CommandBuffer& GetHandle() const { return m_commandBuffer; }

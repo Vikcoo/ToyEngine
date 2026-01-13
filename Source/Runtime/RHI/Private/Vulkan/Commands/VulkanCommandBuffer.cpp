@@ -1,5 +1,8 @@
 // Vulkan Command Buffer 实现
 #include "Commands/VulkanCommandBuffer.h"
+
+#include <vector>
+
 #include "Core/VulkanDevice.h"
 #include "Pipeline/VulkanRenderPass.h"
 #include "Pipeline/VulkanFramebuffer.h"
@@ -129,6 +132,29 @@ void VulkanCommandBuffer::BindDescriptorSets(
     );
 }
 
+void VulkanCommandBuffer::BindDescriptorSets(
+    vk::PipelineBindPoint bindPoint,
+    const vk::PipelineLayout& layout,
+    uint32_t firstSet,
+    const std::vector<vk::raii::DescriptorSet>& descriptorSets,
+    const std::vector<uint32_t>& dynamicOffsets)
+{
+    // 将 vk::raii::DescriptorSet 转换为 vk::DescriptorSet
+    std::vector<vk::DescriptorSet> rawSets;
+    rawSets.reserve(descriptorSets.size());
+    for (const auto& set : descriptorSets) {
+        rawSets.push_back(*set);
+    }
+    
+    m_commandBuffer.bindDescriptorSets(
+        bindPoint,
+        layout,
+        firstSet,
+        rawSets,
+        dynamicOffsets
+    );
+}
+
 void VulkanCommandBuffer::CopyBuffer(const VulkanBuffer& srcBuffer,
                                      const VulkanBuffer& dstBuffer,
                                      size_t size,
@@ -164,6 +190,31 @@ void VulkanCommandBuffer::Draw(const uint32_t vertexCount,
 void VulkanCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance){
     m_commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
+
+
+// 通用模板实现
+template<typename T>
+void VulkanCommandBuffer::PushConstants(const vk::PipelineLayout& layout,
+                                        vk::ShaderStageFlags stageFlags,
+                                        uint32_t offset,
+                                        const std::vector<T>& value)
+{
+    // vulkan-hpp 的 pushConstants 接受 vk::ArrayProxy，需要传递数组或范围
+    // 对于单个值，传递一个包含该值的数组
+    m_commandBuffer.pushConstants<T>(
+        layout,
+        stageFlags,
+        offset,
+        value  // 传递包含单个元素的数组
+    );
+}
+
+// 显式实例化常用类型
+template void VulkanCommandBuffer::PushConstants<uint32_t>(
+    const vk::PipelineLayout& layout,
+    vk::ShaderStageFlags stageFlags,
+    uint32_t offset,
+    const std::vector<uint32_t>& value);
 
 void VulkanCommandBuffer::Begin(const vk::CommandBufferUsageFlags flags) {
     vk::CommandBufferBeginInfo beginInfo;

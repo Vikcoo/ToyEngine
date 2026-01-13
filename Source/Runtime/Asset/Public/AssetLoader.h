@@ -10,17 +10,18 @@ namespace TE
 {
     struct RawTextureData;
     class Mesh;
+
     class AssetLoader
-{
-public:
-    AssetLoader() = default;
-    ~AssetLoader() = default;
+    {
+    public:
+        AssetLoader() = default;
+        ~AssetLoader() = default;
 
-    static AssetLoader* GetInstance();
+        static AssetLoader* GetInstance();
 
-    template<typename T>
-    static std::shared_ptr<T> Load(const std::string& AssetPath);
-};
+        template<typename T>
+        static std::shared_ptr<T> Load(const std::string& AssetPath);
+    };
 
 template<>
 std::shared_ptr<Mesh> AssetLoader::Load<Mesh>(const std::string& AssetPath);

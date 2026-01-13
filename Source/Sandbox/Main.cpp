@@ -841,11 +841,16 @@ int main()
                 commandBuffers[currentFrame]->BindPipeline(*pipeline);
 
                 // 绑定描述符集（在绑定管线之后） 将 UBO 绑定到着色器，使着色器可以访问 uniform 数据
+                // 直接传递原始句柄，避免拷贝 vk::raii::DescriptorSet
+                std::vector<vk::DescriptorSet> descriptorSets = {
+                    *uboDescriptorSets[currentFrame],
+                    *samplerDescriptorSets[currentFrame]
+                };
                 commandBuffers[currentFrame]->BindDescriptorSets(
                     vk::PipelineBindPoint::eGraphics,
-                    pipeline->GetLayout().operator*(),  // 获取 PipelineLayout
-                    0,                                   // 第一个描述符集
-                    {uboDescriptorSets[currentFrame], samplerDescriptorSets[currentFrame]}      // 当前帧的描述符集
+                    *pipeline->GetLayout(),  // 获取 PipelineLayout（更清晰的写法）
+                    0,                       // 第一个描述符集
+                    descriptorSets           // 当前帧的描述符集
                 );
 
                 // 绑定顶点缓冲区和索引缓冲区 ，供 GPU 读取
@@ -877,13 +882,15 @@ int main()
                 scissor.extent = swapChain->GetExtent();
                 commandBuffers[currentFrame]->SetScissor(scissor);
 
-
-                commandBuffers[currentFrame].pushConstants<uint32_t>(
-                    m_pipelineLayout,
+                // 推送常量：控制是否使用纹理
+                uint32_t useTexture = 1;  // 1 = 使用纹理, 0 = 不使用纹理
+                commandBuffers[currentFrame]->PushConstants<uint32_t>(
+                    *pipeline->GetLayout(),
                     vk::ShaderStageFlagBits::eFragment,
                     0,              // offset
-                    enableTexture   // value
+                    {useTexture}      // value
                 );
+                
                 // 9. 绘制三角形
                 //commandBuffers[currentFrame]->Draw(3, 1, 0, 0);
                 commandBuffers[currentFrame]->DrawIndexed(static_cast<uint32_t>(model->m_indices.size()),INSTANCE_COUNT,0,0,0);

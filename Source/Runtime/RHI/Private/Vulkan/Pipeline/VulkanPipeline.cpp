@@ -43,8 +43,9 @@ void VulkanPipeline::CreatePipelineLayout(const GraphicsPipelineConfig& config) 
     }
     
     // 添加 PushConstants 支持
-
-    createInfo.setPushConstantRanges(config.pushConstantRange);
+    if (config.pushConstantRange.size > 0) {
+        createInfo.setPushConstantRanges({config.pushConstantRange});
+    }
     
     try {
         m_layout = m_device->GetHandle().createPipelineLayout(createInfo);
