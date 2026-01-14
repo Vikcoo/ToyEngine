@@ -26,7 +26,7 @@ public:
         friend class VulkanDevice;
     };
 
-    explicit VulkanDescriptorPool(
+    VulkanDescriptorPool(
         PrivateTag,
         std::shared_ptr<VulkanDevice> device,
         uint32_t maxSets,                              // 最大描述符集数量

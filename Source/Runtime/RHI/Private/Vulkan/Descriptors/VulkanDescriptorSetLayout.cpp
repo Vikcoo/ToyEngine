@@ -36,14 +36,12 @@ VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(
     vk::DescriptorSetLayoutCreateInfo createInfo;
     createInfo.setBindings(vkBindings);
 
-    try {
-        m_layout = m_device->GetHandle().createDescriptorSetLayout(createInfo);
-        TE_LOG_DEBUG("Descriptor set layout created with {} binding(s)", bindings.size());
+    m_layout = m_device->GetHandle().createDescriptorSetLayout(createInfo);
+    if (m_layout == nullptr)
+    {
+        TE_LOG_ERROR("Failed to create descriptor set layout");
     }
-    catch (const vk::SystemError& e) {
-        TE_LOG_ERROR("Failed to create descriptor set layout: {}", e.what());
-        throw;
-    }
+    TE_LOG_DEBUG("Descriptor set layout created with {} binding(s)", bindings.size());
 }
 
 VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout() {

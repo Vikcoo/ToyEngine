@@ -46,16 +46,13 @@ void VulkanPipeline::CreatePipelineLayout(const GraphicsPipelineConfig& config) 
     if (config.pushConstantRange.size > 0) {
         createInfo.setPushConstantRanges({config.pushConstantRange});
     }
-    
-    try {
-        m_layout = m_device->GetHandle().createPipelineLayout(createInfo);
-        TE_LOG_DEBUG("Pipeline layout created with {} descriptor set layout(s)", 
-                    config.descriptorSetLayouts.size());
+
+    m_layout = m_device->GetHandle().createPipelineLayout(createInfo);
+    if (m_layout == VK_NULL_HANDLE){
+        TE_LOG_ERROR("Failed to create pipeline layout");
     }
-    catch (const vk::SystemError& e) {
-        TE_LOG_ERROR("Failed to create pipeline layout: {}", e.what());
-        throw;
-    }
+    TE_LOG_DEBUG("Pipeline layout created with {} descriptor set layout(s)", config.descriptorSetLayouts.size());
+
 }
 
 void VulkanPipeline::CreatePipeline(const VulkanRenderPass& renderPass, 

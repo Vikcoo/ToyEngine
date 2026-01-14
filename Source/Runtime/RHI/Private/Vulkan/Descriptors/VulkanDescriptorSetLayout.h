@@ -28,7 +28,7 @@ public:
         friend class VulkanDevice;
     };
 
-    explicit VulkanDescriptorSetLayout(
+    VulkanDescriptorSetLayout(
         PrivateTag,
         std::shared_ptr<VulkanDevice> device,
         const std::vector<DescriptorSetLayoutBinding>& bindings

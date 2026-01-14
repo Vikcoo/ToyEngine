@@ -134,11 +134,11 @@ int main()
     }
 
 
-    constexpr uint32_t INSTANCE_COUNT = 5;  // 渲染 1000 个实例
+    constexpr uint32_t INSTANCE_COUNT = 5;
     std::vector<TE::InstanceData> instanceData(INSTANCE_COUNT);
     for (uint32_t i = 0; i < INSTANCE_COUNT; ++i) {
         // 为每个实例设置不同的位置/旋转/缩放
-        float angle = i * 0.1f;
+        float angle = i * 1.0f;
         instanceData[i].model = glm::rotate(
             glm::translate(glm::mat4(1.0f), glm::vec3(i * 5.0f, 0.0f, 0.0f)),
             angle,
@@ -287,16 +287,14 @@ int main()
     // 检查文件是否存在
     std::ifstream testFile(absVertexPath);
     if (testFile.good()) {
-        vertexShaderPath = absVertexPath;
-        fragmentShaderPath = absFragmentPath;
         TE_LOG_INFO("Using absolute shader paths from project root");
     } else {
         TE_LOG_INFO("Using relative shader paths (current working directory)");
     }
     testFile.close();
 
-    pipelineConfig.vertexShaderPath = vertexShaderPath;
-    pipelineConfig.fragmentShaderPath = fragmentShaderPath;
+    pipelineConfig.vertexShaderPath = absVertexPath;
+    pipelineConfig.fragmentShaderPath = absFragmentPath;
 
     // 视口和剪裁
     pipelineConfig.viewport = vk::Viewport(
@@ -330,12 +328,11 @@ int main()
     pipelineConfig.vertexAttributes.insert(pipelineConfig.vertexAttributes.end(), instanceAttributes.begin(), instanceAttributes.end());
 
 
-    /* 描述符集布局（UBO） */
-    // 创建描述符集布局，定义 UBO 绑定（binding = 0）
+    /* 描述符集布局 */
     std::vector<TE::DescriptorSetLayoutBinding> uboDescLayoutBindings;
     uboDescLayoutBindings.push_back({
         0,                                          // binding = 0（对应 shader 中的 layout(binding = 0)）
-        vk::DescriptorType::eUniformBuffer,        // UBO 类型
+        vk::DescriptorType::eUniformBuffer,         // UBO 类型
         1,                                          // 数量
         vk::ShaderStageFlagBits::eVertex         // 在顶点着色器中使用
     });
@@ -352,7 +349,7 @@ int main()
         0,                                          // binding = 0（对应 shader 中的 layout(binding = 0) set = 1
         vk::DescriptorType::eCombinedImageSampler,  // 组合图像采样器类型
         1,                                          // 数量
-        vk::ShaderStageFlagBits::eFragment         // 在片段着色器中使用
+        vk::ShaderStageFlagBits::eFragment       // 在片段着色器中使用
     });
 
     auto samplerDescSetLayout = device->CreateDescriptorSetLayout(samplerLayoutBindings);
