@@ -65,16 +65,7 @@ int main()
     auto surface = context->CreateSurface(*window);
 
     /* 4. 物理设备 */
-    auto devices = context->EnumeratePhysicalDevices();
-    if (devices.empty()) {
-        TE_LOG_ERROR("No physical devices found");
-        return -1;
-    }
-    auto bestDevice = *std::max_element(devices.begin(), devices.end(),
-        [](const auto& a, const auto& b) {
-            return a->CalculateScore() < b->CalculateScore();
-        });
-    bestDevice->PrintInfo();
+    auto bestDevice = context->GetBestPhysicalDevice();
 
     /* 5. 队列族 找到一个支持图形绘制和呈现的队列族 */
     auto queueFamilies = bestDevice->FindQueueFamilies(surface.get());

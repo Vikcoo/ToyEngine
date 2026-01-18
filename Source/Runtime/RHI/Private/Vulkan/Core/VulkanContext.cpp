@@ -194,6 +194,18 @@ std::vector<std::shared_ptr<VulkanPhysicalDevice>> VulkanContext::EnumeratePhysi
     return devices;
 }
 
+std::shared_ptr<VulkanPhysicalDevice> VulkanContext::GetBestPhysicalDevice()
+{
+    auto devices = EnumeratePhysicalDevices();
+
+    auto bestDevice = *std::max_element(devices.begin(), devices.end(),
+        [](const auto& a, const auto& b) {
+            return a->CalculateScore() < b->CalculateScore();
+        });
+
+    return bestDevice;
+}
+
 std::shared_ptr<VulkanSurface> VulkanContext::CreateSurface(Window& window) {
     VkSurfaceKHR surface;
     auto* glfwWindow = static_cast<GLFWwindow*>(window.GetNativeHandle());
