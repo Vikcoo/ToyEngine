@@ -133,54 +133,6 @@ int main()
         return -1;
     }
 
-
-    constexpr uint32_t INSTANCE_COUNT = 5;
-    std::vector<TE::InstanceData> instanceData(INSTANCE_COUNT);
-    for (uint32_t i = 0; i < INSTANCE_COUNT; ++i) {
-        // 为每个实例设置不同的位置/旋转/缩放
-        float angle = i * 1.0f;
-        instanceData[i].model = glm::rotate(
-            glm::translate(glm::mat4(1.0f), glm::vec3(i * 5.0f, 0.0f, 0.0f)),
-            angle,
-            glm::vec3(0.0f, 1.0f, 0.0f)
-        );
-    }
-    // 创建实例数据缓冲区
-    TE::BufferConfig instanceBufferConfig;
-    instanceBufferConfig.size = sizeof(TE::InstanceData) * INSTANCE_COUNT;
-    instanceBufferConfig.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
-    instanceBufferConfig.memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal;
-    auto instanceBuffer = device->CreateBuffer(instanceBufferConfig);
-
-    // 上传实例数据（使用 staging buffer）
-    TE::BufferConfig stagingConfig;
-    stagingConfig.size = sizeof(TE::InstanceData) * INSTANCE_COUNT;
-    stagingConfig.usage = vk::BufferUsageFlagBits::eTransferSrc;
-    stagingConfig.memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible |
-                                     vk::MemoryPropertyFlagBits::eHostCoherent;
-
-    auto stagingBuffer = device->CreateBuffer(stagingConfig);
-    stagingBuffer->UploadData(instanceData.data(), sizeof(TE::InstanceData) * INSTANCE_COUNT);
-
-
-    // 复制到设备本地缓冲区（需要命令缓冲区）
-    auto cmdPool = device->CreateCommandPool(
-        device->GetQueueFamilies().graphics.value(),
-        vk::CommandPoolCreateFlagBits::eTransient
-    );
-    auto cmdBuffers = cmdPool->AllocateCommandBuffers(1);
-    auto& cmdBuffer = cmdBuffers[0];
-
-    {
-        auto recording = cmdBuffer->BeginRecording(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-        cmdBuffer->CopyBuffer(*stagingBuffer, *instanceBuffer, sizeof(TE::InstanceData) * INSTANCE_COUNT);
-    }
-    graphicsQueue->Submit({cmdBuffer->GetRawHandle()}, {}, {}, {}, nullptr);
-    graphicsQueue->WaitIdle();
-
-
-    auto maxSampleCount = bestDevice->GetMaxUsableSampleCount();
-    TE_LOG_DEBUG("maxSampleCount: {}",static_cast<int>(maxSampleCount));
     /* 多重采样 */
     auto samples = vk::SampleCountFlagBits::e8;
     TE::VulkanImageConfig sampleImageConfig{
@@ -225,6 +177,28 @@ int main()
     };
     auto depthImageView = depthImage->CreateImageView(depthImageViewConfig);
 
+
+    constexpr uint32_t INSTANCE_COUNT = 5;
+    std::vector<TE::InstanceData> instanceData(INSTANCE_COUNT);
+    for (uint32_t i = 0; i < INSTANCE_COUNT; ++i) {
+        // 为每个实例设置不同的位置/旋转/缩放
+        float angle = i * 1.0f;
+        instanceData[i].model = glm::rotate(
+            glm::translate(glm::mat4(1.0f), glm::vec3(i * 2.0f, 0.0f, 0.0f)),
+            angle,
+            glm::vec3(0.0f, 1.0f, 0.0f)
+        );
+    }
+    // 创建实例数据缓冲区
+    TE::BufferConfig instanceBufferConfig;
+    instanceBufferConfig.size = sizeof(TE::InstanceData) * INSTANCE_COUNT;
+    instanceBufferConfig.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+    instanceBufferConfig.memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal;
+    auto instanceBuffer = device->CreateBuffer(instanceBufferConfig);
+    device->UploadToDeviceLocalBuffer(*instanceBuffer, instanceData.data(), instanceBufferConfig.size);
+
+    auto maxSampleCount = bestDevice->GetMaxUsableSampleCount();
+    TE_LOG_DEBUG("maxSampleCount: {}",static_cast<int>(maxSampleCount));
 
 
     /* 10. RenderPass */
@@ -311,13 +285,7 @@ int main()
     instanceBinding.stride = sizeof(TE::InstanceData);
     instanceBinding.inputRate = vk::VertexInputRate::eInstance;  // 关键：使用 eInstance
 
-    // 添加实例数据的 attributes
-    // mat4 需要拆分成 4 个 vec4（location 3, 4, 5, 6）
-    std::vector<vk::VertexInputAttributeDescription> instanceAttributes;
-    instanceAttributes.emplace_back(3, 1, vk::Format::eR32G32B32A32Sfloat, offsetof(TE::InstanceData, model) + 0 * sizeof(glm::vec4));   // mat4 第 0 列
-    instanceAttributes.emplace_back(4, 1, vk::Format::eR32G32B32A32Sfloat, offsetof(TE::InstanceData, model) + 1 * sizeof(glm::vec4));   // mat4 第 1 列
-    instanceAttributes.emplace_back(5, 1, vk::Format::eR32G32B32A32Sfloat, offsetof(TE::InstanceData, model) + 2 * sizeof(glm::vec4));   // mat4 第 2 列
-    instanceAttributes.emplace_back(6, 1, vk::Format::eR32G32B32A32Sfloat, offsetof(TE::InstanceData, model) + 3 * sizeof(glm::vec4));   // mat4 第 3 列
+
 
     // 配置顶点输入（使用辅助函数）
     pipelineConfig.vertexBindings = {
@@ -325,6 +293,14 @@ int main()
         instanceBinding,
     };
     pipelineConfig.vertexAttributes = TE::Vertex::getAttributeDescriptions();
+
+    // 添加实例数据的 attributes
+    // mat4 需要拆分成 4 个 vec4（location 3, 4, 5, 6）
+    std::vector<vk::VertexInputAttributeDescription> instanceAttributes;
+    instanceAttributes.emplace_back(3, 1, vk::Format::eR32G32B32A32Sfloat, static_cast<uint32_t>(offsetof(TE::InstanceData, model) + 0 * sizeof(glm::vec4)));   // mat4 第 0 列
+    instanceAttributes.emplace_back(4, 1, vk::Format::eR32G32B32A32Sfloat, static_cast<uint32_t>(offsetof(TE::InstanceData, model) + 1 * sizeof(glm::vec4)));   // mat4 第 1 列
+    instanceAttributes.emplace_back(5, 1, vk::Format::eR32G32B32A32Sfloat, static_cast<uint32_t>(offsetof(TE::InstanceData, model) + 2 * sizeof(glm::vec4)));   // mat4 第 2 列
+    instanceAttributes.emplace_back(6, 1, vk::Format::eR32G32B32A32Sfloat, static_cast<uint32_t>(offsetof(TE::InstanceData, model) + 3 * sizeof(glm::vec4)));   // mat4 第 3 列
     pipelineConfig.vertexAttributes.insert(pipelineConfig.vertexAttributes.end(), instanceAttributes.begin(), instanceAttributes.end());
 
 
@@ -781,7 +757,7 @@ int main()
         // 重置围栏为未信号状态（准备下一帧）
         device->GetHandle().resetFences(*inFlightFences[currentFrame]);
 
-        GLFWwindow* glfwWindow = static_cast<GLFWwindow*>(window->GetNativeHandle());
+        auto* glfwWindow = static_cast<GLFWwindow*>(window->GetNativeHandle());
         if (glfwGetKey(glfwWindow, GLFW_KEY_W) == GLFW_PRESS)
              camera.Move(TE::CameraMovement::Forward, deltaTime);
         if (glfwGetKey(glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
