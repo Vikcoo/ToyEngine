@@ -57,24 +57,12 @@ int main()
     /* 1. 创建窗口 */
     const TE::WindowConfig config{"ToyEngine", 1280, 720, true};
     const auto window = TE::Window::Create(config);
-    if (!window) {
-        TE_LOG_ERROR("Failed to create window");
-        return -1;
-    }
 
     /* 2. 上下文与实例 */
     auto context = TE::VulkanContext::Create();
-    if (!context) {
-        TE_LOG_ERROR("Failed to create Vulkan Context");
-        return -1;
-    }
 
     /* 3. 表面 */
     auto surface = context->CreateSurface(*window);
-    if (!surface) {
-        TE_LOG_ERROR("Failed to create Surface");
-        return -1;
-    }
 
     /* 4. 物理设备 */
     auto devices = context->EnumeratePhysicalDevices();
@@ -90,27 +78,13 @@ int main()
 
     /* 5. 队列族 找到一个支持图形绘制和呈现的队列族 */
     auto queueFamilies = bestDevice->FindQueueFamilies(surface.get());
-    if (!queueFamilies.IsComplete()) {
-        TE_LOG_ERROR("Required queue families not found");
-        return -1;
-    }
     TE_LOG_INFO("Graphics Queue Family: {}", queueFamilies.graphics.value());
     TE_LOG_INFO("Present Queue Family: {}", queueFamilies.present.value());
-    if (queueFamilies.compute.has_value()) {
-        TE_LOG_INFO("  Compute Queue Family: {}", queueFamilies.compute.value());
-    }
-    if (queueFamilies.transfer.has_value()) {
-        TE_LOG_INFO("  Transfer Queue Family: {}", queueFamilies.transfer.value());
-    }
 
     /* 6. 逻辑设备 */
     TE::DeviceConfig deviceConfig;
     deviceConfig.enabledFeatures.samplerAnisotropy = VK_TRUE;  // 启用各向异性过滤
     auto device = TE::VulkanDevice::Create(bestDevice, queueFamilies, deviceConfig);
-    if (!device) {
-        TE_LOG_ERROR("Failed to create logical device");
-        return -1;
-    }
 
     /* 7. 队列  取出逻辑设备创建时创建的队列并检查 */
     auto graphicsQueue = device->GetGraphicsQueue();
