@@ -357,12 +357,10 @@ int main()
     std::string modelPath = TE_PROJECT_ROOT_DIR + modelSubPath;
     auto model = TE::AssetLoader::Load<TE::Mesh>(modelPath);
 
-    // 创建顶点缓冲区配置（使用设备本地内存 - 显存）
-    // 这是最佳实践：静态顶点数据应该存储在 GPU 显存中，以获得最快访问速度
+    // 创建顶点缓冲区配置 - 显存
     TE::BufferConfig vertexBufferConfig;
     vertexBufferConfig.size = sizeof(TE::Vertex) * model->m_vertices.size();
     vertexBufferConfig.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
-    // 创建顶点缓冲区（在显存中）
     auto vertexBuffer = device->CreateBuffer(vertexBufferConfig);
     if (!vertexBuffer) {
         TE_LOG_ERROR("Failed to create vertex buffer");

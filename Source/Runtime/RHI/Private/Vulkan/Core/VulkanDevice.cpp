@@ -43,7 +43,7 @@ VulkanDevice::~VulkanDevice() {
     if (m_device != nullptr) {
         WaitIdle();
     }
-    TE_LOG_INFO("Vulkan Device destroyed");
+    TE_LOG_DEBUG("Vulkan Device destroyed");
 }
 
 // ============================================================================

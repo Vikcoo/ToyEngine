@@ -20,6 +20,8 @@ add_subdirectory(ThirdParty)
 # 引擎源码
 add_subdirectory(Source)
 
+add_subdirectory(Tests)
+
 # 定义项目根目录路径（用于运行时查找资源）
 # 将路径中的反斜杠转换为正斜杠，并转义引号
 target_compile_definitions(Sandbox PRIVATE

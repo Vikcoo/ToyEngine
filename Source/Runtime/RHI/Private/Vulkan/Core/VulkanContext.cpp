@@ -28,7 +28,7 @@ std::shared_ptr<VulkanContext> VulkanContext::Create(const VulkanContextConfig& 
 }
 
 VulkanContext::~VulkanContext() {
-    TE_LOG_INFO("Destroying Vulkan Context");
+    TE_LOG_DEBUG("Destroying Vulkan Context");
     m_debugMessenger.clear();
     m_instance.clear();
 }

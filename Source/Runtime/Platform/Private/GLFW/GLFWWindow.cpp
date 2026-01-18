@@ -42,7 +42,7 @@ void GLFWWindow::ShutdownGLFW()
     s_glfwWindowCount--;
     if (s_glfwWindowCount == 0)
     {
-        TE_LOG_INFO("[Platform] Shutting down GLFW...");
+        TE_LOG_DEBUG("[Platform] Shutting down GLFW...");
         glfwTerminate();
     }
 }
@@ -91,7 +91,7 @@ GLFWWindow::~GLFWWindow()
 {
     if (m_window)
     {
-        TE_LOG_INFO("[Platform] Destroying window...");
+        TE_LOG_DEBUG("[Platform] Destroying window...");
         glfwDestroyWindow(m_window);
         m_window = nullptr;
     }
