@@ -115,10 +115,10 @@ namespace TE
 
         // 4. 标记网格为有效
         resultMesh->m_isValid = true;
-        TE_LOG_DEBUG("[ModelLoader] 加载成功：{}",filePath);
+        TE_LOG_DEBUG("[ModelLoader] load success {}",filePath);
         auto aa = resultMesh->m_vertices.size();
-        TE_LOG_DEBUG("[ModelLoader] 顶点数：{}", std::to_string(aa));
-        TE_LOG_DEBUG("[ModelLoader] 索引数：{}", std::to_string(resultMesh->m_indices.size()));
+        TE_LOG_DEBUG("[ModelLoader] vert count{}", std::to_string(aa));
+        TE_LOG_DEBUG("[ModelLoader] index count{}", std::to_string(resultMesh->m_indices.size()));
         return resultMesh;
     }
 } // TE

@@ -69,8 +69,6 @@ int main()
 
     /* 5. 队列族 找到一个支持图形绘制和呈现的队列族 */
     auto queueFamilies = bestDevice->FindQueueFamilies(surface.get());
-    TE_LOG_INFO("Graphics Queue Family: {}", queueFamilies.graphics.value());
-    TE_LOG_INFO("Present Queue Family: {}", queueFamilies.present.value());
 
     /* 6. 逻辑设备 */
     TE::DeviceConfig deviceConfig;
@@ -80,23 +78,11 @@ int main()
     /* 7. 队列  取出逻辑设备创建时创建的队列并检查 */
     auto graphicsQueue = device->GetGraphicsQueue();
     auto presentQueue = device->GetPresentQueue();
-    if (!graphicsQueue) {
-        TE_LOG_ERROR("Graphics queue is null");
-        return -1;
-    }
-    if (!presentQueue) {
-        TE_LOG_ERROR("Present queue is null");
-        return -1;
-    }
     TE_LOG_INFO("Graphics Queue: Family={}, Index={}", graphicsQueue->GetFamilyIndex(), graphicsQueue->GetQueueIndex());
     TE_LOG_INFO("Present Queue: Family={}, Index={}", presentQueue->GetFamilyIndex(), presentQueue->GetQueueIndex());
 
     /* 8.交换链  包含images和对应的imageViews */
     auto swapChain = device->CreateSwapChain(surface, TE::SwapChainConfig{}, window->GetWidth(), window->GetHeight());
-    if (!swapChain) {
-        TE_LOG_ERROR("Failed to create swap chain");
-        return -1;
-    }
 
     /* 多重采样 */
     auto samples = vk::SampleCountFlagBits::e8;
