@@ -14,7 +14,7 @@ VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(
 {
     if (bindings.empty()) {
         TE_LOG_ERROR("Descriptor set layout bindings cannot be empty");
-        throw std::runtime_error("Descriptor set layout bindings cannot be empty");
+        return;
     }
 
     // 转换为 Vulkan 格式

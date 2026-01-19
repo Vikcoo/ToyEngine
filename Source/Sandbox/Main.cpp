@@ -133,7 +133,7 @@ int main()
     std::vector<TE::InstanceData> instanceData(INSTANCE_COUNT);
     for (uint32_t i = 0; i < INSTANCE_COUNT; ++i) {
         // 为每个实例设置不同的位置/旋转/缩放
-        float angle = i * 1.0f;
+        float angle = i * glm::radians(10.0f);
         instanceData[i].model = glm::rotate(
             glm::translate(glm::mat4(1.0f), glm::vec3(i * 2.0f, 0.0f, 0.0f)),
             angle,
