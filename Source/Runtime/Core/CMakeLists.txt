@@ -4,8 +4,16 @@ project(Core)
 add_library(Core STATIC
     # Public接口
     Public/Log/Log.h
+    Public/Memory/Memory.h
+    Public/Memory/MemoryTag.h
+    Public/Memory/tlsf.h
 	# Private实现
     Private/Log.cpp
+    Private/Memory/Memory.cpp
+    Private/Memory/TlsfAllocator.h
+    Private/Memory/TlsfAllocator.cpp
+    Private/Memory/GlobalNewDelete.cpp
+    Public/Memory/tlsf.c
 )
 
 # 公共包含目录
