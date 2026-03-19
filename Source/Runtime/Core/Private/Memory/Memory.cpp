@@ -13,12 +13,22 @@ namespace TE {
 namespace {
 
 std::mutex g_memoryMutex;
-std::unique_ptr<TlsfAllocator> g_allocator;
+std::shared_ptr<TlsfAllocator> g_allocator;
 
-TlsfAllocator* GetAllocator()
+std::shared_ptr<TlsfAllocator> GetAllocatorSnapshot()
 {
     std::scoped_lock lock(g_memoryMutex);
-    return g_allocator.get();
+    return g_allocator;
+}
+
+std::shared_ptr<TlsfAllocator> GetOrCreateAllocator(std::size_t initialBytes = 256ull * 1024ull * 1024ull)
+{
+    std::scoped_lock lock(g_memoryMutex);
+    if (!g_allocator)
+    {
+        g_allocator = std::make_shared<TlsfAllocator>(initialBytes);
+    }
+    return g_allocator;
 }
 
 } // namespace
@@ -26,18 +36,14 @@ TlsfAllocator* GetAllocator()
 void MemoryInit(std::size_t initialBytes)
 {
     std::scoped_lock lock(g_memoryMutex);
-    if (g_allocator)
-    {
-        return;
-    }
-
-    g_allocator = std::make_unique<TlsfAllocator>(initialBytes);
+    g_allocator = g_allocator ? g_allocator : std::make_shared<TlsfAllocator>(initialBytes);
 }
 
 void MemoryShutdown()
 {
+    std::shared_ptr<TlsfAllocator> old;
     std::scoped_lock lock(g_memoryMutex);
-    g_allocator.reset();
+    old.swap(g_allocator);
 }
 
 void* MemAlloc(std::size_t size, MemoryTag tag)
@@ -47,39 +53,32 @@ void* MemAlloc(std::size_t size, MemoryTag tag)
 
 void* MemAlignedAlloc(std::size_t size, std::size_t align, MemoryTag tag)
 {
-    auto* alloc = GetAllocator();
+    auto alloc = GetOrCreateAllocator();
     if (!alloc)
     {
-        // 默认懒初始化，避免遗漏初始化导致崩溃
-        MemoryInit();
-        alloc = GetAllocator();
-        if (!alloc)
-        {
-            return nullptr;
-        }
+        return nullptr;
     }
     return alloc->Allocate(size, align, tag);
 }
 
-void* MemRealloc(void* ptr, std::size_t newSize, MemoryTag tag)
+void* MemAlignedRealloc(void* ptr, std::size_t newSize, std::size_t align, MemoryTag tag)
 {
-    auto* alloc = GetAllocator();
+    auto alloc = GetOrCreateAllocator();
     if (!alloc)
     {
-        MemoryInit();
-        alloc = GetAllocator();
-        if (!alloc)
-        {
-            return nullptr;
-        }
+        return nullptr;
     }
-    // 这里 align 传 0：保持“最小默认对齐”，如果你后续需要对齐 realloc，再加一个带 align 的 API
-    return alloc->Reallocate(ptr, newSize, 0, tag);
+    return alloc->Reallocate(ptr, newSize, align, tag);
+}
+
+void* MemRealloc(void* ptr, std::size_t newSize, MemoryTag tag)
+{
+    return MemAlignedRealloc(ptr, newSize, 0, tag);
 }
 
 void MemFree(void* ptr)
 {
-    auto* alloc = GetAllocator();
+    auto alloc = GetAllocatorSnapshot();
     if (!alloc)
     {
         return;
@@ -89,7 +88,7 @@ void MemFree(void* ptr)
 
 MemoryStats GetMemoryStats()
 {
-    auto* alloc = GetAllocator();
+    auto alloc = GetAllocatorSnapshot();
     if (!alloc)
     {
         return {};

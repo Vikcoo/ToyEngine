@@ -4,7 +4,10 @@
 #include "Memory/TlsfAllocator.h"
 
 #include <algorithm>
+#include <cassert>
+#include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <new>
 
 #if defined(_WIN32)
@@ -57,6 +60,16 @@ std::size_t TlsfAllocator::DefaultAlign()
     return tlsf_align_size();
 }
 
+std::size_t TlsfAllocator::NormalizeAlign(std::size_t align)
+{
+    const std::size_t baseAlign = DefaultAlign();
+    if (align == 0)
+    {
+        return baseAlign;
+    }
+    return std::max(align, baseAlign);
+}
+
 bool TlsfAllocator::IsPowerOfTwo(std::size_t x)
 {
     return x != 0 && (x & (x - 1)) == 0;
@@ -67,16 +80,33 @@ std::uintptr_t TlsfAllocator::AlignUp(std::uintptr_t x, std::size_t align)
     return (x + (align - 1)) & ~(static_cast<std::uintptr_t>(align - 1));
 }
 
+bool TlsfAllocator::CheckedAdd(std::size_t a, std::size_t b, std::size_t& out)
+{
+    if (a > std::numeric_limits<std::size_t>::max() - b)
+    {
+        return false;
+    }
+    out = a + b;
+    return true;
+}
+
 void* TlsfAllocator::OsReserveCommit(std::size_t bytes, std::size_t align)
 {
-    (void)align;
-
 #if defined(_WIN32)
     // VirtualAlloc 返回的地址通常满足页对齐（>= 4KB），足以覆盖 tlsf_align_size(4/8)。
+    (void)align;
     return ::VirtualAlloc(nullptr, bytes, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 #else
-    // TODO: 非 Windows 平台：mmap/posix_memalign 等
-    return std::aligned_alloc(align, bytes);
+    if (!IsPowerOfTwo(align) || bytes == 0)
+    {
+        return nullptr;
+    }
+    void* ptr = nullptr;
+    if (posix_memalign(&ptr, align, bytes) != 0)
+    {
+        return nullptr;
+    }
+    return ptr;
 #endif
 }
 
@@ -138,7 +168,7 @@ bool TlsfAllocator::AddPoolLocked(std::size_t bytes)
     }
 
     const std::size_t align = DefaultAlign();
-    const std::size_t growBytes = ClampGrow(bytes);
+    const std::size_t growBytes = ClampGrow(bytes > 0 ? bytes : (16ull * 1024ull * 1024ull));
 
     void* base = OsReserveCommit(growBytes, align);
     if (!base)
@@ -162,7 +192,7 @@ bool TlsfAllocator::AddPoolLocked(std::size_t bytes)
     }
 
     // 下一次按几何增长
-    m_nextGrowBytes = ClampGrow(m_nextGrowBytes * 2);
+    m_nextGrowBytes = ClampGrow(growBytes * 2);
     return true;
 }
 
@@ -199,11 +229,11 @@ void TlsfAllocator::OnFreeLocked(MemoryTag tag, std::uint64_t bytes)
     if (idx < m_stats.PerTag.size())
     {
         auto& t = m_stats.PerTag[idx];
-        t.CurrentBytes -= bytes;
+        t.CurrentBytes = (t.CurrentBytes >= bytes) ? (t.CurrentBytes - bytes) : 0;
         t.FreeCount += 1;
     }
 
-    m_stats.CurrentBytes -= bytes;
+    m_stats.CurrentBytes = (m_stats.CurrentBytes >= bytes) ? (m_stats.CurrentBytes - bytes) : 0;
     m_stats.FreeCount += 1;
 }
 
@@ -219,17 +249,25 @@ void* TlsfAllocator::AllocateLocked(std::size_t size, std::size_t align, MemoryT
         return nullptr;
     }
 
-    if (align == 0)
-    {
-        align = DefaultAlign();
-    }
-    align = std::max(align, DefaultAlign());
+    align = NormalizeAlign(align);
     if (!IsPowerOfTwo(align))
     {
         return nullptr;
     }
+    if (align > std::numeric_limits<std::uint32_t>::max())
+    {
+        return nullptr;
+    }
 
-    const std::size_t total = size + sizeof(AllocHeader) + (align - 1);
+    std::size_t total = 0;
+    if (!CheckedAdd(size, sizeof(AllocHeader), total))
+    {
+        return nullptr;
+    }
+    if (!CheckedAdd(total, align - 1, total))
+    {
+        return nullptr;
+    }
 
     void* raw = tlsf_malloc(m_tlsf, total);
     if (!raw)
@@ -252,6 +290,7 @@ void* TlsfAllocator::AllocateLocked(std::size_t size, std::size_t align, MemoryT
     auto* header = reinterpret_cast<AllocHeader*>(userAddr - sizeof(AllocHeader));
     header->RawPtr = raw;
     header->Magic = HeaderMagic;
+    header->Alignment = static_cast<std::uint32_t>(align);
     header->Tag = tag;
     header->RequestedBytes = static_cast<std::uint64_t>(size);
 
@@ -280,7 +319,7 @@ void* TlsfAllocator::Reallocate(void* userPtr, std::size_t newSize, std::size_t 
     }
     if (newSize == 0)
     {
-        Free(userPtr);
+        FreeLocked(userPtr);
         return nullptr;
     }
 
@@ -291,21 +330,31 @@ void* TlsfAllocator::Reallocate(void* userPtr, std::size_t newSize, std::size_t 
         return nullptr;
     }
 
-    // 简化策略：保持语义稳定（尤其是对齐变化时），直接 alloc + memcpy + free
     const std::uint64_t oldSize = oldHeader->RequestedBytes;
+    const std::size_t oldAlign = oldHeader->Alignment != 0
+        ? static_cast<std::size_t>(oldHeader->Alignment)
+        : DefaultAlign();
     const MemoryTag oldTag = oldHeader->Tag;
 
-    void* newPtr = AllocateLocked(newSize, align, tag);
+    // 若未显式传入新对齐，则沿用旧对齐语义。
+    const std::size_t effectiveAlign = (align == 0) ? oldAlign : align;
+    // 若未显式传入新 tag，则沿用旧 tag。
+    const MemoryTag effectiveTag = (tag == MemoryTag::Unknown) ? oldTag : tag;
+
+    if (newSize == oldSize && effectiveAlign == oldAlign && effectiveTag == oldTag)
+    {
+        return userPtr;
+    }
+
+    // 保持语义稳定（尤其是对齐变化时），统一走 alloc + memcpy + free。
+    void* newPtr = AllocateLocked(newSize, effectiveAlign, effectiveTag);
     if (!newPtr)
     {
         return nullptr;
     }
 
     std::memcpy(newPtr, userPtr, static_cast<std::size_t>(std::min<std::uint64_t>(oldSize, newSize)));
-    Free(userPtr);
-
-    // 统计：Free 里已经按 oldTag 扣除；AllocateLocked 已按 tag 增加
-    (void)oldTag;
+    FreeLocked(userPtr);
     return newPtr;
 }
 
@@ -317,10 +366,15 @@ void TlsfAllocator::Free(void* userPtr)
     }
 
     std::scoped_lock lock(m_mutex);
+    FreeLocked(userPtr);
+}
 
+void TlsfAllocator::FreeLocked(void* userPtr)
+{
     auto* header = HeaderFromUserPtr(userPtr);
     if (!header || header->Magic != HeaderMagic)
     {
+        assert(false && "invalid pointer passed to TlsfAllocator::FreeLocked");
         return;
     }
 
