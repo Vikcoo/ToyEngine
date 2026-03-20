@@ -1,5 +1,5 @@
 // ToyEngine Core Module
-// TLSF 分配器封装（引擎默认堆）
+// Tlsf 分配器封装（引擎默认堆）
 
 #pragma once
 
@@ -10,9 +10,9 @@
 #include <mutex>
 #include <vector>
 
-// TLSF 是 C 实现
+// Tlsf 是 C 实现
 extern "C" {
-#include "tlsf.h"
+#include "tlsf/tlsf.h"
 }
 
 namespace TE {
@@ -42,7 +42,7 @@ private:
 
     struct AllocHeader
     {
-        void* RawPtr = nullptr;           // TLSF 返回的原始指针（用于 free/realloc）
+        void* RawPtr = nullptr;           // Tlsf 返回的原始指针（用于 free/realloc）
         std::uint32_t Magic = 0;          // 调试用
         std::uint32_t Alignment = 0;      // 用户请求对齐（realloc 时用于保留原语义）
         MemoryTag Tag = MemoryTag::Unknown;

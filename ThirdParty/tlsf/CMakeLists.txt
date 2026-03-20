@@ -1,9 +1,9 @@
 project(tlsf C)
 
 add_library(tlsf STATIC
-    ${CMAKE_SOURCE_DIR}/Source/Runtime/Core/Public/Memory/tlsf.c
+    tlsf.c
 )
 
 target_include_directories(tlsf PUBLIC
-    ${CMAKE_SOURCE_DIR}/Source/Runtime/Core/Public/Memory
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
