@@ -1,5 +1,6 @@
 // ToyEngine Engine Module
 // 引擎主类 - 管理所有子系统和主循环
+// 重构为 UE5 架构：持有 World + FScene + SceneRenderer
 
 #pragma once
 
@@ -9,68 +10,61 @@
 // 前向声明
 namespace TE {
     class Window;
+    class RHIDevice;
+    class RHICommandBuffer;
+    class TWorld;
+    class FScene;
+    class SceneRenderer;
+    class TCameraComponent;
 }
 
 namespace TE {
 
-/// <summary>
-/// 引擎主类 - Phase 1 精简版
-/// 当前仅管理 Core 和 Platform 子系统
-/// Phase 2+ 将添加 RHI、AssetManager、World、Renderer 等
-/// </summary>
+/// 引擎主类 - UE5 架构单线程版本
+///
+/// 数据流（每帧）：
+/// Engine::Tick(deltaTime)
+///   → PollEvents()
+///   → World::Tick(deltaTime)          // 逻辑更新（旋转立方体等）
+///   → World::SyncToScene(FScene)      // 脏 Component 同步到 Proxy
+///   → CameraComponent::BuildViewInfo  // 构建视图信息
+///   → SceneRenderer::Render(FScene)   // 遍历 Proxy → 收集 DrawCmd → RHI 提交
+///   → SwapBuffers()
 class Engine
 {
 public:
-    /// <summary>
     /// 获取引擎单例
-    /// </summary>
     static Engine& Get();
 
-    /// <summary>
     /// 初始化所有子系统
-    /// 顺序：Log → Memory → Window
-    /// </summary>
+    /// 顺序：Log → Memory → Window → RHI → World/FScene/SceneRenderer → 构建场景
     void Init();
 
-    /// <summary>
     /// 运行主循环（阻塞直到退出）
-    /// </summary>
     void Run();
 
-    /// <summary>
     /// 关闭引擎，清理所有子系统
-    /// 顺序（逆序）：Window → Memory
-    /// </summary>
     void Shutdown();
 
-    /// <summary>
     /// 请求退出主循环
-    /// </summary>
     void RequestExit();
 
-    /// <summary>
     /// 检查是否正在运行
-    /// </summary>
     bool IsRunning() const { return m_Running; }
 
-    /// <summary>
     /// 获取窗口
-    /// </summary>
     Window* GetWindow() const { return m_Window.get(); }
 
-    /// <summary>
+    /// 获取 RHI 设备
+    RHIDevice* GetRHIDevice() const { return m_RHIDevice.get(); }
+
     /// 获取当前帧时间（秒）
-    /// </summary>
     float GetDeltaTime() const { return m_DeltaTime; }
 
-    /// <summary>
     /// 获取总运行时间（秒）
-    /// </summary>
     float GetTotalTime() const { return m_TotalTime; }
 
-    /// <summary>
     /// 获取当前帧数
-    /// </summary>
     uint64_t GetFrameCount() const { return m_FrameCount; }
 
 private:
@@ -81,13 +75,32 @@ private:
     Engine(const Engine&) = delete;
     Engine& operator=(const Engine&) = delete;
 
-    /// <summary>
+    /// 初始化 RHI 子系统（创建 Device 和 CommandBuffer）
+    bool InitRHI();
+
+    /// 构建游戏场景（创建 World、Actor、Component）
+    void BuildScene();
+
+    /// 关闭 RHI 子系统
+    void ShutdownRHI();
+
     /// 单帧更新
-    /// </summary>
     void Tick(float deltaTime);
 
-    // Phase 1 子系统
+    // Platform 子系统
     std::unique_ptr<Window> m_Window;
+
+    // RHI 子系统（全局单例资源）
+    std::unique_ptr<RHIDevice>          m_RHIDevice;
+    std::unique_ptr<RHICommandBuffer>   m_CommandBuffer;
+
+    // UE5 架构核心模块
+    std::unique_ptr<TWorld>         m_World;            // 游戏世界（Actor/Component）
+    std::unique_ptr<FScene>         m_Scene;            // 渲染场景（Proxy 容器）
+    std::unique_ptr<SceneRenderer>  m_SceneRenderer;    // 渲染调度器
+
+    // 相机组件引用（用于每帧构建 ViewInfo）
+    TCameraComponent* m_CameraComponent = nullptr;
 
     // 运行状态
     bool m_Running = false;
@@ -100,6 +113,12 @@ private:
 
     // 用于计算 delta time
     std::chrono::high_resolution_clock::time_point m_LastFrameTime;
+
+    // FPS 统计（滑动窗口均值）
+    float m_FPSAccumulatedTime = 0.0f;   // 窗口内累计时间
+    uint32_t m_FPSAccumulatedFrames = 0; // 窗口内累计帧数
+    float m_CurrentFPS = 0.0f;           // 最近一次计算出的平均 FPS
+    static constexpr float FPS_UPDATE_INTERVAL = 0.5f; // 每 0.5 秒更新一次
 };
 
 } // namespace TE

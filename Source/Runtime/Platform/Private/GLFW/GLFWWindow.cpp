@@ -1,61 +1,44 @@
 // ToyEngine Platform Module
-// GLFW窗口实现
+// GLFW窗口实现 - OpenGL Context + glad
 
 #include "GLFWWindow.h"
 #include "Log/Log.h"
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 
 namespace TE {
 
-// 静态成员初始化
-int GLFWWindow::s_glfwWindowCount = 0;
-
-// GLFW错误回调
-static void GLFWErrorCallback(int error, const char* description)
-{
-    TE_LOG_ERROR("[GLFW Error {}]: {}", error, description);
-}
-
-void GLFWWindow::InitializeGLFW()
-{
-    if (s_glfwWindowCount == 0)
-    {
-        TE_LOG_INFO("[Platform] Initializing GLFW...");
-        
-        // 设置错误回调
-        glfwSetErrorCallback(GLFWErrorCallback);
-        
-        if (!glfwInit())
-        {
-            TE_LOG_CRITICAL("[Platform] Failed to initialize GLFW!");
-            throw std::runtime_error("Failed to initialize GLFW!");
-        }
-        
-        TE_LOG_INFO("[Platform] GLFW initialized successfully");
-    }
-    s_glfwWindowCount++;
-}
-
-void GLFWWindow::ShutdownGLFW()
-{
-    s_glfwWindowCount--;
-    if (s_glfwWindowCount == 0)
-    {
-        TE_LOG_DEBUG("[Platform] Shutting down GLFW...");
-        glfwTerminate();
-    }
-}
+static bool s_glfwInitialized = false;
 
 GLFWWindow::GLFWWindow(const WindowConfig& config)
-    : m_title(config.title)
-    , m_width(config.width)
-    , m_height(config.height)
+    : m_title(config.title), m_width(config.width), m_height(config.height)
 {
-    InitializeGLFW();
+    // 初始化 GLFW（只做一次）
+    if (!s_glfwInitialized)
+    {
+        glfwSetErrorCallback([](int error, const char* desc) {
+            TE_LOG_ERROR("[GLFW Error {}]: {}", error, desc);
+        });
 
-    // 配置GLFW窗口提示
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);  // 不创建OpenGL上下文（为Vulkan准备）
+        if (!glfwInit())
+        {
+            throw std::runtime_error("Failed to initialize GLFW!");
+        }
+
+        s_glfwInitialized = true;
+        TE_LOG_INFO("[Platform] GLFW initialized");
+    }
+
+    // OpenGL Context 配置
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef TE_PLATFORM_MACOS
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
     glfwWindowHint(GLFW_RESIZABLE, config.resizable ? GLFW_TRUE : GLFW_FALSE);
 
     // 创建窗口
@@ -69,22 +52,40 @@ GLFWWindow::GLFWWindow(const WindowConfig& config)
 
     if (!m_window)
     {
-        ShutdownGLFW();
-        TE_LOG_CRITICAL("[Platform] Failed to create GLFW window!");
         throw std::runtime_error("Failed to create GLFW window!");
     }
 
-    TE_LOG_INFO("[Platform] Window created: \"{}\" ({}x{})", m_title, m_width, m_height);
+    // 激活 OpenGL Context
+    glfwMakeContextCurrent(m_window);
 
-    // 将this指针存储到GLFW窗口，以便在静态回调中访问
+    // 加载 OpenGL 函数
+    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+    {
+        glfwDestroyWindow(m_window);
+        throw std::runtime_error("Failed to initialize glad!");
+    }
+
+    TE_LOG_INFO("[Platform] OpenGL {}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+    TE_LOG_INFO("[Platform] Renderer: {}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
+
+    // VSync：默认开启（1 = 锁定刷新率，0 = 不限帧）
+    glfwSwapInterval(1);
+    m_vsyncEnabled = true;
+
+    // 获取实际帧缓冲区尺寸（Retina 屏上可能是逻辑尺寸的 2 倍）
+    int fbW = 0, fbH = 0;
+    glfwGetFramebufferSize(m_window, &fbW, &fbH);
+    m_fbWidth = static_cast<uint32_t>(fbW);
+    m_fbHeight = static_cast<uint32_t>(fbH);
+
+    // 显示窗口并设置回调
+    glfwShowWindow(m_window);
     glfwSetWindowUserPointer(m_window, this);
-
-    // 设置GLFW事件回调
     glfwSetFramebufferSizeCallback(m_window, GLFWFramebufferSizeCallback);
-    glfwSetWindowCloseCallback(m_window, GLFWWindowCloseCallback);
-    glfwSetWindowFocusCallback(m_window, GLFWWindowFocusCallback);
-    glfwSetWindowIconifyCallback(m_window, GLFWWindowIconifyCallback);
     glfwSetKeyCallback(m_window, GLFWKeyCallback);
+
+    TE_LOG_INFO("[Platform] Window created: \"{}\" ({}x{}, framebuffer: {}x{})",
+                m_title, m_width, m_height, m_fbWidth, m_fbHeight);
 }
 
 GLFWWindow::~GLFWWindow()
@@ -95,28 +96,9 @@ GLFWWindow::~GLFWWindow()
         glfwDestroyWindow(m_window);
         m_window = nullptr;
     }
-    ShutdownGLFW();
-}
 
-void GLFWWindow::Show()
-{
-    if (m_window)
-    {
-        glfwShowWindow(m_window);
-    }
-}
-
-void GLFWWindow::Hide()
-{
-    if (m_window)
-    {
-        glfwHideWindow(m_window);
-    }
-}
-
-bool GLFWWindow::ShouldClose() const
-{
-    return m_window ? glfwWindowShouldClose(m_window) : true;
+    glfwTerminate();
+    s_glfwInitialized = false;
 }
 
 void GLFWWindow::PollEvents()
@@ -124,30 +106,36 @@ void GLFWWindow::PollEvents()
     glfwPollEvents();
 }
 
+bool GLFWWindow::ShouldClose() const
+{
+    return m_window ? glfwWindowShouldClose(m_window) : true;
+}
+
 void* GLFWWindow::GetNativeHandle() const
 {
     return m_window;
 }
 
-// 实现用户回调设置
+void GLFWWindow::SwapBuffers()
+{
+    glfwSwapBuffers(m_window);
+}
+
+void GLFWWindow::SetVSync(bool enabled)
+{
+    glfwSwapInterval(enabled ? 1 : 0);
+    m_vsyncEnabled = enabled;
+    TE_LOG_INFO("[Platform] VSync {}", enabled ? "ON (locked to display refresh rate)" : "OFF (unlocked framerate)");
+}
+
+bool GLFWWindow::IsVSyncEnabled() const
+{
+    return m_vsyncEnabled;
+}
+
 void GLFWWindow::SetResizeCallback(WindowResizeCallback callback)
 {
     m_resizeCallback = std::move(callback);
-}
-
-void GLFWWindow::SetCloseCallback(WindowCloseCallback callback)
-{
-    m_CloseCallback = std::move(callback);
-}
-
-void GLFWWindow::SetFocusCallback(WindowFocusCallback callback)
-{
-    m_FocusCallback = std::move(callback);
-}
-
-void GLFWWindow::SetIconifyCallback(WindowIconifyCallback callback)
-{
-    m_iconifyCallback = std::move(callback);
 }
 
 void GLFWWindow::SetKeyCallback(KeyCallback callback)
@@ -155,70 +143,44 @@ void GLFWWindow::SetKeyCallback(KeyCallback callback)
     m_keyCallback = std::move(callback);
 }
 
-void GLFWWindow::SetCursorVisible(bool visible)
-{
-    if (visible){
-        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    }else{
-        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    }
-
-}
-
-// GLFW静态回调 -> 调用用户回调
+// GLFW 静态回调（注意：FramebufferSizeCallback 的参数是帧缓冲区物理像素尺寸）
 void GLFWWindow::GLFWFramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
-    if (auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window)))
-    {
-        // 更新内部尺寸
-        self->m_width = static_cast<uint32_t>(width);
-        self->m_height = static_cast<uint32_t>(height);
-        
-        TE_LOG_DEBUG("[Platform] Window resized: {}x{}", width, height);
-        
-        // 触发用户回调
-        if (self->m_resizeCallback)
-        {
-            self->m_resizeCallback(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-        }
-    }
-}
+    auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+    if (!self) return;
 
-void GLFWWindow::GLFWWindowCloseCallback(GLFWwindow* window)
-{
-    if (const auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window)); self && self->m_CloseCallback)
-    {
-        self->m_CloseCallback();
-    }
-}
+    // 更新帧缓冲区尺寸
+    self->m_fbWidth = static_cast<uint32_t>(width);
+    self->m_fbHeight = static_cast<uint32_t>(height);
 
-void GLFWWindow::GLFWWindowFocusCallback(GLFWwindow* window, int focused)
-{
-    const auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
-    if (self && self->m_FocusCallback)
-    {
-        self->m_FocusCallback(focused == GLFW_TRUE);
-    }
-}
+    // 同时获取逻辑窗口尺寸
+    int winW = 0, winH = 0;
+    glfwGetWindowSize(window, &winW, &winH);
+    self->m_width = static_cast<uint32_t>(winW);
+    self->m_height = static_cast<uint32_t>(winH);
 
-void GLFWWindow::GLFWWindowIconifyCallback(GLFWwindow* window, int iconified)
-{
-    TE_LOG_DEBUG("[Platform] Window IconifyCallback");
-    const auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
-    if (self && self->m_iconifyCallback)
+    // 同步 OpenGL Viewport（使用帧缓冲区像素尺寸）
+    glViewport(0, 0, width, height);
+
+    if (self->m_resizeCallback)
     {
-        self->m_iconifyCallback(iconified == GLFW_TRUE);
+        self->m_resizeCallback(self->m_fbWidth, self->m_fbHeight);
     }
 }
 
 void GLFWWindow::GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    TE_LOG_DEBUG("[Platform] Window KeyCallback");
-    const auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+    auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
     if (self && self->m_keyCallback)
     {
         self->m_keyCallback(key, scancode, action, mods);
     }
 }
-} // namespace TE
 
+// 工厂方法（内联，不需要单独的 PlatformFactory.cpp）
+std::unique_ptr<Window> Window::Create(const WindowConfig& config)
+{
+    return std::make_unique<GLFWWindow>(config);
+}
+
+} // namespace TE

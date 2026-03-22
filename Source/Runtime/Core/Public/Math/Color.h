@@ -49,10 +49,10 @@ public:
     /// 从 0-255 整数构造
     /// </summary>
     Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255)
-        : R(r / 255.0f)
-        , G(g / 255.0f)
-        , B(b / 255.0f)
-        , A(a / 255.0f)
+        : R(static_cast<float>(r) / 255.0f)
+        , G(static_cast<float>(g) / 255.0f)
+        , B(static_cast<float>(b) / 255.0f)
+        , A(static_cast<float>(a) / 255.0f)
     {}
 
     // ==================== 转换 ====================
@@ -126,6 +126,17 @@ public:
 
     bool operator==(const Color& other) const { return R == other.R && G == other.G && B == other.B && A == other.A; }
     bool operator!=(const Color& other) const { return !(*this == other); }
+
+    /// <summary>
+    /// 近似相等比较（考虑浮点误差）
+    /// </summary>
+    bool Equals(const Color& other, float epsilon = 1e-6f) const
+    {
+        return std::abs(R - other.R) <= epsilon &&
+               std::abs(G - other.G) <= epsilon &&
+               std::abs(B - other.B) <= epsilon &&
+               std::abs(A - other.A) <= epsilon;
+    }
 
     // ==================== 预设颜色 ====================
 

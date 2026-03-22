@@ -4,6 +4,7 @@
 #pragma once
 
 #include "MathTypes.h"
+#include "MathUtils.h"
 
 namespace TE {
 

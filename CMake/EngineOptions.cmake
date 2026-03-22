@@ -3,7 +3,7 @@
 
 # RHI 后端选择（Phase 2+ 使用，Phase 1 仅占位）
 option(TE_RHI_VULKAN "Build Vulkan RHI backend" OFF)
-option(TE_RHI_OPENGL "Build OpenGL RHI backend" OFF)
+option(TE_RHI_OPENGL "Build OpenGL RHI backend" ON)
 option(TE_RHI_D3D12 "Build D3D12 RHI backend" OFF)
 
 # 应用选项（根 CMakeLists.txt 已定义，此处留作参考）

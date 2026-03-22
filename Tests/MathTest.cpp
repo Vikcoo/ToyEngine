@@ -7,6 +7,8 @@
 #include "Math/Color.h"
 #include "Math/Random.h"
 #include "Math/Geometry.h"
+#include "Math/Frustum.h"
+#include "Math/VectorInt.h"
 #include "Memory/Memory.h"
 
 #include <iostream>
@@ -523,6 +525,467 @@ bool TestGeometry()
     return true;
 }
 
+// ==================== Bug 修复测试 ====================
+
+bool TestBugFixes()
+{
+    std::cout << "[MathTest] Bug fixes...\n";
+
+    // InverseLerp 除零保护
+    float result = TE::Math::InverseLerp(5.0f, 5.0f, 5.0f);
+    if (!ApproxEqual(result, 0.0f)) {
+        std::cerr << "[FAIL] InverseLerp divide-by-zero protection\n";
+        return false;
+    }
+
+    // InverseLerp 正常情况
+    if (!ApproxEqual(TE::Math::InverseLerp(0.0f, 10.0f, 5.0f), 0.5f)) {
+        std::cerr << "[FAIL] InverseLerp normal case\n";
+        return false;
+    }
+
+    // SmoothStep 除零保护
+    float ssResult = TE::Math::SmoothStep(3.0f, 3.0f, 3.0f);
+    if (!ApproxEqual(ssResult, 0.0f)) {
+        std::cerr << "[FAIL] SmoothStep divide-by-zero protection\n";
+        return false;
+    }
+
+    // SmootherStep 除零保护
+    float sssResult = TE::Math::SmootherStep(3.0f, 3.0f, 3.0f);
+    if (!ApproxEqual(sssResult, 0.0f)) {
+        std::cerr << "[FAIL] SmootherStep divide-by-zero protection\n";
+        return false;
+    }
+
+    // Remap 除零保护
+    float remapResult = TE::Math::Remap(5.0f, 5.0f, 5.0f, 0.0f, 100.0f);
+    if (!ApproxEqual(remapResult, 0.0f)) {
+        std::cerr << "[FAIL] Remap divide-by-zero protection\n";
+        return false;
+    }
+
+    // Remap 正常情况
+    if (!ApproxEqual(TE::Math::Remap(5.0f, 0.0f, 10.0f, 0.0f, 100.0f), 50.0f)) {
+        std::cerr << "[FAIL] Remap normal case\n";
+        return false;
+    }
+
+    // Color Equals
+    TE::Color c1(0.5f, 0.5f, 0.5f, 1.0f);
+    TE::Color c2(0.5f + 1e-7f, 0.5f, 0.5f, 1.0f);
+    if (!c1.Equals(c2)) {
+        std::cerr << "[FAIL] Color Equals with small delta\n";
+        return false;
+    }
+
+    // Color uint8_t constructor
+    TE::Color fromByte(static_cast<uint8_t>(255), static_cast<uint8_t>(128), static_cast<uint8_t>(0), static_cast<uint8_t>(255));
+    if (!ApproxEqual(fromByte.R, 1.0f) || fromByte.G < 0.49f || fromByte.G > 0.51f) {
+        std::cerr << "[FAIL] Color uint8_t constructor\n";
+        return false;
+    }
+
+    std::cout << "[MathTest] Bug fixes passed.\n";
+    return true;
+}
+
+// ==================== 向量扩展测试 ====================
+
+bool TestVectorExtensions()
+{
+    std::cout << "[MathTest] Vector extensions...\n";
+
+    // Vector2 Equals
+    TE::Vector2 v2a(1.0f, 2.0f);
+    TE::Vector2 v2b(1.0f + 1e-7f, 2.0f - 1e-7f);
+    if (!v2a.Equals(v2b)) {
+        std::cerr << "[FAIL] Vector2 Equals\n";
+        return false;
+    }
+
+    // Vector2 Min/Max
+    TE::Vector2 v2min = TE::Vector2::Min(TE::Vector2(1.0f, 4.0f), TE::Vector2(3.0f, 2.0f));
+    if (!ApproxEqual(v2min.X, 1.0f) || !ApproxEqual(v2min.Y, 2.0f)) {
+        std::cerr << "[FAIL] Vector2 Min\n";
+        return false;
+    }
+
+    // Vector3 Equals
+    TE::Vector3 v3a(1.0f, 2.0f, 3.0f);
+    TE::Vector3 v3b(1.0f + 1e-7f, 2.0f, 3.0f - 1e-7f);
+    if (!v3a.Equals(v3b)) {
+        std::cerr << "[FAIL] Vector3 Equals\n";
+        return false;
+    }
+
+    // Vector3 Angle
+    TE::Vector3 right = TE::Vector3::Right;
+    TE::Vector3 up = TE::Vector3::Up;
+    float angle = TE::Vector3::Angle(right, up);
+    if (!ApproxEqual(angle, TE::Math::HALF_PI, 1e-4f)) {
+        std::cerr << "[FAIL] Vector3 Angle (90 degrees)\n";
+        return false;
+    }
+
+    // Vector3 Angle — 同方向应为 0
+    float zeroAngle = TE::Vector3::Angle(right, right);
+    if (!ApproxEqual(zeroAngle, 0.0f, 1e-4f)) {
+        std::cerr << "[FAIL] Vector3 Angle (same direction)\n";
+        return false;
+    }
+
+    // Vector3 Min/Max
+    TE::Vector3 v3min = TE::Vector3::Min(TE::Vector3(1.0f, 5.0f, 3.0f), TE::Vector3(4.0f, 2.0f, 6.0f));
+    if (!ApproxEqual(v3min, TE::Vector3(1.0f, 2.0f, 3.0f))) {
+        std::cerr << "[FAIL] Vector3 Min\n";
+        return false;
+    }
+
+    TE::Vector3 v3max = TE::Vector3::Max(TE::Vector3(1.0f, 5.0f, 3.0f), TE::Vector3(4.0f, 2.0f, 6.0f));
+    if (!ApproxEqual(v3max, TE::Vector3(4.0f, 5.0f, 6.0f))) {
+        std::cerr << "[FAIL] Vector3 Max\n";
+        return false;
+    }
+
+    // Vector3 ClampLength
+    TE::Vector3 longVec(10.0f, 0.0f, 0.0f);
+    TE::Vector3 clamped = longVec.ClampLength(5.0f);
+    if (!ApproxEqual(clamped.Length(), 5.0f, 1e-4f)) {
+        std::cerr << "[FAIL] Vector3 ClampLength\n";
+        return false;
+    }
+    // 短向量不应被修改
+    TE::Vector3 shortVec(1.0f, 0.0f, 0.0f);
+    TE::Vector3 notClamped = shortVec.ClampLength(5.0f);
+    if (!ApproxEqual(notClamped, shortVec)) {
+        std::cerr << "[FAIL] Vector3 ClampLength (no clamp needed)\n";
+        return false;
+    }
+
+    // Vector3 MoveTowards
+    TE::Vector3 current(0.0f, 0.0f, 0.0f);
+    TE::Vector3 target(10.0f, 0.0f, 0.0f);
+    TE::Vector3 moved = TE::Vector3::MoveTowards(current, target, 3.0f);
+    if (!ApproxEqual(moved, TE::Vector3(3.0f, 0.0f, 0.0f))) {
+        std::cerr << "[FAIL] Vector3 MoveTowards\n";
+        return false;
+    }
+    // 当距离小于 maxDelta 时应到达目标
+    TE::Vector3 nearTarget(9.0f, 0.0f, 0.0f);
+    TE::Vector3 reached = TE::Vector3::MoveTowards(nearTarget, target, 5.0f);
+    if (!ApproxEqual(reached, target)) {
+        std::cerr << "[FAIL] Vector3 MoveTowards (reach target)\n";
+        return false;
+    }
+
+    // Vector4 Equals
+    TE::Vector4 v4a(1.0f, 2.0f, 3.0f, 4.0f);
+    TE::Vector4 v4b(1.0f + 1e-7f, 2.0f, 3.0f, 4.0f - 1e-7f);
+    if (!v4a.Equals(v4b)) {
+        std::cerr << "[FAIL] Vector4 Equals\n";
+        return false;
+    }
+
+    // Quat Equals
+    TE::Quat q1(0.0f, 0.7071f, 0.0f, 0.7071f);
+    TE::Quat q2(0.0f, 0.7071f + 1e-7f, 0.0f, 0.7071f);
+    if (!q1.Equals(q2)) {
+        std::cerr << "[FAIL] Quat Equals\n";
+        return false;
+    }
+    // q 和 -q 应视为相等旋转
+    TE::Quat q3 = -q1;
+    if (!q1.Equals(q3)) {
+        std::cerr << "[FAIL] Quat Equals (q == -q)\n";
+        return false;
+    }
+
+    std::cout << "[MathTest] Vector extensions passed.\n";
+    return true;
+}
+
+// ==================== 矩阵分解测试 ====================
+
+bool TestMatrixDecompose()
+{
+    std::cout << "[MathTest] Matrix decompose...\n";
+
+    // Matrix3 Determinant
+    TE::Matrix3 m3Identity;
+    float det3 = m3Identity.Determinant();
+    if (!ApproxEqual(det3, 1.0f)) {
+        std::cerr << "[FAIL] Matrix3 Determinant (identity)\n";
+        return false;
+    }
+
+    // Matrix4 Determinant
+    float det4 = TE::Matrix4::Identity.Determinant();
+    if (!ApproxEqual(det4, 1.0f)) {
+        std::cerr << "[FAIL] Matrix4 Determinant (identity)\n";
+        return false;
+    }
+
+    // Scale matrix determinant = sx * sy * sz
+    TE::Matrix4 scaleMat = TE::Matrix4::Scale(TE::Vector3(2.0f, 3.0f, 4.0f));
+    float scaleDet = scaleMat.Determinant();
+    if (!ApproxEqual(scaleDet, 24.0f)) {
+        std::cerr << "[FAIL] Matrix4 Determinant (scale)\n";
+        return false;
+    }
+
+    // Matrix4 ToMatrix3
+    TE::Matrix4 rot = TE::Matrix4::Rotate(TE::Math::PI / 4.0f, TE::Vector3::Up);
+    TE::Matrix3 rot3 = rot.ToMatrix3();
+    // 旋转矩阵的 3x3 部分行列式应接近 1
+    float rot3Det = rot3.Determinant();
+    if (!ApproxEqual(rot3Det, 1.0f, 1e-4f)) {
+        std::cerr << "[FAIL] Matrix4 ToMatrix3 rotation determinant\n";
+        return false;
+    }
+
+    // Matrix4 GetTranslation
+    TE::Matrix4 transMat = TE::Matrix4::Translate(TE::Vector3(10.0f, 20.0f, 30.0f));
+    TE::Vector3 trans = transMat.GetTranslation();
+    if (!ApproxEqual(trans, TE::Vector3(10.0f, 20.0f, 30.0f))) {
+        std::cerr << "[FAIL] Matrix4 GetTranslation\n";
+        return false;
+    }
+
+    // Matrix4 GetScale
+    TE::Vector3 scaleVec = scaleMat.GetScale();
+    if (!ApproxEqual(scaleVec, TE::Vector3(2.0f, 3.0f, 4.0f))) {
+        std::cerr << "[FAIL] Matrix4 GetScale\n";
+        return false;
+    }
+
+    // Matrix4 Decompose — 组合一个 TRS 矩阵再分解
+    TE::Vector3 expectedTrans(5.0f, 10.0f, 15.0f);
+    TE::Vector3 expectedScale(2.0f, 3.0f, 4.0f);
+    TE::Quat expectedRot(TE::Vector3::Up, TE::Math::PI / 6.0f); // 30 度绕 Y 旋转
+
+    TE::Matrix4 trsMat = TE::Matrix4::Translate(expectedTrans) *
+                          expectedRot.ToMatrix4() *
+                          TE::Matrix4::Scale(expectedScale);
+
+    TE::Vector3 decTrans, decScale;
+    TE::Quat decRot;
+    bool success = trsMat.Decompose(decTrans, decRot, decScale);
+    if (!success) {
+        std::cerr << "[FAIL] Matrix4 Decompose returned false\n";
+        return false;
+    }
+    if (!ApproxEqual(decTrans, expectedTrans)) {
+        std::cerr << "[FAIL] Matrix4 Decompose translation\n";
+        return false;
+    }
+    if (!ApproxEqual(decScale, expectedScale, 1e-3f)) {
+        std::cerr << "[FAIL] Matrix4 Decompose scale\n";
+        return false;
+    }
+
+    // GetNormalMatrix — 正交旋转矩阵的法线矩阵应等于旋转矩阵本身
+    TE::Matrix3 normalMat = rot.GetNormalMatrix();
+    float normalDet = normalMat.Determinant();
+    if (!ApproxEqual(normalDet, 1.0f, 1e-3f)) {
+        std::cerr << "[FAIL] Matrix4 GetNormalMatrix determinant\n";
+        return false;
+    }
+
+    std::cout << "[MathTest] Matrix decompose passed.\n";
+    return true;
+}
+
+// ==================== Frustum 测试 ====================
+
+bool TestFrustum()
+{
+    std::cout << "[MathTest] Frustum...\n";
+
+    // 创建一个简单的视图投影矩阵
+    TE::Matrix4 view = TE::Matrix4::LookAt(
+        TE::Vector3(0.0f, 0.0f, 5.0f),   // eye
+        TE::Vector3(0.0f, 0.0f, 0.0f),   // center
+        TE::Vector3(0.0f, 1.0f, 0.0f)    // up
+    );
+    TE::Matrix4 proj = TE::Matrix4::Perspective(
+        TE::Math::DegToRad(60.0f),  // fov
+        1.0f,                         // aspect
+        0.1f,                         // near
+        100.0f                        // far
+    );
+    TE::Matrix4 vp = proj * view;
+
+    TE::Frustum frustum = TE::Frustum::FromViewProjection(vp);
+
+    // 原点应该在视锥体内（相机在 z=5 看向原点，原点在 near 和 far 之间）
+    if (!frustum.ContainsPoint(TE::Vector3(0.0f, 0.0f, 0.0f))) {
+        std::cerr << "[FAIL] Frustum ContainsPoint (origin)\n";
+        return false;
+    }
+
+    // 相机后方的点应该不在视锥体内
+    if (frustum.ContainsPoint(TE::Vector3(0.0f, 0.0f, 10.0f))) {
+        std::cerr << "[FAIL] Frustum ContainsPoint (behind camera)\n";
+        return false;
+    }
+
+    // 非常远的点应该不在视锥体内
+    if (frustum.ContainsPoint(TE::Vector3(0.0f, 0.0f, -200.0f))) {
+        std::cerr << "[FAIL] Frustum ContainsPoint (beyond far plane)\n";
+        return false;
+    }
+
+    // AABB 相交测试 — 原点处的包围盒应与视锥体相交
+    TE::BoundingBox boxInFrustum(TE::Vector3(-1.0f, -1.0f, -1.0f), TE::Vector3(1.0f, 1.0f, 1.0f));
+    if (!frustum.IntersectsAABB(boxInFrustum)) {
+        std::cerr << "[FAIL] Frustum IntersectsAABB (center box)\n";
+        return false;
+    }
+
+    // 相机后方的包围盒不应与视锥体相交
+    TE::BoundingBox boxBehind(TE::Vector3(-1.0f, -1.0f, 9.0f), TE::Vector3(1.0f, 1.0f, 11.0f));
+    if (frustum.IntersectsAABB(boxBehind)) {
+        std::cerr << "[FAIL] Frustum IntersectsAABB (behind camera)\n";
+        return false;
+    }
+
+    // 球体相交测试 — 原点处的球应与视锥体相交
+    TE::BoundingSphere sphereIn(TE::Vector3::Zero, 2.0f);
+    if (!frustum.IntersectsSphere(sphereIn)) {
+        std::cerr << "[FAIL] Frustum IntersectsSphere (center)\n";
+        return false;
+    }
+
+    // 远处的球不应与视锥体相交
+    TE::BoundingSphere sphereFar(TE::Vector3(0.0f, 0.0f, -500.0f), 1.0f);
+    if (frustum.IntersectsSphere(sphereFar)) {
+        std::cerr << "[FAIL] Frustum IntersectsSphere (far away)\n";
+        return false;
+    }
+
+    std::cout << "[MathTest] Frustum passed.\n";
+    return true;
+}
+
+// ==================== IntVector/Rect 测试 ====================
+
+bool TestIntVectors()
+{
+    std::cout << "[MathTest] IntVector/Rect...\n";
+
+    // IntVector2 基本运算
+    TE::IntVector2 iv2a(3, 4);
+    TE::IntVector2 iv2b(1, 2);
+    TE::IntVector2 iv2sum = iv2a + iv2b;
+    if (iv2sum.X != 4 || iv2sum.Y != 6) {
+        std::cerr << "[FAIL] IntVector2 addition\n";
+        return false;
+    }
+
+    // IntVector2 ToFloat
+    TE::Vector2 fv2 = iv2a.ToFloat();
+    if (!ApproxEqual(fv2.X, 3.0f) || !ApproxEqual(fv2.Y, 4.0f)) {
+        std::cerr << "[FAIL] IntVector2 ToFloat\n";
+        return false;
+    }
+
+    // IntVector2 FromFloat
+    TE::IntVector2 fromFloat = TE::IntVector2::FromFloat(TE::Vector2(3.7f, 4.2f));
+    if (fromFloat.X != 3 || fromFloat.Y != 4) {
+        std::cerr << "[FAIL] IntVector2 FromFloat\n";
+        return false;
+    }
+
+    // IntVector2 Min/Max
+    TE::IntVector2 minIV = TE::IntVector2::Min(TE::IntVector2(1, 4), TE::IntVector2(3, 2));
+    if (minIV.X != 1 || minIV.Y != 2) {
+        std::cerr << "[FAIL] IntVector2 Min\n";
+        return false;
+    }
+
+    // IntVector3 基本运算
+    TE::IntVector3 iv3(1, 2, 3);
+    TE::IntVector3 iv3scaled = iv3 * 2;
+    if (iv3scaled.X != 2 || iv3scaled.Y != 4 || iv3scaled.Z != 6) {
+        std::cerr << "[FAIL] IntVector3 scalar multiply\n";
+        return false;
+    }
+
+    // IntVector3 常量
+    if (TE::IntVector3::Zero.X != 0 || TE::IntVector3::One.X != 1) {
+        std::cerr << "[FAIL] IntVector3 constants\n";
+        return false;
+    }
+
+    // Rect 基本操作
+    TE::Rect rect(10.0f, 20.0f, 100.0f, 50.0f);
+    if (!ApproxEqual(rect.GetRight(), 110.0f) || !ApproxEqual(rect.GetBottom(), 70.0f)) {
+        std::cerr << "[FAIL] Rect edges\n";
+        return false;
+    }
+
+    // Rect Contains
+    if (!rect.Contains(TE::Vector2(50.0f, 40.0f))) {
+        std::cerr << "[FAIL] Rect Contains (inside)\n";
+        return false;
+    }
+    if (rect.Contains(TE::Vector2(0.0f, 0.0f))) {
+        std::cerr << "[FAIL] Rect Contains (outside)\n";
+        return false;
+    }
+
+    // Rect Intersects
+    TE::Rect rect2(50.0f, 40.0f, 200.0f, 100.0f);
+    if (!rect.Intersects(rect2)) {
+        std::cerr << "[FAIL] Rect Intersects\n";
+        return false;
+    }
+
+    // Rect Intersection
+    TE::Rect inter = rect.Intersection(rect2);
+    if (!ApproxEqual(inter.X, 50.0f) || !ApproxEqual(inter.Y, 40.0f) ||
+        !ApproxEqual(inter.Width, 60.0f) || !ApproxEqual(inter.Height, 30.0f)) {
+        std::cerr << "[FAIL] Rect Intersection\n";
+        return false;
+    }
+
+    // Rect FromMinMax
+    TE::Rect rectMM = TE::Rect::FromMinMax(10.0f, 20.0f, 110.0f, 70.0f);
+    if (rectMM != rect) {
+        std::cerr << "[FAIL] Rect FromMinMax\n";
+        return false;
+    }
+
+    // IntRect 基本操作
+    TE::IntRect intRect(0, 0, 1920, 1080);
+    if (intRect.GetArea() != 1920 * 1080) {
+        std::cerr << "[FAIL] IntRect GetArea\n";
+        return false;
+    }
+
+    // IntRect Contains
+    if (!intRect.Contains(TE::IntVector2(960, 540))) {
+        std::cerr << "[FAIL] IntRect Contains\n";
+        return false;
+    }
+    if (intRect.Contains(TE::IntVector2(1920, 1080))) {
+        // IntRect 使用半开区间 [min, max)
+        std::cerr << "[FAIL] IntRect Contains (boundary)\n";
+        return false;
+    }
+
+    // IntRect ToFloat
+    TE::Rect floatRect = intRect.ToFloat();
+    if (!ApproxEqual(floatRect.Width, 1920.0f) || !ApproxEqual(floatRect.Height, 1080.0f)) {
+        std::cerr << "[FAIL] IntRect ToFloat\n";
+        return false;
+    }
+
+    std::cout << "[MathTest] IntVector/Rect passed.\n";
+    return true;
+}
+
 } // anonymous namespace
 
 int main()
@@ -543,6 +1006,11 @@ int main()
     allPassed &= TestColor();
     allPassed &= TestRandom();
     allPassed &= TestGeometry();
+    allPassed &= TestBugFixes();
+    allPassed &= TestVectorExtensions();
+    allPassed &= TestMatrixDecompose();
+    allPassed &= TestFrustum();
+    allPassed &= TestIntVectors();
 
     TE::MemoryShutdown();
 

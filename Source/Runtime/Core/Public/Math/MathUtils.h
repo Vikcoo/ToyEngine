@@ -188,27 +188,39 @@ inline float Lerp(float a, float b, float t)
 
 /// <summary>
 /// 反向线性插值（获取 t 值）
+/// 当 a == b 时返回 0 避免除零
 /// </summary>
 inline float InverseLerp(float a, float b, float value)
 {
-    return (value - a) / (b - a);
+    float denom = b - a;
+    if (std::abs(denom) < EPSILON)
+        return 0.0f;
+    return (value - a) / denom;
 }
 
 /// <summary>
 /// 平滑步进（Hermite 插值）
+/// 当 edge0 == edge1 时返回 0
 /// </summary>
 inline float SmoothStep(float edge0, float edge1, float value)
 {
-    float t = Saturate((value - edge0) / (edge1 - edge0));
+    float denom = edge1 - edge0;
+    if (std::abs(denom) < EPSILON)
+        return 0.0f;
+    float t = Saturate((value - edge0) / denom);
     return t * t * (3.0f - 2.0f * t);
 }
 
 /// <summary>
 /// 更平滑的步进（更高阶）
+/// 当 edge0 == edge1 时返回 0
 /// </summary>
 inline float SmootherStep(float edge0, float edge1, float value)
 {
-    float t = Saturate((value - edge0) / (edge1 - edge0));
+    float denom = edge1 - edge0;
+    if (std::abs(denom) < EPSILON)
+        return 0.0f;
+    float t = Saturate((value - edge0) / denom);
     return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
 }
 
@@ -374,10 +386,14 @@ inline Vector3 Slerp(const Vector3& a, const Vector3& b, float t)
 
 /// <summary>
 /// 将一个范围的值映射到另一个范围
+/// 当 fromMin == fromMax 时返回 toMin 避免除零
 /// </summary>
 inline float Remap(float value, float fromMin, float fromMax, float toMin, float toMax)
 {
-    float t = (value - fromMin) / (fromMax - fromMin);
+    float denom = fromMax - fromMin;
+    if (std::abs(denom) < EPSILON)
+        return toMin;
+    float t = (value - fromMin) / denom;
     return toMin + t * (toMax - toMin);
 }
 

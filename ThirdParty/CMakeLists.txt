@@ -8,3 +8,6 @@ add_subdirectory(glfw-3.4)
 
 # TLSF allocator
 add_subdirectory(tlsf)
+
+# glad - OpenGL Loader
+add_subdirectory(glad)

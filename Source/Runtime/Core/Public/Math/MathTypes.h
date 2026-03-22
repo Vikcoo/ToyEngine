@@ -12,6 +12,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <cmath>
+#include <algorithm>
 
 namespace TE {
 
@@ -81,6 +82,30 @@ struct Vector2
     static float Dot(const Vector2& a, const Vector2& b) { return a.X * b.X + a.Y * b.Y; }
     static float Distance(const Vector2& a, const Vector2& b) { return (a - b).Length(); }
     static float DistanceSquared(const Vector2& a, const Vector2& b) { return (a - b).LengthSquared(); }
+
+    /// <summary>
+    /// 近似相等比较（考虑浮点误差）
+    /// </summary>
+    bool Equals(const Vector2& other, float epsilon = 1e-6f) const
+    {
+        return std::abs(X - other.X) <= epsilon && std::abs(Y - other.Y) <= epsilon;
+    }
+
+    /// <summary>
+    /// 逐分量取最小值
+    /// </summary>
+    static Vector2 Min(const Vector2& a, const Vector2& b)
+    {
+        return Vector2(std::min(a.X, b.X), std::min(a.Y, b.Y));
+    }
+
+    /// <summary>
+    /// 逐分量取最大值
+    /// </summary>
+    static Vector2 Max(const Vector2& a, const Vector2& b)
+    {
+        return Vector2(std::max(a.X, b.X), std::max(a.Y, b.Y));
+    }
 
     // 线性插值
     static Vector2 Lerp(const Vector2& a, const Vector2& b, float t)
@@ -166,6 +191,113 @@ struct Vector3
         return a + (b - a) * t;
     }
 
+    /// <summary>
+    /// 近似相等比较（考虑浮点误差）
+    /// </summary>
+    bool Equals(const Vector3& other, float epsilon = 1e-6f) const
+    {
+        return std::abs(X - other.X) <= epsilon &&
+               std::abs(Y - other.Y) <= epsilon &&
+               std::abs(Z - other.Z) <= epsilon;
+    }
+
+    /// <summary>
+    /// 逐分量取最小值
+    /// </summary>
+    static Vector3 Min(const Vector3& a, const Vector3& b)
+    {
+        return Vector3(std::min(a.X, b.X), std::min(a.Y, b.Y), std::min(a.Z, b.Z));
+    }
+
+    /// <summary>
+    /// 逐分量取最大值
+    /// </summary>
+    static Vector3 Max(const Vector3& a, const Vector3& b)
+    {
+        return Vector3(std::max(a.X, b.X), std::max(a.Y, b.Y), std::max(a.Z, b.Z));
+    }
+
+    /// <summary>
+    /// 计算两个向量之间的夹角（弧度）
+    /// </summary>
+    static float Angle(const Vector3& a, const Vector3& b)
+    {
+        float lenProduct = a.Length() * b.Length();
+        if (lenProduct < 1e-6f)
+            return 0.0f;
+        float dot = Dot(a, b) / lenProduct;
+        // Clamp 以避免 acos 参数超出 [-1, 1]
+        dot = std::max(-1.0f, std::min(1.0f, dot));
+        return std::acos(dot);
+    }
+
+    /// <summary>
+    /// 限制向量长度不超过 maxLength
+    /// </summary>
+    Vector3 ClampLength(float maxLength) const
+    {
+        float lenSq = LengthSquared();
+        if (lenSq > maxLength * maxLength)
+        {
+            float len = std::sqrt(lenSq);
+            return *this * (maxLength / len);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 从当前位置向目标移动，每次最多移动 maxDelta 距离
+    /// </summary>
+    static Vector3 MoveTowards(const Vector3& current, const Vector3& target, float maxDelta)
+    {
+        Vector3 diff = target - current;
+        float dist = diff.Length();
+        if (dist <= maxDelta || dist < 1e-6f)
+            return target;
+        return current + diff * (maxDelta / dist);
+    }
+
+    /// <summary>
+    /// 弹簧阻尼插值（临界阻尼弹簧，常用于摄像机跟随）
+    /// </summary>
+    /// <param name="current">当前位置</param>
+    /// <param name="target">目标位置</param>
+    /// <param name="currentVelocity">当前速度（会被修改）</param>
+    /// <param name="smoothTime">到达目标的大致时间</param>
+    /// <param name="deltaTime">帧时间间隔</param>
+    /// <param name="maxSpeed">最大速度限制</param>
+    static Vector3 SmoothDamp(const Vector3& current, const Vector3& target, Vector3& currentVelocity,
+                               float smoothTime, float deltaTime, float maxSpeed = 1e30f)
+    {
+        // 基于 Unity 的临界阻尼弹簧实现
+        smoothTime = std::max(0.0001f, smoothTime);
+        float omega = 2.0f / smoothTime;
+        float x = omega * deltaTime;
+        // 近似 exp(-x)
+        float exp_factor = 1.0f / (1.0f + x + 0.48f * x * x + 0.235f * x * x * x);
+
+        Vector3 diff = current - target;
+        Vector3 origTarget = target;
+
+        // 限制最大位移
+        float maxDist = maxSpeed * smoothTime;
+        diff = diff.ClampLength(maxDist);
+        Vector3 clampedTarget = current - diff;
+
+        Vector3 temp = (currentVelocity + diff * omega) * deltaTime;
+        currentVelocity = (currentVelocity - temp * omega) * exp_factor;
+        Vector3 result = clampedTarget + (diff + temp) * exp_factor;
+
+        // 防止超调
+        if (Dot(origTarget - current, result - origTarget) > 0.0f)
+        {
+            result = origTarget;
+            currentVelocity = (result - origTarget) * (1.0f / deltaTime);
+        }
+
+        return result;
+    }
+
     //  todo 反射和投影
     Vector3 Reflect(const Vector3& normal) const
     {
@@ -242,6 +374,33 @@ struct Vector4
     }
 
     static float Dot(const Vector4& a, const Vector4& b) { return a.X * b.X + a.Y * b.Y + a.Z * b.Z + a.W * b.W; }
+
+    /// <summary>
+    /// 近似相等比较（考虑浮点误差）
+    /// </summary>
+    bool Equals(const Vector4& other, float epsilon = 1e-6f) const
+    {
+        return std::abs(X - other.X) <= epsilon &&
+               std::abs(Y - other.Y) <= epsilon &&
+               std::abs(Z - other.Z) <= epsilon &&
+               std::abs(W - other.W) <= epsilon;
+    }
+
+    /// <summary>
+    /// 逐分量取最小值
+    /// </summary>
+    static Vector4 Min(const Vector4& a, const Vector4& b)
+    {
+        return Vector4(std::min(a.X, b.X), std::min(a.Y, b.Y), std::min(a.Z, b.Z), std::min(a.W, b.W));
+    }
+
+    /// <summary>
+    /// 逐分量取最大值
+    /// </summary>
+    static Vector4 Max(const Vector4& a, const Vector4& b)
+    {
+        return Vector4(std::max(a.X, b.X), std::max(a.Y, b.Y), std::max(a.Z, b.Z), std::max(a.W, b.W));
+    }
 
     // 线性插值
     static Vector4 Lerp(const Vector4& a, const Vector4& b, float t)
@@ -335,6 +494,11 @@ struct Matrix3
     // 逆矩阵（使用 glm 实现）
     Matrix3 Inverse() const;
 
+    /// <summary>
+    /// 计算 3x3 矩阵行列式
+    /// </summary>
+    float Determinant() const;
+
     // 获取原始数据指针（用于传递给图形 API）
     const float* Data() const { return &M[0][0]; }
 };
@@ -425,12 +589,55 @@ struct Matrix4
     // 获取原始数据指针（用于传递给图形 API）
     const float* Data() const { return &M[0][0]; }
 
+    /// <summary>
+    /// 计算 4x4 矩阵行列式
+    /// </summary>
+    float Determinant() const;
+
+    /// <summary>
+    /// 获取法线变换矩阵（逆转置 3x3 矩阵）
+    /// 在 PBR 渲染中用于将法线从模型空间变换到世界空间
+    /// </summary>
+    Matrix3 GetNormalMatrix() const;
+
+    /// <summary>
+    /// 从 TRS 矩阵分解出平移、旋转和缩放分量
+    /// </summary>
+    /// <returns>分解是否成功</returns>
+    bool Decompose(Vector3& outTranslation, Quat& outRotation, Vector3& outScale) const;
+
+    /// <summary>
+    /// 快捷方法：获取平移分量（矩阵第 4 列）
+    /// </summary>
+    Vector3 GetTranslation() const;
+
+    /// <summary>
+    /// 快捷方法：获取缩放分量（各列向量长度）
+    /// </summary>
+    Vector3 GetScale() const;
+
+    /// <summary>
+    /// 快捷方法：获取旋转分量（去缩放后转为四元数）
+    /// </summary>
+    Quat GetRotation() const;
+
+    /// <summary>
+    /// 提取左上角 3x3 旋转/缩放矩阵
+    /// </summary>
+    Matrix3 ToMatrix3() const;
+
     // 变换辅助函数
     static Matrix4 Translate(const Vector3& translation);
     static Matrix4 Rotate(float angleRadians, const Vector3& axis);
     static Matrix4 Scale(const Vector3& scale);
     static Matrix4 LookAt(const Vector3& eye, const Vector3& center, const Vector3& up);
     static Matrix4 Perspective(float fovRadians, float aspect, float nearPlane, float farPlane);
+
+    /// OpenGL 专用透视投影（NDC 深度范围 [-1, 1]）
+    /// 项目默认 GLM_FORCE_DEPTH_ZERO_TO_ONE 是 Vulkan 风格 [0,1]，
+    /// macOS OpenGL 4.1 不支持 glClipControl，需要使用 [-1,1] 范围
+    static Matrix4 PerspectiveGL(float fovRadians, float aspect, float nearPlane, float farPlane);
+
     static Matrix4 Orthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane);
 };
 
@@ -501,6 +708,25 @@ struct Quat
 
     bool operator==(const Quat& other) const { return X == other.X && Y == other.Y && Z == other.Z && W == other.W; }
     bool operator!=(const Quat& other) const { return !(*this == other); }
+
+    /// <summary>
+    /// 近似相等比较（考虑浮点误差）
+    /// 注意：四元数 q 和 -q 表示相同旋转，此方法会同时检查两种情况
+    /// </summary>
+    bool Equals(const Quat& other, float epsilon = 1e-6f) const
+    {
+        // q 和 -q 表示相同旋转
+        bool direct = std::abs(X - other.X) <= epsilon &&
+                       std::abs(Y - other.Y) <= epsilon &&
+                       std::abs(Z - other.Z) <= epsilon &&
+                       std::abs(W - other.W) <= epsilon;
+        if (direct) return true;
+        bool negated = std::abs(X + other.X) <= epsilon &&
+                        std::abs(Y + other.Y) <= epsilon &&
+                        std::abs(Z + other.Z) <= epsilon &&
+                        std::abs(W + other.W) <= epsilon;
+        return negated;
+    }
 
     // 常用方法
     float Length() const { return std::sqrt(X * X + Y * Y + Z * Z + W * W); }
