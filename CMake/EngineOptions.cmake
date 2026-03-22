@@ -1,37 +1,14 @@
-## 引擎构建选项
-#
-## 图形API选项
-#option(TE_RHI_VULKAN "Enable Vulkan RHI backend" ON)
-#option(TE_RHI_D3D12 "Enable DirectX 12 RHI backend" OFF)
-#option(TE_RHI_OPENGL "Enable OpenGL RHI backend" OFF)
-#
-## 检查至少有一个RHI后端被启用
-#if(NOT (TE_RHI_VULKAN OR TE_RHI_D3D12 OR TE_RHI_OPENGL))
-#    message(FATAL_ERROR "[EngineOptions] At least one RHI backend must be enabled!")
-#endif()
-#
-## 设置RHI宏定义
-#if(TE_RHI_VULKAN)
-#    message(STATUS "[EngineOptions] RHI Backend: Vulkan enabled")
-#    add_definitions(-DTE_RHI_VULKAN)
-#endif()
-#
-#if(TE_RHI_D3D12)
-#    message(STATUS "[EngineOptions] RHI Backend: DirectX 12 enabled")
-#    add_definitions(-DTE_RHI_D3D12)
-#endif()
-#
-#if(TE_RHI_OPENGL)
-#    message(STATUS "[EngineOptions] RHI Backend: OpenGL enabled")
-#    add_definitions(-DTE_RHI_OPENGL)
-#endif()
-#
-## 其他构建选项
-#option(TE_BUILD_SANDBOX "Build sandbox application" ON)
-#option(TE_ENABLE_LOGGING "Enable logging" ON)
-#
-#if(TE_ENABLE_LOGGING)
-#    add_definitions(-DTE_ENABLE_LOGGING)
-#    message(STATUS "[EngineOptions] Logging: Enabled")
-#endif()
-#
+# ToyEngine 构建选项
+# 此文件集中管理所有引擎构建选项
+
+# RHI 后端选择（Phase 2+ 使用，Phase 1 仅占位）
+option(TE_RHI_VULKAN "Build Vulkan RHI backend" OFF)
+option(TE_RHI_OPENGL "Build OpenGL RHI backend" OFF)
+option(TE_RHI_D3D12 "Build D3D12 RHI backend" OFF)
+
+# 应用选项（根 CMakeLists.txt 已定义，此处留作参考）
+# option(TE_BUILD_SANDBOX "Build Sandbox application" ON)
+# option(TE_BUILD_TESTS "Build test executables" ON)
+
+# 验证：至少启用一个 RHI 后端时才构建渲染模块（Phase 2 时启用）
+# set(TE_HAS_RHI_BACKEND ${TE_RHI_VULKAN} OR ${TE_RHI_OPENGL} OR ${TE_RHI_D3D12})

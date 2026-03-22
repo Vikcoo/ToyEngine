@@ -1,53 +1,27 @@
-// ToyEngine Sandbox - 完整渲染流程测试
-#include "Log/Log.h"
-#include "Memory/Memory.h"
-#include "Window.h"
+// ToyEngine Sandbox - Phase 1 测试应用
+// 测试 Engine 主循环和 Math 模块
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include "Engine.h"
+
+// Math 模块测试（可选，取消注释以启用）
+// #include "Math/MathTypes.h"
+// #include "Math/Transform.h"
+// #include "Math/MathUtils.h"
+// #include "Math/Color.h"
+// #include "Math/Random.h"
+// #include "Math/Geometry.h"
 
 int main()
 {
-    // 初始化日志系统
-    TE::Log::Init();
+    // 获取引擎实例并初始化
+    TE::Engine& engine = TE::Engine::Get();
+    engine.Init();
 
-    // 初始化内存系统：故意给小一点以测试扩容
-    TE::MemoryInit(32ull * 1024ull * 1024ull);
+    // 运行主循环（阻塞直到退出）
+    engine.Run();
 
-    // 简单自检：不同 tag / 不同对齐 / 触发扩容
-    void* a = TE::MemAlloc(1024, TE::MemoryTag::Core);
-    void* b = TE::MemAlignedAlloc(4096, 64, TE::MemoryTag::Renderer);
-    void* c = TE::MemAlloc(20ull * 1024ull * 1024ull, TE::MemoryTag::Asset);
-    c = TE::MemRealloc(c, 48ull * 1024ull * 1024ull, TE::MemoryTag::Asset); // 大概率触发 add_pool
-
-    const auto stats = TE::GetMemoryStats();
-    TE_LOG_INFO("Memory: current={} bytes, peak={} bytes, alloc={}, free={}",
-        stats.CurrentBytes, stats.PeakBytes, stats.AllocCount, stats.FreeCount);
-    TE_LOG_INFO("Memory(Core): current={} peak={} alloc={} free={}",
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Core)].CurrentBytes,
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Core)].PeakBytes,
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Core)].AllocCount,
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Core)].FreeCount);
-    TE_LOG_INFO("Memory(Renderer): current={} peak={} alloc={} free={}",
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Renderer)].CurrentBytes,
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Renderer)].PeakBytes,
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Renderer)].AllocCount,
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Renderer)].FreeCount);
-    TE_LOG_INFO("Memory(Asset): current={} peak={} alloc={} free={}",
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Asset)].CurrentBytes,
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Asset)].PeakBytes,
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Asset)].AllocCount,
-        stats.PerTag[static_cast<std::size_t>(TE::MemoryTag::Asset)].FreeCount);
-
-    TE::MemFree(a);
-    TE::MemFree(b);
-    TE::MemFree(c);
-
-    /* 1. 创建窗口 */
-    const TE::WindowConfig config{"ToyEngine", 1280, 720, true};
-    const auto window = TE::Window::Create(config);
-
-    system("pause");
+    // 关闭引擎
+    engine.Shutdown();
 
     return 0;
 }

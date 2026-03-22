@@ -1,38 +1,18 @@
-project(Platform)
-
-# 创建Platform静态库
-add_library(Platform STATIC
-    # Public接口
-    Public/Window.h
-    
-    # Private实现
-    Private/PlatformFactory.cpp
-    Private/GLFW/GLFWWindow.h
-    Private/GLFW/GLFWWindow.cpp
+file(GLOB_RECURSE PLATFORM_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/Public/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Private/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Private/*.cpp
 )
 
-# 公共包含目录（Public接口）
-target_include_directories(Platform PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/Public
+add_library(Platform STATIC ${PLATFORM_SOURCES})
+
+target_include_directories(Platform
+    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/Public
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Private
+            ${CMAKE_SOURCE_DIR}/ThirdParty/glfw-3.4/include
 )
 
-# 私有包含目录（Private实现）
-target_include_directories(Platform PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/Private
+target_link_libraries(Platform
+    PUBLIC  Core
+    PRIVATE glfw
 )
-
-# 链接依赖
-target_link_libraries(Platform 
-    PUBLIC
-        Core  # Platform需要使用日志
-    PRIVATE
-        glfw
-)
-
-# GLFW包含目录
-target_include_directories(Platform PRIVATE
-    ${CMAKE_SOURCE_DIR}/ThirdParty/glfw-3.4/include
-)
-
-message(STATUS "Platform module configured")
-

@@ -1,29 +1,23 @@
 cmake_minimum_required(VERSION 3.20)
-project(ToyEngine VERSION 0.1.0)
+project(ToyEngine VERSION 0.1.0 LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+# 包含引擎构建选项（必须在 project() 之后）
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
+include(EngineOptions)
+
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 包含CMake辅助脚本
-include(CMake/PlatformDetection.cmake)
-#include(CMake/EngineOptions.cmake)
-
-# 输出目录
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# 第三方库
-add_subdirectory(ThirdParty)
+option(TE_BUILD_SANDBOX "Build Sandbox application" ON)
+option(TE_BUILD_TESTS   "Build test executables"    ON)
 
-# 引擎源码
+add_subdirectory(ThirdParty)
 add_subdirectory(Source)
 
-add_subdirectory(Tests)
-
-# 定义项目根目录路径（用于运行时查找资源）
-# 将路径中的反斜杠转换为正斜杠，并转义引号
-target_compile_definitions(Sandbox PRIVATE
-    TE_PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}/"
-)
-
+if(TE_BUILD_TESTS)
+    add_subdirectory(Tests)
+endif()

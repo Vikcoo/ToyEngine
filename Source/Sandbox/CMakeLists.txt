@@ -1,28 +1,12 @@
-project(Sandbox)
+add_executable(Sandbox Main.cpp)
 
-# 创建可执行文件
-add_executable(Sandbox
-    Main.cpp
-    ${SHADER_OUTPUTS}  # 将编译后的 shader 添加到依赖中
+target_link_libraries(Sandbox PRIVATE Engine)
+
+target_compile_definitions(Sandbox PRIVATE
+    TE_ENABLE_GLOBAL_NEW_DELETE=1
+    TE_PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}/"
 )
 
-# 链接Runtime模块
-# Platform会自动传递Core依赖（因为Platform PUBLIC链接了Core）
-target_link_libraries(Sandbox PRIVATE
-    Platform
-    #RHI
-	#Asset
-	#Renderer
-)
-
-# Sandbox 开启全局 new/delete 覆盖，方便测试 STL 分配统计（可按需关闭）
-target_compile_definitions(Sandbox PRIVATE TE_ENABLE_GLOBAL_NEW_DELETE=1)
-
-# 设置工作目录为项目根目录（方便访问Content）
 set_target_properties(Sandbox PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
-
-message(STATUS "Sandbox application configured")
-message(STATUS "  Project root: ${CMAKE_SOURCE_DIR}")
-

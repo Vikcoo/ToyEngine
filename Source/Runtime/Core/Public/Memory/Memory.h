@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "Memory/MemoryTag.h"
+#include "MemoryTag.h"
 
 #include <cstddef>
 #include <cstdint>
