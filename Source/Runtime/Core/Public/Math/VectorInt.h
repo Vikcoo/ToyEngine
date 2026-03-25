@@ -184,22 +184,22 @@ struct [[nodiscard]] Rect
     }
 
     // 属性
-    float GetLeft() const { return X; }
-    float GetTop() const { return Y; }
-    float GetRight() const { return X + Width; }
-    float GetBottom() const { return Y + Height; }
+    [[nodiscard]] float GetLeft() const { return X; }
+    [[nodiscard]] float GetTop() const { return Y; }
+    [[nodiscard]] float GetRight() const { return X + Width; }
+    [[nodiscard]] float GetBottom() const { return Y + Height; }
 
     Vector2 GetMin() const { return {X, Y}; }
     Vector2 GetMax() const { return {X + Width, Y + Height}; }
     Vector2 GetCenter() const { return {X + Width * 0.5f, Y + Height * 0.5f}; }
     Vector2 GetSize() const { return {Width, Height}; }
     Vector2 GetExtents() const { return {Width * 0.5f, Height * 0.5f}; }
-    float GetArea() const { return Width * Height; }
+    [[nodiscard]] float GetArea() const { return Width * Height; }
 
     /// <summary>
     /// 是否包含点
     /// </summary>
-    bool Contains(const Vector2& point) const
+    [[nodiscard]] bool Contains(const Vector2& point) const
     {
         return point.X >= X && point.X <= X + Width &&
                point.Y >= Y && point.Y <= Y + Height;
@@ -208,7 +208,7 @@ struct [[nodiscard]] Rect
     /// <summary>
     /// 是否完全包含另一个矩形
     /// </summary>
-    bool Contains(const Rect& other) const
+    [[nodiscard]] bool Contains(const Rect& other) const
     {
         return other.X >= X && other.X + other.Width <= X + Width &&
                other.Y >= Y && other.Y + other.Height <= Y + Height;
@@ -217,7 +217,7 @@ struct [[nodiscard]] Rect
     /// <summary>
     /// 是否与另一个矩形相交
     /// </summary>
-    bool Intersects(const Rect& other) const
+    [[nodiscard]] bool Intersects(const Rect& other) const
     {
         return X < other.X + other.Width && X + Width > other.X &&
                Y < other.Y + other.Height && Y + Height > other.Y;
@@ -291,20 +291,20 @@ struct [[nodiscard]] IntRect
     }
 
     // 属性
-    int32_t GetLeft() const { return X; }
-    int32_t GetTop() const { return Y; }
-    int32_t GetRight() const { return X + Width; }
-    int32_t GetBottom() const { return Y + Height; }
+    [[nodiscard]] int32_t GetLeft() const { return X; }
+    [[nodiscard]] int32_t GetTop() const { return Y; }
+    [[nodiscard]] int32_t GetRight() const { return X + Width; }
+    [[nodiscard]] int32_t GetBottom() const { return Y + Height; }
 
     IntVector2 GetMin() const { return {X, Y}; }
     IntVector2 GetMax() const { return {X + Width, Y + Height}; }
     IntVector2 GetSize() const { return {Width, Height}; }
-    int32_t GetArea() const { return Width * Height; }
+    [[nodiscard]] int32_t GetArea() const { return Width * Height; }
 
     /// <summary>
     /// 是否包含点
     /// </summary>
-    bool Contains(const IntVector2& point) const
+    [[nodiscard]] bool Contains(const IntVector2& point) const
     {
         return point.X >= X && point.X < X + Width &&
                point.Y >= Y && point.Y < Y + Height;
@@ -313,7 +313,7 @@ struct [[nodiscard]] IntRect
     /// <summary>
     /// 是否与另一个矩形相交
     /// </summary>
-    bool Intersects(const IntRect& other) const
+    [[nodiscard]] bool Intersects(const IntRect& other) const
     {
         return X < other.X + other.Width && X + Width > other.X &&
                Y < other.Y + other.Height && Y + Height > other.Y;
