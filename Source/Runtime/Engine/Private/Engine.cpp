@@ -21,6 +21,10 @@
 #include "SceneRenderer.h"
 #include "FStaticMeshSceneProxy.h"
 
+// Asset 模块
+#include "TStaticMesh.h"
+#include "FAssetImporter.h"
+
 #include <string>
 
 namespace TE {
@@ -33,6 +37,9 @@ Engine& Engine::Get()
 
 void Engine::Init()
 {
+    // 1. 初始化日志（最先 — 必须在一切 TE_LOG 调用之前）
+    Log::Init();
+
     // 防止重复初始化
     if (m_Running)
     {
@@ -41,9 +48,6 @@ void Engine::Init()
     }
 
     TE_LOG_INFO("Initializing ToyEngine (UE5 Architecture)...");
-
-    // 1. 初始化日志（最先）
-    Log::Init();
     TE_LOG_INFO("Log system initialized");
 
     // 2. 初始化内存系统
@@ -51,11 +55,12 @@ void Engine::Init()
     TE_LOG_INFO("Memory system initialized");
 
     // 3. 创建窗口（会同时创建 OpenGL Context 并加载 glad）
-    WindowConfig config;
-    config.title = "ToyEngine - UE5 Architecture Cube";
-    config.width = 1280;
-    config.height = 720;
-    config.resizable = true;
+    WindowConfig config{
+        "ToyEngine - Model Loading (UE5 Architecture)",
+        1280,
+        720,
+        true,
+    };
 
     m_Window = Window::Create(config);
     if (!m_Window)
@@ -135,96 +140,46 @@ void Engine::BuildScene()
     TE_LOG_INFO("Building game scene (UE5 Architecture)...");
 
     // ========================================
-    // 创建立方体 Actor
+    // 加载模型资产（通过 FAssetImporter）
     // ========================================
-    auto cubeActor = std::make_unique<TActor>();
-    cubeActor->SetName("CubeActor");
+    std::string modelDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Models/";
 
-    // 添加 MeshComponent（网格组件）
-    auto* meshComp = cubeActor->AddComponent<TMeshComponent>();
-    meshComp->SetName("CubeMesh");
-
-    // 准备立方体网格数据
-    FStaticMeshData meshData;
-
-    // 立方体 24 个顶点（每面 4 个独立顶点，每面不同颜色）
-    // 顶点布局：Position(vec3) + Color(vec3) = stride 24 bytes
-    // clang-format off
-    meshData.Vertices = {
-        // === 前面 (Z+) - 红色 ===
-        -0.5f, -0.5f,  0.5f,  0.9f, 0.2f, 0.2f,  // 0: 左下
-         0.5f, -0.5f,  0.5f,  0.9f, 0.2f, 0.2f,  // 1: 右下
-         0.5f,  0.5f,  0.5f,  0.9f, 0.2f, 0.2f,  // 2: 右上
-        -0.5f,  0.5f,  0.5f,  0.9f, 0.2f, 0.2f,  // 3: 左上
-
-        // === 后面 (Z-) - 绿色 ===
-         0.5f, -0.5f, -0.5f,  0.2f, 0.9f, 0.2f,  // 4: 左下（从后面看）
-        -0.5f, -0.5f, -0.5f,  0.2f, 0.9f, 0.2f,  // 5: 右下
-        -0.5f,  0.5f, -0.5f,  0.2f, 0.9f, 0.2f,  // 6: 右上
-         0.5f,  0.5f, -0.5f,  0.2f, 0.9f, 0.2f,  // 7: 左上
-
-        // === 右面 (X+) - 蓝色 ===
-         0.5f, -0.5f,  0.5f,  0.2f, 0.2f, 0.9f,  // 8
-         0.5f, -0.5f, -0.5f,  0.2f, 0.2f, 0.9f,  // 9
-         0.5f,  0.5f, -0.5f,  0.2f, 0.2f, 0.9f,  // 10
-         0.5f,  0.5f,  0.5f,  0.2f, 0.2f, 0.9f,  // 11
-
-        // === 左面 (X-) - 黄色 ===
-        -0.5f, -0.5f, -0.5f,  0.9f, 0.9f, 0.2f,  // 12
-        -0.5f, -0.5f,  0.5f,  0.9f, 0.9f, 0.2f,  // 13
-        -0.5f,  0.5f,  0.5f,  0.9f, 0.9f, 0.2f,  // 14
-        -0.5f,  0.5f, -0.5f,  0.9f, 0.9f, 0.2f,  // 15
-
-        // === 顶面 (Y+) - 青色 ===
-        -0.5f,  0.5f,  0.5f,  0.2f, 0.9f, 0.9f,  // 16
-         0.5f,  0.5f,  0.5f,  0.2f, 0.9f, 0.9f,  // 17
-         0.5f,  0.5f, -0.5f,  0.2f, 0.9f, 0.9f,  // 18
-        -0.5f,  0.5f, -0.5f,  0.2f, 0.9f, 0.9f,  // 19
-
-        // === 底面 (Y-) - 品红 ===
-        -0.5f, -0.5f, -0.5f,  0.9f, 0.2f, 0.9f,  // 20
-         0.5f, -0.5f, -0.5f,  0.9f, 0.2f, 0.9f,  // 21
-         0.5f, -0.5f,  0.5f,  0.9f, 0.2f, 0.9f,  // 22
-        -0.5f, -0.5f,  0.5f,  0.9f, 0.2f, 0.9f,  // 23
-    };
-    // clang-format on
-
-    // 36 个索引（6 面 × 2 三角形 × 3 顶点）
-    // 每个面的两个三角形，顶点顺序为 CCW（逆时针 = 正面）
-    meshData.Indices = {
-        // 前面
-         0,  1,  2,   2,  3,  0,
-        // 后面
-         4,  5,  6,   6,  7,  4,
-        // 右面
-         8,  9, 10,  10, 11,  8,
-        // 左面
-        12, 13, 14,  14, 15, 12,
-        // 顶面
-        16, 17, 18,  18, 19, 16,
-        // 底面
-        20, 21, 22,  22, 23, 20,
+    // 尝试加载外部模型文件
+    // 优先查找常见格式的测试模型
+    std::vector<std::string> candidateFiles = {
+        modelDir + "model.obj",
+        modelDir + "model.fbx",
+        modelDir + "model.gltf",
+        modelDir + "model.glb",
     };
 
-    meshData.VertexStride = 6 * sizeof(float);  // Position(3) + Color(3)
+    for (const auto& candidate : candidateFiles)
+    {
+        m_LoadedMesh = FAssetImporter::ImportStaticMesh(candidate);
+        if (m_LoadedMesh)
+        {
+            TE_LOG_INFO("Loaded model from: {}", candidate);
+            break;
+        }
+    }
 
-    // Shader 路径
-    std::string shaderDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Shaders/OpenGL/";
-    meshData.VertexShaderPath = shaderDir + "cube.vert";
-    meshData.FragmentShaderPath = shaderDir + "cube.frag";
+    // 如果没有找到外部模型文件，使用内置的立方体作为 fallback
+    if (!m_LoadedMesh)
+    {
+        TE_LOG_INFO("No external model found, creating default cube mesh...");
+        m_LoadedMesh = CreateDefaultCubeMesh();
+    }
 
-    // 顶点属性布局
-    meshData.Attributes = {
-        { 0, static_cast<uint32_t>(RHIFormat::Float3), 0 },                      // Position: location=0
-        { 1, static_cast<uint32_t>(RHIFormat::Float3), 3 * sizeof(float) },      // Color:    location=1
-    };
+    // ========================================
+    // 创建模型 Actor
+    // ========================================
+    auto meshActor = std::make_unique<TActor>();
+    meshActor->SetName("MeshActor");
 
-    // Pipeline 状态
-    meshData.DepthTestEnabled = true;
-    meshData.DepthWriteEnabled = true;
-    meshData.BackfaceCulling = true;
-
-    meshComp->SetMeshData(meshData);
+    // 添加 MeshComponent，引用加载的 TStaticMesh 资产
+    auto* meshComp = meshActor->AddComponent<TMeshComponent>();
+    meshComp->SetName("ModelMesh");
+    meshComp->SetStaticMesh(m_LoadedMesh);
 
     // ========================================
     // 创建相机 Actor
@@ -247,7 +202,7 @@ void Engine::BuildScene()
         );
     }
 
-    // 相机位置：在立方体右上前方观察
+    // 相机位置：在模型右上前方观察
     cameraComp->SetPosition(Vector3(2.0f, 2.0f, 3.0f));
     // 朝向原点
     cameraComp->GetTransform().LookAt(Vector3::Zero);
@@ -258,10 +213,69 @@ void Engine::BuildScene()
     // ========================================
     // 将 Actor 添加到 World
     // ========================================
-    m_World->AddActor(std::move(cubeActor));
+    m_World->AddActor(std::move(meshActor));
     m_World->AddActor(std::move(cameraActor));
 
-    TE_LOG_INFO("Game scene built: CubeActor + CameraActor");
+    TE_LOG_INFO("Game scene built: MeshActor ({}) + CameraActor",
+                m_LoadedMesh ? m_LoadedMesh->GetName() : "default_cube");
+}
+
+std::shared_ptr<TStaticMesh> Engine::CreateDefaultCubeMesh()
+{
+    auto mesh = std::make_shared<TStaticMesh>();
+    mesh->SetName("DefaultCube");
+
+    FMeshSection section;
+
+    // 立方体 24 个顶点（每面 4 个独立顶点，每面不同颜色）
+    // 前面 (Z+) - 红色
+    section.Vertices.push_back({{-0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 0.0f}, {0.9f, 0.2f, 0.2f}});
+    section.Vertices.push_back({{ 0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 0.0f}, {0.9f, 0.2f, 0.2f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 1.0f}, {0.9f, 0.2f, 0.2f}});
+    section.Vertices.push_back({{-0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 1.0f}, {0.9f, 0.2f, 0.2f}});
+
+    // 后面 (Z-) - 绿色
+    section.Vertices.push_back({{ 0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}, {0.2f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 0.0f}, {0.2f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 1.0f}, {0.2f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 1.0f}, {0.2f, 0.9f, 0.2f}});
+
+    // 右面 (X+) - 蓝色
+    section.Vertices.push_back({{ 0.5f, -0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.2f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f, -0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {0.2f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {0.2f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.2f, 0.2f, 0.9f}});
+
+    // 左面 (X-) - 黄色
+    section.Vertices.push_back({{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.9f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f, -0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {0.9f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {0.9f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f,  0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.9f, 0.9f, 0.2f}});
+
+    // 顶面 (Y+) - 青色
+    section.Vertices.push_back({{-0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 0.0f}, {0.2f, 0.9f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 0.0f}, {0.2f, 0.9f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 1.0f}, {0.2f, 0.9f, 0.9f}});
+    section.Vertices.push_back({{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 1.0f}, {0.2f, 0.9f, 0.9f}});
+
+    // 底面 (Y-) - 品红
+    section.Vertices.push_back({{-0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {0.0f, 0.0f}, {0.9f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 0.0f}, {0.9f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 1.0f}, {0.9f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{-0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {0.0f, 1.0f}, {0.9f, 0.2f, 0.9f}});
+
+    // 36 个索引（6 面 × 2 三角形 × 3 顶点，CCW 正面）
+    section.Indices = {
+         0,  1,  2,   2,  3,  0,    // 前面
+         4,  5,  6,   6,  7,  4,    // 后面
+         8,  9, 10,  10, 11,  8,    // 右面
+        12, 13, 14,  14, 15, 12,    // 左面
+        16, 17, 18,  18, 19, 16,    // 顶面
+        20, 21, 22,  22, 23, 20,    // 底面
+    };
+
+    mesh->AddSection(std::move(section));
+    return mesh;
 }
 
 void Engine::ShutdownRHI()
@@ -272,6 +286,9 @@ void Engine::ShutdownRHI()
     m_World.reset();
     m_SceneRenderer.reset();
     m_Scene.reset();
+
+    // 释放资产
+    m_LoadedMesh.reset();
 
     // 再销毁 RHI 核心
     m_CommandBuffer.reset();
@@ -335,14 +352,13 @@ void Engine::Tick(float deltaTime)
     }
 
     // 2. World::Tick - 逻辑更新
-    // 这里我们让立方体每帧旋转
+    // 让模型每帧旋转
     if (m_World)
     {
-        // 获取立方体 Actor 并旋转它
         const auto& actors = m_World->GetActors();
         for (const auto& actor : actors)
         {
-            if (actor->GetName() == "CubeActor")
+            if (actor->GetName() == "MeshActor")
             {
                 // 每秒绕 Y 轴旋转 45 度，绕 X 轴旋转 30 度
                 float rotY = Math::DegToRad(45.0f) * deltaTime;
@@ -399,14 +415,18 @@ void Engine::Tick(float deltaTime)
         m_Window->SwapBuffers();
     }
 
-    // 每 0.5 秒输出一次平均 FPS（滑动窗口）
+    // 每 0.5 秒输出一次平均 FPS + 渲染统计（滑动窗口）
     m_FPSAccumulatedTime += deltaTime;
     m_FPSAccumulatedFrames++;
     if (m_FPSAccumulatedTime >= FPS_UPDATE_INTERVAL)
     {
         m_CurrentFPS = static_cast<float>(m_FPSAccumulatedFrames) / m_FPSAccumulatedTime;
-        TE_LOG_DEBUG("FPS: {:.1f} (avg over {:.2f}s, {} frames)",
-                     m_CurrentFPS, m_FPSAccumulatedTime, m_FPSAccumulatedFrames);
+        TE_LOG_DEBUG("FPS: {:.1f} (avg over {:.2f}s, {} frames) | DC: {} PipeBinds: {} VBOBinds: {} IBOBinds: {}",
+                     m_CurrentFPS, m_FPSAccumulatedTime, m_FPSAccumulatedFrames,
+                     m_SceneRenderer ? m_SceneRenderer->GetLastDrawCallCount() : 0,
+                     m_SceneRenderer ? m_SceneRenderer->GetLastPipelineBindCount() : 0,
+                     m_SceneRenderer ? m_SceneRenderer->GetLastVBOBindCount() : 0,
+                     m_SceneRenderer ? m_SceneRenderer->GetLastIBOBindCount() : 0);
         m_FPSAccumulatedTime = 0.0f;
         m_FPSAccumulatedFrames = 0;
     }

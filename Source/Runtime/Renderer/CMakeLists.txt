@@ -17,9 +17,15 @@ target_include_directories(Renderer
         ${CMAKE_CURRENT_SOURCE_DIR}/Private
 )
 
-# 依赖 Core（Math 类型）和 RHI（接口）
+# 依赖 Core（Math 类型）、RHI（接口）和 Asset（TStaticMesh 类型）
 target_link_libraries(Renderer
     PUBLIC
         Core
         RHI
+        Asset
+)
+
+# 提供项目根目录宏，用于定位 Shader 文件等资源
+target_compile_definitions(Renderer PRIVATE
+    TE_PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}/"
 )

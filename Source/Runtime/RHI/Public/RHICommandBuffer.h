@@ -92,6 +92,11 @@ public:
     /// @param value 浮点值
     virtual void SetUniformFloat(const char* name, float value) = 0;
 
+    /// 设置 vec3 Uniform
+    /// @param name Uniform 变量名
+    /// @param data vec3 数据指针（3 个 float）
+    virtual void SetUniformVec3(const char* name, const float* data) = 0;
+
     /// 结束录制命令
     virtual void End() = 0;
 

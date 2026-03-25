@@ -13,6 +13,9 @@ endif()
 # endif()
 add_subdirectory(RHI)
 
+# Asset 模块：资产管理（TStaticMesh、FAssetImporter）
+add_subdirectory(Asset)
+
 # UE5 架构模块：Renderer（渲染侧数据 + 渲染器）和 Scene（游戏侧数据）
 add_subdirectory(Renderer)
 add_subdirectory(Scene)

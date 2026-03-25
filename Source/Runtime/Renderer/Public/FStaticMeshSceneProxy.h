@@ -2,8 +2,10 @@
 // FStaticMeshSceneProxy - 静态网格的渲染侧镜像
 // 对应 UE5 的 FStaticMeshSceneProxy
 //
-// 负责管理静态网格的 GPU 资源（VBO、IBO、Shader、Pipeline），
-// 在构造时通过 RHIDevice 创建这些资源
+// 重构说明：
+// - 支持多 Section（每个 Section 对应一个 VBO+IBO）
+// - 从 TStaticMesh 资产读取数据创建 GPU 资源
+// - GetMeshDrawCommands() 返回多条绘制命令（每个 Section 一条）
 
 #pragma once
 
@@ -20,31 +22,16 @@ class RHIDevice;
 class RHIBuffer;
 class RHIShader;
 class RHIPipeline;
+class TStaticMesh;
 struct RHIVertexInputDesc;
 
-/// 静态网格数据描述（从 TMeshComponent 传递给 Proxy）
-/// 包含创建 GPU 资源所需的全部 CPU 侧数据
-struct FStaticMeshData
+/// 每个 Section 的 GPU 资源
+/// 对应 UE5 中 FStaticMeshBatch / FMeshBatchElement
+struct FSectionGPUData
 {
-    std::vector<float>      Vertices;       // 顶点数据（交错布局：Position + Color）
-    std::vector<uint32_t>   Indices;        // 索引数据
-    uint32_t                VertexStride = 0;  // 每个顶点的字节步长
-    std::string             VertexShaderPath;  // 顶点着色器路径
-    std::string             FragmentShaderPath; // 片段着色器路径
-
-    // 顶点属性布局
-    struct VertexAttribute
-    {
-        uint32_t location;      // Shader 中的 location
-        uint32_t format;        // 对应 RHIFormat 的值
-        uint32_t offset;        // 在顶点中的字节偏移
-    };
-    std::vector<VertexAttribute> Attributes;
-
-    // Pipeline 状态
-    bool DepthTestEnabled = true;
-    bool DepthWriteEnabled = true;
-    bool BackfaceCulling = true;
+    std::unique_ptr<RHIBuffer> VertexBuffer;
+    std::unique_ptr<RHIBuffer> IndexBuffer;
+    uint32_t IndexCount = 0;
 };
 
 /// 静态网格渲染侧 Proxy
@@ -54,31 +41,34 @@ struct FStaticMeshData
 /// - 在构造时从 UStaticMesh 获取 LOD 数据，创建对应的 RenderBatch
 ///
 /// 在 ToyEngine 中：
-/// - 构造时接收 FStaticMeshData + RHIDevice
-/// - 通过 RHIDevice 创建 VBO/IBO/Shader/Pipeline
-/// - GetMeshDrawCommand() 填充绘制命令
+/// - 构造时接收 TStaticMesh + RHIDevice
+/// - 为每个 Section 创建独立的 VBO/IBO
+/// - 共享同一套 Shader/Pipeline（所有 Section 用相同的 model shader）
+/// - GetMeshDrawCommands() 为每个 Section 填充一条绘制命令
 class FStaticMeshSceneProxy : public FPrimitiveSceneProxy
 {
 public:
-    /// 构造函数：接收网格数据，通过 RHIDevice 创建 GPU 资源
-    FStaticMeshSceneProxy(const FStaticMeshData& meshData, RHIDevice* device);
+    /// 构造函数：从 TStaticMesh 资产创建 GPU 资源
+    FStaticMeshSceneProxy(const TStaticMesh* staticMesh, RHIDevice* device);
     ~FStaticMeshSceneProxy() override = default;
 
-    /// 收集绘制命令
-    [[nodiscard]] bool GetMeshDrawCommand(FMeshDrawCommand& outCmd) const override;
+    /// 收集绘制命令（每个 Section 一条）
+    void GetMeshDrawCommands(std::vector<FMeshDrawCommand>& outCommands) const override;
 
     /// GPU 资源是否创建成功
     [[nodiscard]] bool IsValid() const;
 
 private:
-    // RHI 资源（Proxy 拥有这些资源的生命周期）
-    std::unique_ptr<RHIBuffer>      m_VertexBuffer;
+    /// 创建共享的 Shader 和 Pipeline
+    bool CreateShaderAndPipeline(RHIDevice* device);
+
+    // 每个 Section 的 GPU 资源
+    std::vector<FSectionGPUData>    m_SectionGPUData;
+
+    // 所有 Section 共享的 Shader 和 Pipeline
     std::unique_ptr<RHIShader>      m_VertexShader;
     std::unique_ptr<RHIShader>      m_FragmentShader;
     std::unique_ptr<RHIPipeline>    m_Pipeline;
-    std::unique_ptr<RHIBuffer>      m_IndexBuffer;
-
-    uint32_t m_IndexCount = 0;
 };
 
 } // namespace TE

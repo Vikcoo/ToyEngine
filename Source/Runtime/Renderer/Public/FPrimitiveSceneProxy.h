@@ -12,6 +12,7 @@
 
 #include "Math/MathTypes.h"
 #include "FMeshDrawCommand.h"
+#include <vector>
 
 namespace TE {
 
@@ -37,10 +38,10 @@ public:
     [[nodiscard]] const Matrix4& GetWorldMatrix() const { return m_WorldMatrix; }
 
     /// 收集绘制命令（SceneRenderer 调用）
-    /// 子类 override 此方法，填充 FMeshDrawCommand
-    /// @param outCmd 输出的绘制命令
-    /// @return 是否有有效的绘制命令
-    [[nodiscard]] virtual bool GetMeshDrawCommand(FMeshDrawCommand& outCmd) const = 0;
+    /// 子类 override 此方法，填充 FMeshDrawCommand 列表
+    /// 支持多 Section 的 Proxy 返回多条绘制命令
+    /// @param outCommands 输出的绘制命令列表
+    virtual void GetMeshDrawCommands(std::vector<FMeshDrawCommand>& outCommands) const = 0;
 
 protected:
     FPrimitiveSceneProxy() = default;

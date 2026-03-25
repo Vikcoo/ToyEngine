@@ -16,6 +16,7 @@ namespace TE {
     class FScene;
     class SceneRenderer;
     class TCameraComponent;
+    class TStaticMesh;
 }
 
 namespace TE {
@@ -81,6 +82,9 @@ private:
     /// 构建游戏场景（创建 World、Actor、Component）
     void BuildScene();
 
+    /// 创建默认立方体网格（用于无外部模型文件时的 fallback）
+    std::shared_ptr<TStaticMesh> CreateDefaultCubeMesh();
+
     /// 关闭 RHI 子系统
     void ShutdownRHI();
 
@@ -101,6 +105,10 @@ private:
 
     // 相机组件引用（用于每帧构建 ViewInfo）
     TCameraComponent* m_CameraComponent = nullptr;
+
+    // 已加载的静态网格资产（Engine 持有所有权，Component 通过 shared_ptr 共享引用）
+    // 对应 UE5 中 FAssetManager 管理的资产
+    std::shared_ptr<TStaticMesh> m_LoadedMesh;
 
     // 运行状态
     bool m_Running = false;

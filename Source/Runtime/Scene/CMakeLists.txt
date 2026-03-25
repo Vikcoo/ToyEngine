@@ -20,10 +20,11 @@ target_include_directories(Scene
         ${CMAKE_CURRENT_SOURCE_DIR}/Private
 )
 
-# 依赖 Core（Math/Transform）+ RHI（前向声明）+ Renderer（FScene/Proxy 类型）
+# 依赖 Core（Math/Transform）+ RHI（前向声明）+ Renderer（FScene/Proxy 类型）+ Asset（TStaticMesh）
 target_link_libraries(Scene
     PUBLIC
         Core
         RHI
         Renderer
+        Asset
 )

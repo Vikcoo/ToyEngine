@@ -251,6 +251,23 @@ void OpenGLCommandBuffer::SetUniformFloat(const char* name, float value)
     glUniform1f(location, value);
 }
 
+void OpenGLCommandBuffer::SetUniformVec3(const char* name, const float* data)
+{
+    if (!m_BoundPipeline)
+    {
+        TE_LOG_WARN("[OpenGLRHI] SetUniformVec3 called without bound pipeline");
+        return;
+    }
+
+    GLint location = glGetUniformLocation(m_BoundPipeline->GetGLProgram(), name);
+    if (location == -1)
+    {
+        TE_LOG_WARN("[OpenGLRHI] Uniform '{}' not found in shader program", name);
+        return;
+    }
+    glUniform3fv(location, 1, data);
+}
+
 void OpenGLCommandBuffer::End()
 {
     m_IsRecording = false;

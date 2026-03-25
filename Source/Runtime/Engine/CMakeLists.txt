@@ -12,7 +12,8 @@ target_include_directories(Engine
 )
 
 # Engine 通过 RHI 抽象层操作 GPU，通过 Scene/Renderer 模块实现 UE5 架构
-target_link_libraries(Engine PUBLIC Platform RHI Scene Renderer)
+# Asset 模块提供 TStaticMesh 和 FAssetImporter
+target_link_libraries(Engine PUBLIC Platform RHI Scene Renderer Asset)
 
 # 提供项目根目录宏，用于定位 Shader 文件等资源
 target_compile_definitions(Engine PRIVATE

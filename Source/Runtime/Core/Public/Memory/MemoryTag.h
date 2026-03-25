@@ -15,6 +15,7 @@ enum class MemoryTag : std::uint16_t
     RHI,
     Renderer,
     Asset,
+    Scene,
     Sandbox,
 
     Count,

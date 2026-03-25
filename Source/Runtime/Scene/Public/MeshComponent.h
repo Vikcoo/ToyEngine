@@ -2,17 +2,19 @@
 // TMeshComponent - 网格组件
 // 对应 UE5 的 UStaticMeshComponent
 //
-// 持有网格数据描述（顶点、索引、Shader 路径等），
-// override CreateSceneProxy() 创建 FStaticMeshSceneProxy
+// 重构说明：
+// - 持有 shared_ptr<TStaticMesh> 资产引用（对应 UE5 中 UStaticMeshComponent 引用 UStaticMesh）
+// - CreateSceneProxy() 从 TStaticMesh 构建 FStaticMeshSceneProxy
 
 #pragma once
 
 #include "PrimitiveComponent.h"
-#include "FStaticMeshSceneProxy.h"
-#include <vector>
-#include <string>
+#include <memory>
 
 namespace TE {
+
+// 前向声明
+class TStaticMesh;
 
 /// 网格组件
 ///
@@ -21,24 +23,26 @@ namespace TE {
 /// - CreateSceneProxy() 返回 FStaticMeshSceneProxy
 ///
 /// ToyEngine 简化版：
-/// - 直接持有顶点/索引数据（而非引用独立的 Mesh 资产）
-/// - SetMeshData() 设置网格数据
-/// - CreateSceneProxy() 将数据传给 FStaticMeshSceneProxy 构造
+/// - 持有 shared_ptr<TStaticMesh> 资产引用（多个组件可共享同一资产）
+/// - SetStaticMesh() 设置资产引用
+/// - CreateSceneProxy() 将 TStaticMesh 传给 FStaticMeshSceneProxy 构造
 class TMeshComponent : public TPrimitiveComponent
 {
 public:
     TMeshComponent() = default;
     ~TMeshComponent() override = default;
 
-    /// 设置网格数据
-    void SetMeshData(const FStaticMeshData& meshData) { m_MeshData = meshData; }
-    [[nodiscard]] const FStaticMeshData& GetMeshData() const { return m_MeshData; }
+    /// 设置静态网格资产（对应 UE5 的 UStaticMeshComponent::SetStaticMesh）
+    void SetStaticMesh(std::shared_ptr<TStaticMesh> mesh) { m_StaticMesh = std::move(mesh); }
+
+    /// 获取静态网格资产引用
+    [[nodiscard]] const std::shared_ptr<TStaticMesh>& GetStaticMesh() const { return m_StaticMesh; }
 
     /// 创建渲染侧 Proxy（override）
     FPrimitiveSceneProxy* CreateSceneProxy(RHIDevice* device) override;
 
 private:
-    FStaticMeshData m_MeshData;
+    std::shared_ptr<TStaticMesh> m_StaticMesh;
 };
 
 } // namespace TE

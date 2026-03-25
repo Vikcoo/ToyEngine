@@ -9,6 +9,8 @@
 #include <thread>
 #include <vector>
 
+#include "Memory/MemoryUtils.h"
+
 namespace {
 
 bool IsAligned(void* p, std::size_t align)
@@ -109,6 +111,8 @@ bool TestAlignedReallocPreservesAlignment()
         TE::MemoryShutdown();
         return false;
     }
+
+    TE::DumpMemoryStats();
 
     auto* qbytes = static_cast<std::byte*>(q);
     for (std::size_t i = 0; i < kOldSize; ++i)
@@ -216,6 +220,8 @@ bool TestShutdownRaceNoCrash()
 
 int main()
 {
+    TE::Log::Init();
+
     std::cout << "[MemoryAllocatorRegressionTest] multi-thread alloc/free...\n";
     if (!TestMultiThreadAllocFree())
     {
