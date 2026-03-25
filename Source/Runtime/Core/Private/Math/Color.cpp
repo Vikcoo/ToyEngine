@@ -36,7 +36,7 @@ Color Color::FromHSV(float h, float s, float v, float a)
     if (s <= 0.0f)
     {
         // 灰度
-        return Color(v, v, v, a);
+        return {v, v, v, a};
     }
 
     float hh = h / 60.0f;
@@ -49,13 +49,13 @@ Color Color::FromHSV(float h, float s, float v, float a)
 
     switch (i)
     {
-    case 0: return Color(v, t, p, a);
-    case 1: return Color(q, v, p, a);
-    case 2: return Color(p, v, t, a);
-    case 3: return Color(p, q, v, a);
-    case 4: return Color(t, p, v, a);
+    case 0: return {v, t, p, a};
+    case 1: return {q, v, p, a};
+    case 2: return {p, v, t, a};
+    case 3: return {p, q, v, a};
+    case 4: return {t, p, v, a};
     case 5:
-    default: return Color(v, p, q, a);
+    default: return {v, p, q, a};
     }
 }
 
@@ -86,7 +86,7 @@ Vector3 Color::ToHSV() const
         }
     }
 
-    return Vector3(h, s, v);
+    return {h, s, v};
 }
 
 // ==================== HSV 空间插值 ====================

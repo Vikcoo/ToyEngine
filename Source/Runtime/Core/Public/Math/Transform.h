@@ -46,29 +46,29 @@ public:
     /// 转换为 4x4 变换矩阵
     /// 顺序：缩放 -> 旋转 -> 平移
     /// </summary>
-    Matrix4 ToMatrix() const;
+    [[nodiscard]] Matrix4 ToMatrix() const;
 
     /// <summary>
     /// 从矩阵还原变换（缩放假设为正）
     /// </summary>
-    static Transform FromMatrix(const Matrix4& matrix);
+    [[nodiscard]] static Transform FromMatrix(const Matrix4& matrix);
 
     // ==================== 方向向量 ====================
 
     /// <summary>
     /// 获取前向向量（局部 Z 轴在世界空间的指向）
     /// </summary>
-    Vector3 GetForward() const;
+    [[nodiscard]] Vector3 GetForward() const;
 
     /// <summary>
     /// 获取右向向量（局部 X 轴在世界空间的指向）
     /// </summary>
-    Vector3 GetRight() const;
+    [[nodiscard]] Vector3 GetRight() const;
 
     /// <summary>
     /// 获取上向向量（局部 Y 轴在世界空间的指向）
     /// </summary>
-    Vector3 GetUp() const;
+    [[nodiscard]] Vector3 GetUp() const;
 
     /// <summary>
     /// 设置前向方向（保持上向量大致向上）
@@ -87,17 +87,17 @@ public:
     /// <summary>
     /// 获取欧拉角（yaw, pitch, roll，单位：弧度）
     /// </summary>
-    Vector3 GetEulerAngles() const;
+    [[nodiscard]] Vector3 GetEulerAngles() const;
 
     /// <summary>
     /// 从欧拉角创建变换（yaw, pitch, roll，单位：度）
     /// </summary>
-    static Transform FromEulerDegrees(float yawDeg, float pitchDeg, float rollDeg);
+    [[nodiscard]] static Transform FromEulerDegrees(float yawDeg, float pitchDeg, float rollDeg);
 
     /// <summary>
     /// 获取欧拉角（yaw, pitch, roll，单位：度）
     /// </summary>
-    Vector3 GetEulerAnglesDegrees() const;
+    [[nodiscard]] Vector3 GetEulerAnglesDegrees() const;
 
     // ==================== LookAt ====================
 
@@ -109,7 +109,7 @@ public:
     /// <summary>
     /// 创建 LookAt 变换（位置在 eye，朝向 center）
     /// </summary>
-    static Transform LookAt(const Vector3& eye, const Vector3& center, const Vector3& worldUp = Vector3::Up);
+    [[nodiscard]] static Transform LookAt(const Vector3& eye, const Vector3& center, const Vector3& worldUp = Vector3::Up);
 
     // ==================== 变换操作 ====================
 
@@ -144,7 +144,7 @@ public:
     /// <summary>
     /// 获取逆变换
     /// </summary>
-    Transform Inverse() const;
+    [[nodiscard]] Transform Inverse() const;
 
     // ==================== 变换组合 ====================
 
@@ -152,46 +152,46 @@ public:
     /// 组合两个变换（先应用 other，再应用 this）
     /// 结果 = this * other
     /// </summary>
-    Transform operator*(const Transform& other) const;
+    [[nodiscard]] Transform operator*(const Transform& other) const;
 
-    Transform& operator*=(const Transform& other);
+    [[nodiscard]] Transform& operator*=(const Transform& other);
 
     /// <summary>
     /// 对点应用变换
     /// </summary>
-    Vector3 TransformPoint(const Vector3& point) const;
+    [[nodiscard]] Vector3 TransformPoint(const Vector3& point) const;
 
     /// <summary>
     /// 对向量应用变换（忽略平移）
     /// </summary>
-    Vector3 TransformVector(const Vector3& vector) const;
+    [[nodiscard]] Vector3 TransformVector(const Vector3& vector) const;
 
     /// <summary>
     /// 对方向应用变换（仅旋转，忽略平移和缩放）
     /// </summary>
-    Vector3 TransformDirection(const Vector3& direction) const;
+    [[nodiscard]] Vector3 TransformDirection(const Vector3& direction) const;
 
     /// <summary>
     /// 逆变换点
     /// </summary>
-    Vector3 InverseTransformPoint(const Vector3& point) const;
+    [[nodiscard]] Vector3 InverseTransformPoint(const Vector3& point) const;
 
     /// <summary>
     /// 逆变换向量
     /// </summary>
-    Vector3 InverseTransformVector(const Vector3& vector) const;
+    [[nodiscard]] Vector3 InverseTransformVector(const Vector3& vector) const;
 
     /// <summary>
     /// 逆变换方向
     /// </summary>
-    Vector3 InverseTransformDirection(const Vector3& direction) const;
+    [[nodiscard]] Vector3 InverseTransformDirection(const Vector3& direction) const;
 
     // ==================== 插值 ====================
 
     /// <summary>
     /// 线性插值位置，球面插值旋转，线性插值缩放
     /// </summary>
-    static Transform Lerp(const Transform& a, const Transform& b, float t);
+    [[nodiscard]] static Transform Lerp(const Transform& a, const Transform& b, float t);
 
     // ==================== 常量 ====================
 

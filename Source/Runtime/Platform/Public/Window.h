@@ -57,7 +57,7 @@ public:
     [[nodiscard]] virtual bool IsVSyncEnabled() const = 0;
 
     // 工厂方法 - 根据平台自动创建合适的窗口实现
-    static std::unique_ptr<Window> Create(const WindowConfig& config = WindowConfig());
+    [[nodiscard]] static std::unique_ptr<Window> Create(const WindowConfig& config = WindowConfig());
 
 protected:
     Window() = default;

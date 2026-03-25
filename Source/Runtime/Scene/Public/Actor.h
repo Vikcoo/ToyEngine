@@ -40,7 +40,7 @@ public:
 
     /// 添加组件（模板方法，返回 raw 指针便于后续操作）
     template<typename T, typename... Args>
-    T* AddComponent(Args&&... args)
+    [[nodiscard]] T* AddComponent(Args&&... args)
     {
         auto component = std::make_unique<T>(std::forward<Args>(args)...);
         T* ptr = component.get();

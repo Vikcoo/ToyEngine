@@ -30,7 +30,7 @@ const Matrix3 Matrix3::Zero(0.0f);
 // Matrix3 逆矩阵
 Matrix3 Matrix3::Inverse() const
 {
-    glm::mat3 glmMat = static_cast<glm::mat3>(*this);
+    auto glmMat = static_cast<glm::mat3>(*this);
     glm::mat3 inv = glm::inverse(glmMat);
     return Matrix3(inv);
 }
@@ -38,7 +38,7 @@ Matrix3 Matrix3::Inverse() const
 // Matrix3 行列式
 float Matrix3::Determinant() const
 {
-    glm::mat3 glmMat = static_cast<glm::mat3>(*this);
+    auto glmMat = static_cast<glm::mat3>(*this);
     return glm::determinant(glmMat);
 }
 
@@ -49,7 +49,7 @@ const Matrix4 Matrix4::Zero(0.0f);
 // Matrix4 逆矩阵
 Matrix4 Matrix4::Inverse() const
 {
-    glm::mat4 glmMat = static_cast<glm::mat4>(*this);
+    auto glmMat = static_cast<glm::mat4>(*this);
     glm::mat4 inv = glm::inverse(glmMat);
     return Matrix4(inv);
 }
@@ -57,7 +57,7 @@ Matrix4 Matrix4::Inverse() const
 // Matrix4 行列式
 float Matrix4::Determinant() const
 {
-    glm::mat4 glmMat = static_cast<glm::mat4>(*this);
+    auto glmMat = static_cast<glm::mat4>(*this);
     return glm::determinant(glmMat);
 }
 
@@ -73,7 +73,7 @@ Matrix3 Matrix4::GetNormalMatrix() const
 // Matrix4 分解为 TRS 分量
 bool Matrix4::Decompose(Vector3& outTranslation, Quat& outRotation, Vector3& outScale) const
 {
-    glm::mat4 glmMat = static_cast<glm::mat4>(*this);
+    auto glmMat = static_cast<glm::mat4>(*this);
     glm::vec3 scale;
     glm::quat rotation;
     glm::vec3 translation;
@@ -93,7 +93,7 @@ bool Matrix4::Decompose(Vector3& outTranslation, Quat& outRotation, Vector3& out
 // 获取平移分量
 Vector3 Matrix4::GetTranslation() const
 {
-    return Vector3(M[3][0], M[3][1], M[3][2]);
+    return {M[3][0], M[3][1], M[3][2]};
 }
 
 // 获取缩放分量
@@ -103,7 +103,7 @@ Vector3 Matrix4::GetScale() const
     float sx = std::sqrt(M[0][0] * M[0][0] + M[0][1] * M[0][1] + M[0][2] * M[0][2]);
     float sy = std::sqrt(M[1][0] * M[1][0] + M[1][1] * M[1][1] + M[1][2] * M[1][2]);
     float sz = std::sqrt(M[2][0] * M[2][0] + M[2][1] * M[2][1] + M[2][2] * M[2][2]);
-    return Vector3(sx, sy, sz);
+    return {sx, sy, sz};
 }
 
 // 获取旋转分量
@@ -121,7 +121,7 @@ Quat Matrix4::GetRotation() const
     rotMat[2][0] = M[2][0] * invSz; rotMat[2][1] = M[2][1] * invSz; rotMat[2][2] = M[2][2] * invSz;
 
     glm::quat q = glm::quat_cast(rotMat);
-    return Quat(q.x, q.y, q.z, q.w);
+    return {q.x, q.y, q.z, q.w};
 }
 
 // 提取左上角 3x3 矩阵
@@ -197,25 +197,25 @@ Quat Quat::FromEuler(float yaw, float pitch, float roll)
     float cr = std::cos(roll * 0.5f);
     float sr = std::sin(roll * 0.5f);
 
-    return Quat(
+    return {
         sr * cp * cy - cr * sp * sy,  // X
         cr * sp * cy + sr * cp * sy,  // Y
         cr * cp * sy - sr * sp * cy,  // Z
         cr * cp * cy + sr * sp * sy   // W
-    );
+    };
 }
 
 // 转换为旋转矩阵
 Matrix4 Quat::ToMatrix4() const
 {
-    glm::quat glmQuat = static_cast<glm::quat>(*this);
+    auto glmQuat = static_cast<glm::quat>(*this);
     glm::mat4 result = glm::mat4_cast(glmQuat);
     return Matrix4(result);
 }
 
 Matrix3 Quat::ToMatrix3() const
 {
-    glm::quat glmQuat = static_cast<glm::quat>(*this);
+    auto glmQuat = static_cast<glm::quat>(*this);
     glm::mat3 result = glm::mat3_cast(glmQuat);
     return Matrix3(result);
 }
@@ -252,8 +252,8 @@ Vector3 Quat::ToEulerAngles() const
 // 球面线性插值
 Quat Quat::Slerp(const Quat& a, const Quat& b, float t)
 {
-    glm::quat glmA = static_cast<glm::quat>(a);
-    glm::quat glmB = static_cast<glm::quat>(b);
+    auto glmA = static_cast<glm::quat>(a);
+    auto glmB = static_cast<glm::quat>(b);
     glm::quat result = glm::slerp(glmA, glmB, t);
     return Quat(result);
 }

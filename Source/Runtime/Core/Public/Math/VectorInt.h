@@ -19,7 +19,7 @@ struct IntRect;
 /// <summary>
 /// 二维整数向量 - 用于像素坐标、纹理尺寸等
 /// </summary>
-struct IntVector2
+struct [[nodiscard]] IntVector2
 {
     int32_t X, Y;
 
@@ -33,12 +33,12 @@ struct IntVector2
     static const IntVector2 One;
 
     // 运算符重载
-    IntVector2 operator+(const IntVector2& other) const { return IntVector2(X + other.X, Y + other.Y); }
-    IntVector2 operator-(const IntVector2& other) const { return IntVector2(X - other.X, Y - other.Y); }
-    IntVector2 operator*(const IntVector2& other) const { return IntVector2(X * other.X, Y * other.Y); }
-    IntVector2 operator*(int32_t scalar) const { return IntVector2(X * scalar, Y * scalar); }
-    IntVector2 operator/(int32_t scalar) const { return IntVector2(X / scalar, Y / scalar); }
-    IntVector2 operator-() const { return IntVector2(-X, -Y); }
+    IntVector2 operator+(const IntVector2& other) const { return {X + other.X, Y + other.Y}; }
+    IntVector2 operator-(const IntVector2& other) const { return {X - other.X, Y - other.Y}; }
+    IntVector2 operator*(const IntVector2& other) const { return {X * other.X, Y * other.Y}; }
+    IntVector2 operator*(int32_t scalar) const { return {X * scalar, Y * scalar}; }
+    IntVector2 operator/(int32_t scalar) const { return {X / scalar, Y / scalar}; }
+    IntVector2 operator-() const { return {-X, -Y}; }
 
     IntVector2& operator+=(const IntVector2& other) { X += other.X; Y += other.Y; return *this; }
     IntVector2& operator-=(const IntVector2& other) { X -= other.X; Y -= other.Y; return *this; }
@@ -51,14 +51,14 @@ struct IntVector2
     /// <summary>
     /// 转换为浮点向量
     /// </summary>
-    Vector2 ToFloat() const { return Vector2(static_cast<float>(X), static_cast<float>(Y)); }
+    Vector2 ToFloat() const { return {static_cast<float>(X), static_cast<float>(Y)}; }
 
     /// <summary>
     /// 从浮点向量转换（截断取整）
     /// </summary>
     static IntVector2 FromFloat(const Vector2& v)
     {
-        return IntVector2(static_cast<int32_t>(v.X), static_cast<int32_t>(v.Y));
+        return {static_cast<int32_t>(v.X), static_cast<int32_t>(v.Y)};
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ struct IntVector2
     /// </summary>
     static IntVector2 Min(const IntVector2& a, const IntVector2& b)
     {
-        return IntVector2(std::min(a.X, b.X), std::min(a.Y, b.Y));
+        return {std::min(a.X, b.X), std::min(a.Y, b.Y)};
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ struct IntVector2
     /// </summary>
     static IntVector2 Max(const IntVector2& a, const IntVector2& b)
     {
-        return IntVector2(std::max(a.X, b.X), std::max(a.Y, b.Y));
+        return {std::max(a.X, b.X), std::max(a.Y, b.Y)};
     }
 };
 
@@ -100,12 +100,12 @@ struct IntVector3
     static const IntVector3 One;
 
     // 运算符重载
-    IntVector3 operator+(const IntVector3& other) const { return IntVector3(X + other.X, Y + other.Y, Z + other.Z); }
-    IntVector3 operator-(const IntVector3& other) const { return IntVector3(X - other.X, Y - other.Y, Z - other.Z); }
-    IntVector3 operator*(const IntVector3& other) const { return IntVector3(X * other.X, Y * other.Y, Z * other.Z); }
-    IntVector3 operator*(int32_t scalar) const { return IntVector3(X * scalar, Y * scalar, Z * scalar); }
-    IntVector3 operator/(int32_t scalar) const { return IntVector3(X / scalar, Y / scalar, Z / scalar); }
-    IntVector3 operator-() const { return IntVector3(-X, -Y, -Z); }
+    IntVector3 operator+(const IntVector3& other) const { return {X + other.X, Y + other.Y, Z + other.Z}; }
+    IntVector3 operator-(const IntVector3& other) const { return {X - other.X, Y - other.Y, Z - other.Z}; }
+    IntVector3 operator*(const IntVector3& other) const { return {X * other.X, Y * other.Y, Z * other.Z}; }
+    IntVector3 operator*(int32_t scalar) const { return {X * scalar, Y * scalar, Z * scalar}; }
+    IntVector3 operator/(int32_t scalar) const { return {X / scalar, Y / scalar, Z / scalar}; }
+    IntVector3 operator-() const { return {-X, -Y, -Z}; }
 
     IntVector3& operator+=(const IntVector3& other) { X += other.X; Y += other.Y; Z += other.Z; return *this; }
     IntVector3& operator-=(const IntVector3& other) { X -= other.X; Y -= other.Y; Z -= other.Z; return *this; }
@@ -118,14 +118,14 @@ struct IntVector3
     /// <summary>
     /// 转换为浮点向量
     /// </summary>
-    Vector3 ToFloat() const { return Vector3(static_cast<float>(X), static_cast<float>(Y), static_cast<float>(Z)); }
+    Vector3 ToFloat() const { return {static_cast<float>(X), static_cast<float>(Y), static_cast<float>(Z)}; }
 
     /// <summary>
     /// 从浮点向量转换（截断取整）
     /// </summary>
     static IntVector3 FromFloat(const Vector3& v)
     {
-        return IntVector3(static_cast<int32_t>(v.X), static_cast<int32_t>(v.Y), static_cast<int32_t>(v.Z));
+        return {static_cast<int32_t>(v.X), static_cast<int32_t>(v.Y), static_cast<int32_t>(v.Z)};
     }
 
     /// <summary>
@@ -133,7 +133,7 @@ struct IntVector3
     /// </summary>
     static IntVector3 Min(const IntVector3& a, const IntVector3& b)
     {
-        return IntVector3(std::min(a.X, b.X), std::min(a.Y, b.Y), std::min(a.Z, b.Z));
+        return {std::min(a.X, b.X), std::min(a.Y, b.Y), std::min(a.Z, b.Z)};
     }
 
     /// <summary>
@@ -141,7 +141,7 @@ struct IntVector3
     /// </summary>
     static IntVector3 Max(const IntVector3& a, const IntVector3& b)
     {
-        return IntVector3(std::max(a.X, b.X), std::max(a.Y, b.Y), std::max(a.Z, b.Z));
+        return {std::max(a.X, b.X), std::max(a.Y, b.Y), std::max(a.Z, b.Z)};
     }
 };
 
@@ -154,7 +154,7 @@ inline IntVector3 operator*(int32_t scalar, const IntVector3& vec) { return vec 
 /// 浮点 2D 矩形 - 用于视口定义、UV 裁剪等
 /// 存储格式：(X, Y, Width, Height)，与 Vulkan/D3D viewport 一致
 /// </summary>
-struct Rect
+struct [[nodiscard]] Rect
 {
     float X, Y, Width, Height;
 
@@ -172,7 +172,7 @@ struct Rect
     /// </summary>
     static Rect FromMinMax(float minX, float minY, float maxX, float maxY)
     {
-        return Rect(minX, minY, maxX - minX, maxY - minY);
+        return {minX, minY, maxX - minX, maxY - minY};
     }
 
     /// <summary>
@@ -180,7 +180,7 @@ struct Rect
     /// </summary>
     static Rect FromCenterSize(const Vector2& center, const Vector2& size)
     {
-        return Rect(center.X - size.X * 0.5f, center.Y - size.Y * 0.5f, size.X, size.Y);
+        return {center.X - size.X * 0.5f, center.Y - size.Y * 0.5f, size.X, size.Y};
     }
 
     // 属性
@@ -189,11 +189,11 @@ struct Rect
     float GetRight() const { return X + Width; }
     float GetBottom() const { return Y + Height; }
 
-    Vector2 GetMin() const { return Vector2(X, Y); }
-    Vector2 GetMax() const { return Vector2(X + Width, Y + Height); }
-    Vector2 GetCenter() const { return Vector2(X + Width * 0.5f, Y + Height * 0.5f); }
-    Vector2 GetSize() const { return Vector2(Width, Height); }
-    Vector2 GetExtents() const { return Vector2(Width * 0.5f, Height * 0.5f); }
+    Vector2 GetMin() const { return {X, Y}; }
+    Vector2 GetMax() const { return {X + Width, Y + Height}; }
+    Vector2 GetCenter() const { return {X + Width * 0.5f, Y + Height * 0.5f}; }
+    Vector2 GetSize() const { return {Width, Height}; }
+    Vector2 GetExtents() const { return {Width * 0.5f, Height * 0.5f}; }
     float GetArea() const { return Width * Height; }
 
     /// <summary>
@@ -235,7 +235,7 @@ struct Rect
 
         if (right <= left || bottom <= top)
             return Rect::Zero;
-        return Rect(left, top, right - left, bottom - top);
+        return {left, top, right - left, bottom - top};
     }
 
     /// <summary>
@@ -247,7 +247,7 @@ struct Rect
         float top = std::min(Y, other.Y);
         float right = std::max(X + Width, other.X + other.Width);
         float bottom = std::max(Y + Height, other.Y + other.Height);
-        return Rect(left, top, right - left, bottom - top);
+        return {left, top, right - left, bottom - top};
     }
 
     /// <summary>
@@ -255,7 +255,7 @@ struct Rect
     /// </summary>
     Rect Inflate(float amount) const
     {
-        return Rect(X - amount, Y - amount, Width + amount * 2.0f, Height + amount * 2.0f);
+        return {X - amount, Y - amount, Width + amount * 2.0f, Height + amount * 2.0f};
     }
 
     bool operator==(const Rect& other) const
@@ -270,7 +270,7 @@ struct Rect
 /// <summary>
 /// 整数 2D 矩形 - 用于像素区域、纹理裁剪、视口等
 /// </summary>
-struct IntRect
+struct [[nodiscard]] IntRect
 {
     int32_t X, Y, Width, Height;
 
@@ -287,7 +287,7 @@ struct IntRect
     /// </summary>
     static IntRect FromMinMax(int32_t minX, int32_t minY, int32_t maxX, int32_t maxY)
     {
-        return IntRect(minX, minY, maxX - minX, maxY - minY);
+        return {minX, minY, maxX - minX, maxY - minY};
     }
 
     // 属性
@@ -296,9 +296,9 @@ struct IntRect
     int32_t GetRight() const { return X + Width; }
     int32_t GetBottom() const { return Y + Height; }
 
-    IntVector2 GetMin() const { return IntVector2(X, Y); }
-    IntVector2 GetMax() const { return IntVector2(X + Width, Y + Height); }
-    IntVector2 GetSize() const { return IntVector2(Width, Height); }
+    IntVector2 GetMin() const { return {X, Y}; }
+    IntVector2 GetMax() const { return {X + Width, Y + Height}; }
+    IntVector2 GetSize() const { return {Width, Height}; }
     int32_t GetArea() const { return Width * Height; }
 
     /// <summary>
@@ -331,7 +331,7 @@ struct IntRect
 
         if (right <= left || bottom <= top)
             return IntRect::Zero;
-        return IntRect(left, top, right - left, bottom - top);
+        return {left, top, right - left, bottom - top};
     }
 
     /// <summary>
@@ -339,8 +339,8 @@ struct IntRect
     /// </summary>
     Rect ToFloat() const
     {
-        return Rect(static_cast<float>(X), static_cast<float>(Y),
-                    static_cast<float>(Width), static_cast<float>(Height));
+        return {static_cast<float>(X), static_cast<float>(Y),
+                static_cast<float>(Width), static_cast<float>(Height)};
     }
 
     /// <summary>
@@ -348,8 +348,8 @@ struct IntRect
     /// </summary>
     static IntRect FromFloat(const Rect& r)
     {
-        return IntRect(static_cast<int32_t>(r.X), static_cast<int32_t>(r.Y),
-                       static_cast<int32_t>(r.Width), static_cast<int32_t>(r.Height));
+        return {static_cast<int32_t>(r.X), static_cast<int32_t>(r.Y),
+                static_cast<int32_t>(r.Width), static_cast<int32_t>(r.Height)};
     }
 
     bool operator==(const IntRect& other) const

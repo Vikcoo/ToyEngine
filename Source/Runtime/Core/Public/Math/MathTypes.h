@@ -25,7 +25,7 @@ struct Matrix4;
 struct Quat;
 
 // ==================== Vector2 ====================
-struct Vector2
+struct [[nodiscard]] Vector2
 {
     float X, Y;
 
@@ -36,7 +36,7 @@ struct Vector2
 
     // 从 glm 构造/转换
     explicit Vector2(const glm::vec2& v) : X(v.x), Y(v.y) {}
-    operator glm::vec2() const { return glm::vec2(X, Y); }
+    operator glm::vec2() const { return {X, Y}; }
 
     // 常量
     static const Vector2 Zero;
@@ -45,13 +45,13 @@ struct Vector2
     static const Vector2 Up;
 
     // 运算符重载
-    Vector2 operator+(const Vector2& other) const { return Vector2(X + other.X, Y + other.Y); }
-    Vector2 operator-(const Vector2& other) const { return Vector2(X - other.X, Y - other.Y); }
-    Vector2 operator*(const Vector2& other) const { return Vector2(X * other.X, Y * other.Y); }
-    Vector2 operator/(const Vector2& other) const { return Vector2(X / other.X, Y / other.Y); }
-    Vector2 operator*(float scalar) const { return Vector2(X * scalar, Y * scalar); }
-    Vector2 operator/(float scalar) const { return Vector2(X / scalar, Y / scalar); }
-    Vector2 operator-() const { return Vector2(-X, -Y); }
+    Vector2 operator+(const Vector2& other) const { return {X + other.X, Y + other.Y}; }
+    Vector2 operator-(const Vector2& other) const { return {X - other.X, Y - other.Y}; }
+    Vector2 operator*(const Vector2& other) const { return {X * other.X, Y * other.Y}; }
+    Vector2 operator/(const Vector2& other) const { return {X / other.X, Y / other.Y}; }
+    Vector2 operator*(float scalar) const { return {X * scalar, Y * scalar}; }
+    Vector2 operator/(float scalar) const { return {X / scalar, Y / scalar}; }
+    Vector2 operator-() const { return {-X, -Y}; }
 
     Vector2& operator+=(const Vector2& other) { X += other.X; Y += other.Y; return *this; }
     Vector2& operator-=(const Vector2& other) { X -= other.X; Y -= other.Y; return *this; }
@@ -64,13 +64,13 @@ struct Vector2
     bool operator!=(const Vector2& other) const { return !(*this == other); }
 
     // 常用方法
-    float Length() const { return std::sqrt(X * X + Y * Y); }
-    float LengthSquared() const { return X * X + Y * Y; }
+    [[nodiscard]] float Length() const { return std::sqrt(X * X + Y * Y); }
+    [[nodiscard]] float LengthSquared() const { return X * X + Y * Y; }
 
     Vector2 Normalize() const
     {
         float len = Length();
-        return len > 0.0f ? Vector2(X / len, Y / len) : Vector2::Zero;
+        return len > 0.0f ? Vector2{X / len, Y / len} : Vector2::Zero;
     }
 
     void NormalizeInPlace()
@@ -86,7 +86,7 @@ struct Vector2
     /// <summary>
     /// 近似相等比较（考虑浮点误差）
     /// </summary>
-    bool Equals(const Vector2& other, float epsilon = 1e-6f) const
+    [[nodiscard]] bool Equals(const Vector2& other, float epsilon = 1e-6f) const
     {
         return std::abs(X - other.X) <= epsilon && std::abs(Y - other.Y) <= epsilon;
     }
@@ -96,7 +96,7 @@ struct Vector2
     /// </summary>
     static Vector2 Min(const Vector2& a, const Vector2& b)
     {
-        return Vector2(std::min(a.X, b.X), std::min(a.Y, b.Y));
+        return {std::min(a.X, b.X), std::min(a.Y, b.Y)};
     }
 
     /// <summary>
@@ -104,7 +104,7 @@ struct Vector2
     /// </summary>
     static Vector2 Max(const Vector2& a, const Vector2& b)
     {
-        return Vector2(std::max(a.X, b.X), std::max(a.Y, b.Y));
+        return {std::max(a.X, b.X), std::max(a.Y, b.Y)};
     }
 
     // 线性插值
@@ -118,7 +118,7 @@ struct Vector2
 inline Vector2 operator*(float scalar, const Vector2& vec) { return vec * scalar; }
 
 // ==================== Vector3 ====================
-struct Vector3
+struct [[nodiscard]] Vector3
 {
     float X, Y, Z;
 
@@ -129,7 +129,7 @@ struct Vector3
 
     // 从 glm 构造/转换
     explicit Vector3(const glm::vec3& v) : X(v.x), Y(v.y), Z(v.z) {}
-    operator glm::vec3() const { return glm::vec3(X, Y, Z); }
+    operator glm::vec3() const { return {X, Y, Z}; }
 
     // 常量
     static const Vector3 Zero;
@@ -139,13 +139,13 @@ struct Vector3
     static const Vector3 Forward;
 
     // 运算符重载
-    Vector3 operator+(const Vector3& other) const { return Vector3(X + other.X, Y + other.Y, Z + other.Z); }
-    Vector3 operator-(const Vector3& other) const { return Vector3(X - other.X, Y - other.Y, Z - other.Z); }
-    Vector3 operator*(const Vector3& other) const { return Vector3(X * other.X, Y * other.Y, Z * other.Z); }
-    Vector3 operator/(const Vector3& other) const { return Vector3(X / other.X, Y / other.Y, Z / other.Z); }
-    Vector3 operator*(float scalar) const { return Vector3(X * scalar, Y * scalar, Z * scalar); }
-    Vector3 operator/(float scalar) const { return Vector3(X / scalar, Y / scalar, Z / scalar); }
-    Vector3 operator-() const { return Vector3(-X, -Y, -Z); }
+    Vector3 operator+(const Vector3& other) const { return {X + other.X, Y + other.Y, Z + other.Z}; }
+    Vector3 operator-(const Vector3& other) const { return {X - other.X, Y - other.Y, Z - other.Z}; }
+    Vector3 operator*(const Vector3& other) const { return {X * other.X, Y * other.Y, Z * other.Z}; }
+    Vector3 operator/(const Vector3& other) const { return {X / other.X, Y / other.Y, Z / other.Z}; }
+    Vector3 operator*(float scalar) const { return {X * scalar, Y * scalar, Z * scalar}; }
+    Vector3 operator/(float scalar) const { return {X / scalar, Y / scalar, Z / scalar}; }
+    Vector3 operator-() const { return {-X, -Y, -Z}; }
 
     Vector3& operator+=(const Vector3& other) { X += other.X; Y += other.Y; Z += other.Z; return *this; }
     Vector3& operator-=(const Vector3& other) { X -= other.X; Y -= other.Y; Z -= other.Z; return *this; }
@@ -158,13 +158,13 @@ struct Vector3
     bool operator!=(const Vector3& other) const { return !(*this == other); }
 
     // 常用方法
-    float Length() const { return std::sqrt(X * X + Y * Y + Z * Z); }
-    float LengthSquared() const { return X * X + Y * Y + Z * Z; }
+    [[nodiscard]] float Length() const { return std::sqrt(X * X + Y * Y + Z * Z); }
+    [[nodiscard]] float LengthSquared() const { return X * X + Y * Y + Z * Z; }
 
     Vector3 Normalize() const
     {
         float len = Length();
-        return len > 0.0f ? Vector3(X / len, Y / len, Z / len) : Vector3::Zero;
+        return len > 0.0f ? Vector3{X / len, Y / len, Z / len} : Vector3::Zero;
     }
 
     void NormalizeInPlace()
@@ -176,11 +176,11 @@ struct Vector3
     static float Dot(const Vector3& a, const Vector3& b) { return a.X * b.X + a.Y * b.Y + a.Z * b.Z; }
     static Vector3 Cross(const Vector3& a, const Vector3& b)
     {
-        return Vector3(
+        return {
             a.Y * b.Z - a.Z * b.Y,
             a.Z * b.X - a.X * b.Z,
             a.X * b.Y - a.Y * b.X
-        );
+        };
     }
     static float Distance(const Vector3& a, const Vector3& b) { return (a - b).Length(); }
     static float DistanceSquared(const Vector3& a, const Vector3& b) { return (a - b).LengthSquared(); }
@@ -194,7 +194,7 @@ struct Vector3
     /// <summary>
     /// 近似相等比较（考虑浮点误差）
     /// </summary>
-    bool Equals(const Vector3& other, float epsilon = 1e-6f) const
+    [[nodiscard]] bool Equals(const Vector3& other, float epsilon = 1e-6f) const
     {
         return std::abs(X - other.X) <= epsilon &&
                std::abs(Y - other.Y) <= epsilon &&
@@ -206,7 +206,7 @@ struct Vector3
     /// </summary>
     static Vector3 Min(const Vector3& a, const Vector3& b)
     {
-        return Vector3(std::min(a.X, b.X), std::min(a.Y, b.Y), std::min(a.Z, b.Z));
+        return {std::min(a.X, b.X), std::min(a.Y, b.Y), std::min(a.Z, b.Z)};
     }
 
     /// <summary>
@@ -214,7 +214,7 @@ struct Vector3
     /// </summary>
     static Vector3 Max(const Vector3& a, const Vector3& b)
     {
-        return Vector3(std::max(a.X, b.X), std::max(a.Y, b.Y), std::max(a.Z, b.Z));
+        return {std::max(a.X, b.X), std::max(a.Y, b.Y), std::max(a.Z, b.Z)};
     }
 
     /// <summary>
@@ -317,7 +317,7 @@ struct Vector3
 inline Vector3 operator*(float scalar, const Vector3& vec) { return vec * scalar; }
 
 // ==================== Vector4 ====================
-struct Vector4
+struct [[nodiscard]] Vector4
 {
     float X, Y, Z, W;
 
@@ -329,23 +329,23 @@ struct Vector4
 
     // 从 glm 构造/转换
     explicit Vector4(const glm::vec4& v) : X(v.x), Y(v.y), Z(v.z), W(v.w) {}
-    operator glm::vec4() const { return glm::vec4(X, Y, Z, W); }
+    operator glm::vec4() const { return {X, Y, Z, W}; }
 
     // 获取 XYZ 部分作为 Vector3
-    Vector3 GetXYZ() const { return Vector3(X, Y, Z); }
+    Vector3 GetXYZ() const { return {X, Y, Z}; }
 
     // 常量
     static const Vector4 Zero;
     static const Vector4 One;
 
     // 运算符重载
-    Vector4 operator+(const Vector4& other) const { return Vector4(X + other.X, Y + other.Y, Z + other.Z, W + other.W); }
-    Vector4 operator-(const Vector4& other) const { return Vector4(X - other.X, Y - other.Y, Z - other.Z, W - other.W); }
-    Vector4 operator*(const Vector4& other) const { return Vector4(X * other.X, Y * other.Y, Z * other.Z, W * other.W); }
-    Vector4 operator/(const Vector4& other) const { return Vector4(X / other.X, Y / other.Y, Z / other.Z, W / other.W); }
-    Vector4 operator*(float scalar) const { return Vector4(X * scalar, Y * scalar, Z * scalar, W * scalar); }
-    Vector4 operator/(float scalar) const { return Vector4(X / scalar, Y / scalar, Z / scalar, W / scalar); }
-    Vector4 operator-() const { return Vector4(-X, -Y, -Z, -W); }
+    Vector4 operator+(const Vector4& other) const { return {X + other.X, Y + other.Y, Z + other.Z, W + other.W}; }
+    Vector4 operator-(const Vector4& other) const { return {X - other.X, Y - other.Y, Z - other.Z, W - other.W}; }
+    Vector4 operator*(const Vector4& other) const { return {X * other.X, Y * other.Y, Z * other.Z, W * other.W}; }
+    Vector4 operator/(const Vector4& other) const { return {X / other.X, Y / other.Y, Z / other.Z, W / other.W}; }
+    Vector4 operator*(float scalar) const { return {X * scalar, Y * scalar, Z * scalar, W * scalar}; }
+    Vector4 operator/(float scalar) const { return {X / scalar, Y / scalar, Z / scalar, W / scalar}; }
+    Vector4 operator-() const { return {-X, -Y, -Z, -W}; }
 
     Vector4& operator+=(const Vector4& other) { X += other.X; Y += other.Y; Z += other.Z; W += other.W; return *this; }
     Vector4& operator-=(const Vector4& other) { X -= other.X; Y -= other.Y; Z -= other.Z; W -= other.W; return *this; }
@@ -358,13 +358,13 @@ struct Vector4
     bool operator!=(const Vector4& other) const { return !(*this == other); }
 
     // 常用方法
-    float Length() const { return std::sqrt(X * X + Y * Y + Z * Z + W * W); }
-    float LengthSquared() const { return X * X + Y * Y + Z * Z + W * W; }
+    [[nodiscard]] float Length() const { return std::sqrt(X * X + Y * Y + Z * Z + W * W); }
+    [[nodiscard]] float LengthSquared() const { return X * X + Y * Y + Z * Z + W * W; }
 
     Vector4 Normalize() const
     {
         float len = Length();
-        return len > 0.0f ? Vector4(X / len, Y / len, Z / len, W / len) : Vector4::Zero;
+        return len > 0.0f ? Vector4{X / len, Y / len, Z / len, W / len} : Vector4::Zero;
     }
 
     void NormalizeInPlace()
@@ -378,7 +378,7 @@ struct Vector4
     /// <summary>
     /// 近似相等比较（考虑浮点误差）
     /// </summary>
-    bool Equals(const Vector4& other, float epsilon = 1e-6f) const
+    [[nodiscard]] bool Equals(const Vector4& other, float epsilon = 1e-6f) const
     {
         return std::abs(X - other.X) <= epsilon &&
                std::abs(Y - other.Y) <= epsilon &&
@@ -391,7 +391,7 @@ struct Vector4
     /// </summary>
     static Vector4 Min(const Vector4& a, const Vector4& b)
     {
-        return Vector4(std::min(a.X, b.X), std::min(a.Y, b.Y), std::min(a.Z, b.Z), std::min(a.W, b.W));
+        return {std::min(a.X, b.X), std::min(a.Y, b.Y), std::min(a.Z, b.Z), std::min(a.W, b.W)};
     }
 
     /// <summary>
@@ -399,7 +399,7 @@ struct Vector4
     /// </summary>
     static Vector4 Max(const Vector4& a, const Vector4& b)
     {
-        return Vector4(std::max(a.X, b.X), std::max(a.Y, b.Y), std::max(a.Z, b.Z), std::max(a.W, b.W));
+        return {std::max(a.X, b.X), std::max(a.Y, b.Y), std::max(a.Z, b.Z), std::max(a.W, b.W)};
     }
 
     // 线性插值
@@ -413,7 +413,7 @@ struct Vector4
 inline Vector4 operator*(float scalar, const Vector4& vec) { return vec * scalar; }
 
 // ==================== Matrix3 ====================
-struct Matrix3
+struct [[nodiscard]] Matrix3
 {
     // 3x3 矩阵，按列主序存储（与 glm 一致）
     float M[3][3];
@@ -474,11 +474,11 @@ struct Matrix3
 
     Vector3 operator*(const Vector3& vec) const
     {
-        return Vector3(
+        return {
             M[0][0] * vec.X + M[1][0] * vec.Y + M[2][0] * vec.Z,
             M[0][1] * vec.X + M[1][1] * vec.Y + M[2][1] * vec.Z,
             M[0][2] * vec.X + M[1][2] * vec.Y + M[2][2] * vec.Z
-        );
+        };
     }
 
     // 转置
@@ -497,14 +497,14 @@ struct Matrix3
     /// <summary>
     /// 计算 3x3 矩阵行列式
     /// </summary>
-    float Determinant() const;
+    [[nodiscard]] float Determinant() const;
 
     // 获取原始数据指针（用于传递给图形 API）
-    const float* Data() const { return &M[0][0]; }
+    [[nodiscard]] const float* Data() const { return &M[0][0]; }
 };
 
 // ==================== Matrix4 ====================
-struct Matrix4
+struct [[nodiscard]] Matrix4
 {
     // 4x4 矩阵，按列主序存储（与 glm 一致）
     float M[4][4];
@@ -565,12 +565,12 @@ struct Matrix4
 
     Vector4 operator*(const Vector4& vec) const
     {
-        return Vector4(
+        return {
             M[0][0] * vec.X + M[1][0] * vec.Y + M[2][0] * vec.Z + M[3][0] * vec.W,
             M[0][1] * vec.X + M[1][1] * vec.Y + M[2][1] * vec.Z + M[3][1] * vec.W,
             M[0][2] * vec.X + M[1][2] * vec.Y + M[2][2] * vec.Z + M[3][2] * vec.W,
             M[0][3] * vec.X + M[1][3] * vec.Y + M[2][3] * vec.Z + M[3][3] * vec.W
-        );
+        };
     }
 
     // 转置
@@ -587,12 +587,12 @@ struct Matrix4
     Matrix4 Inverse() const;
 
     // 获取原始数据指针（用于传递给图形 API）
-    const float* Data() const { return &M[0][0]; }
+    [[nodiscard]] const float* Data() const { return &M[0][0]; }
 
     /// <summary>
     /// 计算 4x4 矩阵行列式
     /// </summary>
-    float Determinant() const;
+    [[nodiscard]] float Determinant() const;
 
     /// <summary>
     /// 获取法线变换矩阵（逆转置 3x3 矩阵）
@@ -642,7 +642,7 @@ struct Matrix4
 };
 
 // ==================== Quat（四元数） ====================
-struct Quat
+struct [[nodiscard]] Quat
 {
     float X, Y, Z, W;  // W 是实部，X,Y,Z 是虚部
 
@@ -667,17 +667,17 @@ struct Quat
 
     // 从 glm 构造/转换
     explicit Quat(const glm::quat& q) : X(q.x), Y(q.y), Z(q.z), W(q.w) {}
-    operator glm::quat() const { return glm::quat(W, X, Y, Z); }
+    operator glm::quat() const { return {W, X, Y, Z}; }
 
     // 常量
     static const Quat Identity;
 
     // 运算符重载
-    Quat operator+(const Quat& other) const { return Quat(X + other.X, Y + other.Y, Z + other.Z, W + other.W); }
-    Quat operator-(const Quat& other) const { return Quat(X - other.X, Y - other.Y, Z - other.Z, W - other.W); }
-    Quat operator-() const { return Quat(-X, -Y, -Z, -W); }
-    Quat operator*(float scalar) const { return Quat(X * scalar, Y * scalar, Z * scalar, W * scalar); }
-    Quat operator/(float scalar) const { return Quat(X / scalar, Y / scalar, Z / scalar, W / scalar); }
+    Quat operator+(const Quat& other) const { return {X + other.X, Y + other.Y, Z + other.Z, W + other.W}; }
+    Quat operator-(const Quat& other) const { return {X - other.X, Y - other.Y, Z - other.Z, W - other.W}; }
+    Quat operator-() const { return {-X, -Y, -Z, -W}; }
+    Quat operator*(float scalar) const { return {X * scalar, Y * scalar, Z * scalar, W * scalar}; }
+    Quat operator/(float scalar) const { return {X / scalar, Y / scalar, Z / scalar, W / scalar}; }
 
     Quat& operator+=(const Quat& other) { X += other.X; Y += other.Y; Z += other.Z; W += other.W; return *this; }
     Quat& operator-=(const Quat& other) { X -= other.X; Y -= other.Y; Z -= other.Z; W -= other.W; return *this; }
@@ -687,12 +687,12 @@ struct Quat
     // 四元数乘法（表示旋转的组合）
     Quat operator*(const Quat& other) const
     {
-        return Quat(
+        return {
             W * other.X + X * other.W + Y * other.Z - Z * other.Y,
             W * other.Y - X * other.Z + Y * other.W + Z * other.X,
             W * other.Z + X * other.Y - Y * other.X + Z * other.W,
             W * other.W - X * other.X - Y * other.Y - Z * other.Z
-        );
+        };
     }
 
     Quat& operator*=(const Quat& other) { *this = *this * other; return *this; }
@@ -703,7 +703,7 @@ struct Quat
         // q * v * q^-1
         Quat vecQuat(vec.X, vec.Y, vec.Z, 0.0f);
         Quat result = *this * vecQuat * Inverse();
-        return Vector3(result.X, result.Y, result.Z);
+        return {result.X, result.Y, result.Z};
     }
 
     bool operator==(const Quat& other) const { return X == other.X && Y == other.Y && Z == other.Z && W == other.W; }
@@ -713,7 +713,7 @@ struct Quat
     /// 近似相等比较（考虑浮点误差）
     /// 注意：四元数 q 和 -q 表示相同旋转，此方法会同时检查两种情况
     /// </summary>
-    bool Equals(const Quat& other, float epsilon = 1e-6f) const
+    [[nodiscard]] bool Equals(const Quat& other, float epsilon = 1e-6f) const
     {
         // q 和 -q 表示相同旋转
         bool direct = std::abs(X - other.X) <= epsilon &&
@@ -729,13 +729,13 @@ struct Quat
     }
 
     // 常用方法
-    float Length() const { return std::sqrt(X * X + Y * Y + Z * Z + W * W); }
-    float LengthSquared() const { return X * X + Y * Y + Z * Z + W * W; }
+    [[nodiscard]] float Length() const { return std::sqrt(X * X + Y * Y + Z * Z + W * W); }
+    [[nodiscard]] float LengthSquared() const { return X * X + Y * Y + Z * Z + W * W; }
 
     Quat Normalize() const
     {
         float len = Length();
-        return len > 0.0f ? Quat(X / len, Y / len, Z / len, W / len) : Quat::Identity;
+        return len > 0.0f ? Quat{X / len, Y / len, Z / len, W / len} : Quat::Identity;
     }
 
     void NormalizeInPlace()
@@ -744,7 +744,7 @@ struct Quat
         if (len > 0.0f) { X /= len; Y /= len; Z /= len; W /= len; }
     }
 
-    Quat Conjugate() const { return Quat(-X, -Y, -Z, W); }
+    Quat Conjugate() const { return {-X, -Y, -Z, W}; }
 
     Quat Inverse() const
     {

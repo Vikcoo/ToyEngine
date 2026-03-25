@@ -26,11 +26,11 @@ public:
     TlsfAllocator(const TlsfAllocator&) = delete;
     TlsfAllocator& operator=(const TlsfAllocator&) = delete;
 
-    void* Allocate(std::size_t size, std::size_t align, MemoryTag tag);
-    void* Reallocate(void* userPtr, std::size_t newSize, std::size_t align, MemoryTag tag);
+    [[nodiscard]] void* Allocate(std::size_t size, std::size_t align, MemoryTag tag);
+    [[nodiscard]] void* Reallocate(void* userPtr, std::size_t newSize, std::size_t align, MemoryTag tag);
     void  Free(void* userPtr);
 
-    MemoryStats GetStats() const;
+    [[nodiscard]] MemoryStats GetStats() const;
 
 private:
     struct PoolRecord
@@ -51,22 +51,22 @@ private:
 
     static constexpr std::uint32_t HeaderMagic = 0x54454D4D; // 'T''E''M''M'
 
-    static std::size_t DefaultAlign();
-    static std::size_t NormalizeAlign(std::size_t align);
-    static bool IsPowerOfTwo(std::size_t x);
-    static std::uintptr_t AlignUp(std::uintptr_t x, std::size_t align);
-    static bool CheckedAdd(std::size_t a, std::size_t b, std::size_t& out);
+    [[nodiscard]] static std::size_t DefaultAlign();
+    [[nodiscard]] static std::size_t NormalizeAlign(std::size_t align);
+    [[nodiscard]] static bool IsPowerOfTwo(std::size_t x);
+    [[nodiscard]] static std::uintptr_t AlignUp(std::uintptr_t x, std::size_t align);
+    [[nodiscard]] static bool CheckedAdd(std::size_t a, std::size_t b, std::size_t& out);
 
     // OS 后备内存
-    static void* OsReserveCommit(std::size_t bytes, std::size_t align);
+    [[nodiscard]] static void* OsReserveCommit(std::size_t bytes, std::size_t align);
     static void  OsRelease(void* ptr, std::size_t bytes);
 
-    bool EnsureInitializedLocked();
-    bool AddPoolLocked(std::size_t bytes);
-    void* AllocateLocked(std::size_t size, std::size_t align, MemoryTag tag);
+    [[nodiscard]] bool EnsureInitializedLocked();
+    [[nodiscard]] bool AddPoolLocked(std::size_t bytes);
+    [[nodiscard]] void* AllocateLocked(std::size_t size, std::size_t align, MemoryTag tag);
     void  FreeLocked(void* userPtr);
 
-    static AllocHeader* HeaderFromUserPtr(void* userPtr);
+    [[nodiscard]] static AllocHeader* HeaderFromUserPtr(void* userPtr);
 
     void OnAllocLocked(MemoryTag tag, std::uint64_t bytes);
     void OnFreeLocked(MemoryTag tag, std::uint64_t bytes);

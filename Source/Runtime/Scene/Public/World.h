@@ -39,11 +39,11 @@ public:
 
     /// 添加 Actor 到世界
     /// 添加后会遍历其 PrimitiveComponent 注册到 FScene
-    TActor* AddActor(std::unique_ptr<TActor> actor);
+    [[nodiscard]] TActor* AddActor(std::unique_ptr<TActor> actor);
 
     /// 创建 Actor（模板方法）
     template<typename T = TActor, typename... Args>
-    T* SpawnActor(Args&&... args)
+    [[nodiscard]] T* SpawnActor(Args&&... args)
     {
         auto actor = std::make_unique<T>(std::forward<Args>(args)...);
         T* ptr = actor.get();

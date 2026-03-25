@@ -34,8 +34,12 @@ namespace TE {
 class Engine
 {
 public:
+    // 禁止拷贝
+    Engine(const Engine&) = delete;
+    Engine& operator=(const Engine&) = delete;
+
     /// 获取引擎单例
-    static Engine& Get();
+    [[nodiscard]] static Engine& Get();
 
     /// 初始化所有子系统
     /// 顺序：Log → Memory → Window → RHI → World/FScene/SceneRenderer → 构建场景
@@ -51,39 +55,37 @@ public:
     void RequestExit();
 
     /// 检查是否正在运行
-    bool IsRunning() const { return m_Running; }
+    [[nodiscard]] bool IsRunning() const { return m_Running; }
 
     /// 获取窗口
-    Window* GetWindow() const { return m_Window.get(); }
+    [[nodiscard]] Window* GetWindow() const { return m_Window.get(); }
 
     /// 获取 RHI 设备
-    RHIDevice* GetRHIDevice() const { return m_RHIDevice.get(); }
+    [[nodiscard]] RHIDevice* GetRHIDevice() const { return m_RHIDevice.get(); }
 
     /// 获取当前帧时间（秒）
-    float GetDeltaTime() const { return m_DeltaTime; }
+    [[nodiscard]] float GetDeltaTime() const { return m_DeltaTime; }
 
     /// 获取总运行时间（秒）
-    float GetTotalTime() const { return m_TotalTime; }
+    [[nodiscard]] float GetTotalTime() const { return m_TotalTime; }
 
     /// 获取当前帧数
-    uint64_t GetFrameCount() const { return m_FrameCount; }
+    [[nodiscard]] uint64_t GetFrameCount() const { return m_FrameCount; }
 
 private:
     Engine() = default;
     ~Engine() = default;
 
-    // 禁止拷贝
-    Engine(const Engine&) = delete;
-    Engine& operator=(const Engine&) = delete;
+
 
     /// 初始化 RHI 子系统（创建 Device 和 CommandBuffer）
-    bool InitRHI();
+    [[nodiscard]] bool InitRHI();
 
     /// 构建游戏场景（创建 World、Actor、Component）
     void BuildScene();
 
     /// 创建默认立方体网格（用于无外部模型文件时的 fallback）
-    std::shared_ptr<TStaticMesh> CreateDefaultCubeMesh();
+    [[nodiscard]] static std::shared_ptr<TStaticMesh> CreateDefaultCubeMesh();
 
     /// 关闭 RHI 子系统
     void ShutdownRHI();

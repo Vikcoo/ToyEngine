@@ -32,78 +32,78 @@ public:
     /// <summary>
     /// 随机浮点数 [min, max)
     /// </summary>
-    static float Range(float min, float max);
+    [[nodiscard]] static float Range(float min, float max);
 
     /// <summary>
     /// 随机浮点数 [0, max)
     /// </summary>
-    static float Range(float max);
+    [[nodiscard]] static float Range(float max);
 
     /// <summary>
     /// 随机浮点数 [0, 1)
     /// </summary>
-    static float Value();
+    [[nodiscard]] static float Value();
 
     // ==================== 整数范围随机 ====================
 
     /// <summary>
     /// 随机整数 [min, max]（包含边界）
     /// </summary>
-    static int Range(int min, int max);
+    [[nodiscard]] static int Range(int min, int max);
 
     /// <summary>
     /// 随机整数 [0, max]（包含边界）
     /// </summary>
-    static int Range(int max);
+    [[nodiscard]] static int Range(int max);
 
     // ==================== 向量随机 ====================
 
     /// <summary>
     /// 随机单位向量（单位球面上均匀分布）
     /// </summary>
-    static Vector3 UnitVector();
+    [[nodiscard]] static Vector3 UnitVector();
 
     /// <summary>
     /// 随机单位向量（单位圆上均匀分布）
     /// </summary>
-    static Vector2 UnitCircle();
+    [[nodiscard]] static Vector2 UnitCircle();
 
     /// <summary>
     /// 随机方向（仅 XZ 平面，Y=0）
     /// </summary>
-    static Vector3 DirectionXZ();
+    [[nodiscard]] static Vector3 DirectionXZ();
 
     /// <summary>
     /// 随机向量在指定范围内
     /// </summary>
-    static Vector3 Range(const Vector3& min, const Vector3& max);
+    [[nodiscard]] static Vector3 Range(const Vector3& min, const Vector3& max);
 
     /// <summary>
     /// 随机向量在立方体内 [-extent, extent]
     /// </summary>
-    static Vector3 InsideCube(float extent);
+    [[nodiscard]] static Vector3 InsideCube(float extent);
 
     /// <summary>
     /// 随机向量在球体内
     /// </summary>
-    static Vector3 InsideSphere(float radius);
+    [[nodiscard]] static Vector3 InsideSphere(float radius);
 
     // ==================== 特殊分布 ====================
 
     /// <summary>
     /// 高斯分布（正态分布）
     /// </summary>
-    static float Gaussian(float mean, float stdDev);
+    [[nodiscard]] static float Gaussian(float mean, float stdDev);
 
     /// <summary>
     /// 三角形分布
     /// </summary>
-    static float Triangle(float min, float max, float mode);
+    [[nodiscard]] static float Triangle(float min, float max, float mode);
 
     /// <summary>
     /// 指数分布
     /// </summary>
-    static float Exponential(float lambda);
+    [[nodiscard]] static float Exponential(float lambda);
 
     // ==================== 概率与选择 ====================
 
@@ -111,23 +111,23 @@ public:
     /// 概率测试 [0, 1]，probability 为真概率
     /// 例如 Bool(0.8f) 有 80% 概率返回 true
     /// </summary>
-    static bool Bool(float probability);
+    [[nodiscard]] static bool Bool(float probability);
 
     /// <summary>
     /// 50/50 随机，等效于 Bool(0.5f)
     /// </summary>
-    static bool Bool();
+    [[nodiscard]] static bool Bool();
 
     /// <summary>
     /// 符号随机（返回 -1 或 1）
     /// </summary>
-    static float Sign();
+    [[nodiscard]] static float Sign();
 
     /// <summary>
     /// 从数组中随机选择一个索引
     /// </summary>
     template<typename T>
-    static T& Select(T* array, int count)
+    [[nodiscard]] static T& Select(T* array, int count)
     {
         return array[Range(0, count - 1)];
     }
@@ -154,7 +154,7 @@ public:
     /// 创建独立的随机数生成器实例
     /// 可用于需要独立随机序列的场景（如多线程）
     /// </summary>
-    static Random Create(uint64_t seed);
+    [[nodiscard]] static Random Create(uint64_t seed);
 
     /// <summary>
     /// 默认构造函数 - 使用当前时间作为种子
@@ -172,10 +172,10 @@ public:
     void SetSeed(uint64_t seed);
 
     // 实例方法（与静态方法相同功能）
-    float NextFloat();
-    float NextFloat(float min, float max);
-    int NextInt(int min, int max);
-    Vector3 NextUnitVector();
+    [[nodiscard]] float NextFloat();
+    [[nodiscard]] float NextFloat(float min, float max);
+    [[nodiscard]] int NextInt(int min, int max);
+    [[nodiscard]] Vector3 NextUnitVector();
 
 private:
     // PCG 随机数生成器状态
@@ -183,10 +183,10 @@ private:
     uint64_t m_Inc;
 
     // PCG 核心算法
-    uint32_t PCG32();
+    [[nodiscard]] uint32_t PCG32();
 
     // 生成 0~1 的浮点数
-    float PCGFloat();
+    [[nodiscard]] float PCGFloat();
 };
 
 } // namespace TE

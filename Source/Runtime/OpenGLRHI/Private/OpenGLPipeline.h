@@ -42,7 +42,7 @@ public:
 
 private:
     /// 创建并链接 Program
-    bool LinkProgram(GLuint vertShader, GLuint fragShader);
+    [[nodiscard]] bool LinkProgram(GLuint vertShader, GLuint fragShader);
 
     /// 配置 VAO 顶点属性（仅 enable + 记录 format，实际关联 VBO 在 BindVertexBuffer 时）
     void SetupVertexAttributes(const RHIVertexInputDesc& vertexInput);

@@ -25,7 +25,7 @@ Transform Transform::FromMatrix(const Matrix4& matrix)
     Transform result;
 
     // 提取位置（第四列）
-    result.Position = Vector3(matrix(3, 0), matrix(3, 1), matrix(3, 2));
+    result.Position = {matrix(3, 0), matrix(3, 1), matrix(3, 2)};
 
     // 提取缩放（各列向量的长度）
     Vector3 col0(matrix(0, 0), matrix(0, 1), matrix(0, 2));
@@ -158,7 +158,7 @@ Vector3 Transform::GetEulerAnglesDegrees() const
 {
     const float rad2deg = 180.0f / 3.14159265359f;
     Vector3 rad = GetEulerAngles();
-    return Vector3(rad.X * rad2deg, rad.Y * rad2deg, rad.Z * rad2deg);
+    return {rad.X * rad2deg, rad.Y * rad2deg, rad.Z * rad2deg};
 }
 
 // LookAt
@@ -205,7 +205,7 @@ void Transform::Translate(const Vector3& delta)
 
 void Transform::Translate(float x, float y, float z)
 {
-    Position += Vector3(x, y, z);
+    Position += {x, y, z};
 }
 
 // 绕世界轴旋转
@@ -252,7 +252,7 @@ void Transform::RotateLocalZ(float angleRadians)
 // 统一缩放
 void Transform::SetUniformScale(float uniformScale)
 {
-    Scale = Vector3(uniformScale, uniformScale, uniformScale);
+    Scale = {uniformScale, uniformScale, uniformScale};
 }
 
 // 逆变换
@@ -261,11 +261,11 @@ Transform Transform::Inverse() const
     Transform result;
 
     // 逆缩放
-    result.Scale = Vector3(
+    result.Scale = {
         Scale.X != 0.0f ? 1.0f / Scale.X : 0.0f,
         Scale.Y != 0.0f ? 1.0f / Scale.Y : 0.0f,
         Scale.Z != 0.0f ? 1.0f / Scale.Z : 0.0f
-    );
+    };
 
     // 逆旋转
     result.Rotation = Rotation.Conjugate();
@@ -327,11 +327,11 @@ Vector3 Transform::InverseTransformPoint(const Vector3& point) const
     // 逆平移 -> 逆旋转 -> 逆缩放
     Vector3 localPos = point - Position;
     localPos = Rotation.Conjugate() * localPos;
-    return Vector3(
+    return {
         Scale.X != 0.0f ? localPos.X / Scale.X : 0.0f,
         Scale.Y != 0.0f ? localPos.Y / Scale.Y : 0.0f,
         Scale.Z != 0.0f ? localPos.Z / Scale.Z : 0.0f
-    );
+    };
 }
 
 // 逆变换向量
@@ -339,11 +339,11 @@ Vector3 Transform::InverseTransformVector(const Vector3& vector) const
 {
     // 逆旋转 -> 逆缩放
     Vector3 localVec = Rotation.Conjugate() * vector;
-    return Vector3(
+    return {
         Scale.X != 0.0f ? localVec.X / Scale.X : 0.0f,
         Scale.Y != 0.0f ? localVec.Y / Scale.Y : 0.0f,
         Scale.Z != 0.0f ? localVec.Z / Scale.Z : 0.0f
-    );
+    };
 }
 
 // 逆变换方向

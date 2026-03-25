@@ -27,10 +27,10 @@ public:
 
 private:
     /// 从文件读取着色器源码
-    static bool ReadShaderFile(const std::string& filePath, std::string& outSource);
+    [[nodiscard]] static bool ReadShaderFile(const std::string& filePath, std::string& outSource);
 
     /// 编译着色器
-    bool Compile(const std::string& source);
+    [[nodiscard]] bool Compile(const std::string& source);
 
     GLuint          m_ShaderID = 0;
     RHIShaderStage  m_Stage = RHIShaderStage::Vertex;

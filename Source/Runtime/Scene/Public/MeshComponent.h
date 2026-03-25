@@ -39,7 +39,7 @@ public:
     [[nodiscard]] const std::shared_ptr<TStaticMesh>& GetStaticMesh() const { return m_StaticMesh; }
 
     /// 创建渲染侧 Proxy（override）
-    FPrimitiveSceneProxy* CreateSceneProxy(RHIDevice* device) override;
+    [[nodiscard]] FPrimitiveSceneProxy* CreateSceneProxy(RHIDevice* device) override;
 
 private:
     std::shared_ptr<TStaticMesh> m_StaticMesh;

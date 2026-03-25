@@ -33,14 +33,14 @@ struct MemoryStats
 void MemoryInit(std::size_t initialBytes = 256ull * 1024ull * 1024ull);
 void MemoryShutdown();
 
-// 全局分配接口
-void* MemAlloc(std::size_t size, MemoryTag tag = MemoryTag::Unknown);
-void* MemAlignedAlloc(std::size_t size, std::size_t align, MemoryTag tag = MemoryTag::Unknown);
-void* MemAlignedRealloc(void* ptr, std::size_t newSize, std::size_t align, MemoryTag tag = MemoryTag::Unknown);
-void* MemRealloc(void* ptr, std::size_t newSize, MemoryTag tag = MemoryTag::Unknown);
+// 全局分配接口（返回值必须保存或交给 MemFree，否则泄漏）
+[[nodiscard]] void* MemAlloc(std::size_t size, MemoryTag tag = MemoryTag::Unknown);
+[[nodiscard]] void* MemAlignedAlloc(std::size_t size, std::size_t align, MemoryTag tag = MemoryTag::Unknown);
+[[nodiscard]] void* MemAlignedRealloc(void* ptr, std::size_t newSize, std::size_t align, MemoryTag tag = MemoryTag::Unknown);
+[[nodiscard]] void* MemRealloc(void* ptr, std::size_t newSize, MemoryTag tag = MemoryTag::Unknown);
 void  MemFree(void* ptr);
 
-MemoryStats GetMemoryStats();
+[[nodiscard]] MemoryStats GetMemoryStats();
 
 } // namespace TE
 

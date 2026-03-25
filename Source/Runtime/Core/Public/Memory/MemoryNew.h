@@ -30,7 +30,7 @@ namespace TE {
 /// @param  args   转发给 T 构造函数的参数
 /// @return        指向新对象的指针；分配失败抛 std::bad_alloc
 template<typename T, typename... Args>
-T* New(MemoryTag tag, Args&&... args)
+[[nodiscard]] T* New(MemoryTag tag, Args&&... args)
 {
     void* mem = MemAlignedAlloc(sizeof(T), alignof(T), tag);
     if (!mem)
@@ -62,7 +62,7 @@ void Delete(T* ptr)
 /// 在 TLSF 上分配 count 个 T，默认构造。
 /// @return 指向首元素的指针；分配失败抛 std::bad_alloc
 template<typename T>
-T* NewArray(std::size_t count, MemoryTag tag)
+[[nodiscard]] T* NewArray(std::size_t count, MemoryTag tag)
 {
     static_assert(std::is_default_constructible_v<T>,
                   "TE::NewArray requires T to be default-constructible");
@@ -127,7 +127,7 @@ using TUniquePtr = std::unique_ptr<T, TMemDeleter>;
 
 /// 构造一个 TUniquePtr<T>，在 TLSF 上分配。
 template<typename T, typename... Args>
-TUniquePtr<T> MakeUnique(MemoryTag tag, Args&&... args)
+[[nodiscard]] TUniquePtr<T> MakeUnique(MemoryTag tag, Args&&... args)
 {
     return TUniquePtr<T>(New<T>(tag, std::forward<Args>(args)...));
 }
@@ -146,7 +146,7 @@ using TSharedPtr = std::shared_ptr<T>;
 
 /// 构造一个 TSharedPtr<T>，对象在 TLSF 上分配。
 template<typename T, typename... Args>
-TSharedPtr<T> MakeShared(MemoryTag tag, Args&&... args)
+[[nodiscard]] TSharedPtr<T> MakeShared(MemoryTag tag, Args&&... args)
 {
     return TSharedPtr<T>(New<T>(tag, std::forward<Args>(args)...),
                          [](T* ptr) { Delete(ptr); });

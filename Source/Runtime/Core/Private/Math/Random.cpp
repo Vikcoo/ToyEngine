@@ -100,7 +100,7 @@ Vector3 Random::UnitVector()
     } while (d2 > 1.0f || d2 < 0.0001f);
 
     float scale = 1.0f / Math::Sqrt(d2);
-    return Vector3(x * scale, y * scale, z * scale);
+    return {x * scale, y * scale, z * scale};
 }
 
 Vector2 Random::UnitCircle()
@@ -114,31 +114,31 @@ Vector2 Random::UnitCircle()
     } while (d2 > 1.0f || d2 < 0.0001f);
 
     float scale = 1.0f / Math::Sqrt(d2);
-    return Vector2(x * scale, y * scale);
+    return {x * scale, y * scale};
 }
 
 Vector3 Random::DirectionXZ()
 {
     Vector2 circle = UnitCircle();
-    return Vector3(circle.X, 0.0f, circle.Y);
+    return {circle.X, 0.0f, circle.Y};
 }
 
 Vector3 Random::Range(const Vector3& min, const Vector3& max)
 {
-    return Vector3(
+    return {
         Range(min.X, max.X),
         Range(min.Y, max.Y),
         Range(min.Z, max.Z)
-    );
+    };
 }
 
 Vector3 Random::InsideCube(float extent)
 {
-    return Vector3(
+    return {
         Range(-extent, extent),
         Range(-extent, extent),
         Range(-extent, extent)
-    );
+    };
 }
 
 Vector3 Random::InsideSphere(float radius)
@@ -151,11 +151,11 @@ Vector3 Random::InsideSphere(float radius)
     float r = Math::Pow(Range(0.0f, 1.0f), 1.0f / 3.0f) * radius;
 
     float sinPhi = Math::Sin(phi);
-    return Vector3(
+    return {
         r * sinPhi * Math::Cos(theta),
         r * sinPhi * Math::Sin(theta),
         r * Math::Cos(phi)
-    );
+    };
 }
 
 float Random::Gaussian(float mean, float stdDev)
@@ -296,7 +296,7 @@ Vector3 Random::NextUnitVector()
     } while (d2 > 1.0f || d2 < 0.0001f);
 
     float scale = 1.0f / Math::Sqrt(d2);
-    return Vector3(x * scale, y * scale, z * scale);
+    return {x * scale, y * scale, z * scale};
 }
 
 } // namespace TE

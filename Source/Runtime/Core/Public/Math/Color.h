@@ -36,7 +36,7 @@ public:
     explicit Color(float grayscale, float a = 1.0f) : R(grayscale), G(grayscale), B(grayscale), A(a) {}
 
     /// <summary>
-    /// 从 Vector4 构造（RGBA 对应 XYZW）
+    /// 从 Vector4 构造（R G B A 对应 X Y Z W）
     /// </summary>
     explicit Color(const Vector4& vec) : R(vec.X), G(vec.Y), B(vec.Z), A(vec.W) {}
 
@@ -58,9 +58,9 @@ public:
     // ==================== 转换 ====================
 
     /// <summary>
-    /// 转换为 Vector4（RGBA 对应 XYZW）
+    /// 转换为 Vector4（R G B A 对应 X Y Z W）
     /// </summary>
-    Vector4 ToVector4() const { return Vector4(R, G, B, A); }
+    [[nodiscard]] Vector4 ToVector4() const { return {R, G, B, A}; }
 
     /// <summary>
     /// 从 Vector4 创建
@@ -70,59 +70,59 @@ public:
     /// <summary>
     /// 获取 RGB 部分作为 Vector3
     /// </summary>
-    Vector3 ToVector3() const { return Vector3(R, G, B); }
+    [[nodiscard]] Vector3 ToVector3() const { return {R, G, B}; }
 
     /// <summary>
     /// 获取 32 位整数表示（ARGB，用于 DirectX 等）
     /// </summary>
-    uint32_t ToPackedARGB() const
+    [[nodiscard]] uint32_t ToPackedARGB() const
     {
-        uint8_t r = static_cast<uint8_t>(Math::Clamp(R, 0.0f, 1.0f) * 255.0f);
-        uint8_t g = static_cast<uint8_t>(Math::Clamp(G, 0.0f, 1.0f) * 255.0f);
-        uint8_t b = static_cast<uint8_t>(Math::Clamp(B, 0.0f, 1.0f) * 255.0f);
-        uint8_t a = static_cast<uint8_t>(Math::Clamp(A, 0.0f, 1.0f) * 255.0f);
+        const auto r = static_cast<uint8_t>(Math::Clamp(R, 0.0f, 1.0f) * 255.0f);
+        const auto g = static_cast<uint8_t>(Math::Clamp(G, 0.0f, 1.0f) * 255.0f);
+        const auto b = static_cast<uint8_t>(Math::Clamp(B, 0.0f, 1.0f) * 255.0f);
+        const auto a = static_cast<uint8_t>(Math::Clamp(A, 0.0f, 1.0f) * 255.0f);
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
     /// <summary>
     /// 获取 32 位整数表示（RGBA，用于 OpenGL 等）
     /// </summary>
-    uint32_t ToPackedRGBA() const
+    [[nodiscard]] uint32_t ToPackedRGBA() const
     {
-        uint8_t r = static_cast<uint8_t>(Math::Clamp(R, 0.0f, 1.0f) * 255.0f);
-        uint8_t g = static_cast<uint8_t>(Math::Clamp(G, 0.0f, 1.0f) * 255.0f);
-        uint8_t b = static_cast<uint8_t>(Math::Clamp(B, 0.0f, 1.0f) * 255.0f);
-        uint8_t a = static_cast<uint8_t>(Math::Clamp(A, 0.0f, 1.0f) * 255.0f);
+        const auto r = static_cast<uint8_t>(Math::Clamp(R, 0.0f, 1.0f) * 255.0f);
+        const auto g = static_cast<uint8_t>(Math::Clamp(G, 0.0f, 1.0f) * 255.0f);
+        const auto b = static_cast<uint8_t>(Math::Clamp(B, 0.0f, 1.0f) * 255.0f);
+        const auto a = static_cast<uint8_t>(Math::Clamp(A, 0.0f, 1.0f) * 255.0f);
         return (r << 24) | (g << 16) | (b << 8) | a;
     }
 
     /// <summary>
     /// 从 32 位整数创建（RGBA）
     /// </summary>
-    static Color FromPackedRGBA(uint32_t rgba)
+    [[nodiscard]] static Color FromPackedRGBA(uint32_t rgba)
     {
-        return Color(
+        return {
             ((rgba >> 24) & 0xFF) / 255.0f,
             ((rgba >> 16) & 0xFF) / 255.0f,
             ((rgba >> 8) & 0xFF) / 255.0f,
             (rgba & 0xFF) / 255.0f
-        );
+        };
     }
 
     // ==================== 运算符 ====================
 
-    Color operator+(const Color& other) const { return Color(R + other.R, G + other.G, B + other.B, A + other.A); }
-    Color operator-(const Color& other) const { return Color(R - other.R, G - other.G, B - other.B, A - other.A); }
-    Color operator*(const Color& other) const { return Color(R * other.R, G * other.G, B * other.B, A * other.A); }
-    Color operator*(float scalar) const { return Color(R * scalar, G * scalar, B * scalar, A * scalar); }
-    Color operator/(float scalar) const { return Color(R / scalar, G / scalar, B / scalar, A / scalar); }
-    Color operator-() const { return Color(-R, -G, -B, -A); }
+    [[nodiscard]] Color operator+(const Color& other) const { return {R + other.R, G + other.G, B + other.B, A + other.A}; }
+    [[nodiscard]] Color operator-(const Color& other) const { return {R - other.R, G - other.G, B - other.B, A - other.A}; }
+    [[nodiscard]] Color operator*(const Color& other) const { return {R * other.R, G * other.G, B * other.B, A * other.A}; }
+    [[nodiscard]] Color operator*(const float scalar) const { return {R * scalar, G * scalar, B * scalar, A * scalar}; }
+    [[nodiscard]] Color operator/(const float scalar) const { return {R / scalar, G / scalar, B / scalar, A / scalar}; }
+    [[nodiscard]] Color operator-() const { return {-R, -G, -B, -A}; }
 
     Color& operator+=(const Color& other) { R += other.R; G += other.G; B += other.B; A += other.A; return *this; }
     Color& operator-=(const Color& other) { R -= other.R; G -= other.G; B -= other.B; A -= other.A; return *this; }
     Color& operator*=(const Color& other) { R *= other.R; G *= other.G; B *= other.B; A *= other.A; return *this; }
-    Color& operator*=(float scalar) { R *= scalar; G *= scalar; B *= scalar; A *= scalar; return *this; }
-    Color& operator/=(float scalar) { R /= scalar; G /= scalar; B /= scalar; A /= scalar; return *this; }
+    Color& operator*=(const float scalar) { R *= scalar; G *= scalar; B *= scalar; A *= scalar; return *this; }
+    Color& operator/=(const float scalar) { R /= scalar; G /= scalar; B /= scalar; A /= scalar; return *this; }
 
     bool operator==(const Color& other) const { return R == other.R && G == other.G && B == other.B && A == other.A; }
     bool operator!=(const Color& other) const { return !(*this == other); }
@@ -130,7 +130,7 @@ public:
     /// <summary>
     /// 近似相等比较（考虑浮点误差）
     /// </summary>
-    bool Equals(const Color& other, float epsilon = 1e-6f) const
+    [[nodiscard]] bool Equals(const Color& other, float epsilon = 1e-6f) const
     {
         return std::abs(R - other.R) <= epsilon &&
                std::abs(G - other.G) <= epsilon &&
@@ -161,44 +161,44 @@ public:
     /// <summary>
     /// 限制各分量在 0~1 范围
     /// </summary>
-    Color Clamp01() const
+    [[nodiscard]] Color Clamp01() const
     {
-        return Color(
+        return {
             Math::Clamp(R, 0.0f, 1.0f),
             Math::Clamp(G, 0.0f, 1.0f),
             Math::Clamp(B, 0.0f, 1.0f),
             Math::Clamp(A, 0.0f, 1.0f)
-        );
+        };
     }
 
     /// <summary>
     /// 伽马校正（线性到 sRGB）
     /// </summary>
-    Color ToSRGB() const
+    [[nodiscard]] Color ToSRGB() const
     {
         auto gammaCorrect = [](float c)
         {
             return (c > 0.0031308f) ? (1.055f * Math::Pow(c, 1.0f / 2.4f) - 0.055f) : (12.92f * c);
         };
-        return Color(gammaCorrect(R), gammaCorrect(G), gammaCorrect(B), A);
+        return {gammaCorrect(R), gammaCorrect(G), gammaCorrect(B), A};
     }
 
     /// <summary>
     /// 逆伽马校正（sRGB 到线性）
     /// </summary>
-    Color ToLinear() const
+    [[nodiscard]] Color ToLinear() const
     {
         auto gammaExpand = [](float c)
         {
             return (c > 0.04045f) ? Math::Pow((c + 0.055f) / 1.055f, 2.4f) : (c / 12.92f);
         };
-        return Color(gammaExpand(R), gammaExpand(G), gammaExpand(B), A);
+        return {gammaExpand(R), gammaExpand(G), gammaExpand(B), A};
     }
 
     /// <summary>
     /// 亮度（感知亮度，Rec. 601）
     /// </summary>
-    float Luminance() const
+    [[nodiscard]] float Luminance() const
     {
         return 0.299f * R + 0.587f * G + 0.114f * B;
     }
@@ -206,34 +206,34 @@ public:
     /// <summary>
     /// 去饱和（转为灰度）
     /// </summary>
-    Color Grayscale() const
+    [[nodiscard]] Color Grayscale() const
     {
         float lum = Luminance();
-        return Color(lum, lum, lum, A);
+        return {lum, lum, lum, A};
     }
 
     /// <summary>
     /// 反色
     /// </summary>
-    Color Invert() const
+    [[nodiscard]] Color Invert() const
     {
-        return Color(1.0f - R, 1.0f - G, 1.0f - B, A);
+        return {1.0f - R, 1.0f - G, 1.0f - B, A};
     }
 
     /// <summary>
     /// 反色（包括 Alpha）
     /// </summary>
-    Color InvertRGBA() const
+    [[nodiscard]] Color InvertRGBA() const
     {
-        return Color(1.0f - R, 1.0f - G, 1.0f - B, 1.0f - A);
+        return {1.0f - R, 1.0f - G, 1.0f - B, 1.0f - A};
     }
 
     /// <summary>
     /// 透明度预乘（用于渲染混合）
     /// </summary>
-    Color PremultiplyAlpha() const
+    [[nodiscard]] Color PremultiplyAlpha() const
     {
-        return Color(R * A, G * A, B * A, A);
+        return {R * A, G * A, B * A, A};
     }
 
     // ==================== HSV 转换 ====================
@@ -242,18 +242,18 @@ public:
     /// 从 HSV 创建颜色
     /// H: 0~360 度, S: 0~1, V: 0~1
     /// </summary>
-    static Color FromHSV(float h, float s, float v, float a = 1.0f);
+    [[nodiscard]] static Color FromHSV(float h, float s, float v, float a = 1.0f);
 
     /// <summary>
     /// 转换为 HSV
     /// 返回 Vector3(h, s, v)，h 为 0~360 度，s 和 v 为 0~1
     /// </summary>
-    Vector3 ToHSV() const;
+    [[nodiscard]] Vector3 ToHSV() const;
 
     /// <summary>
     /// 色相偏移
     /// </summary>
-    Color ShiftHue(float degrees) const
+    [[nodiscard]] Color ShiftHue(float degrees) const
     {
         Vector3 hsv = ToHSV();
         hsv.X = Math::Repeat(hsv.X + degrees, 360.0f);
@@ -263,7 +263,7 @@ public:
     /// <summary>
     /// 调整饱和度
     /// </summary>
-    Color Saturate(float delta) const
+    [[nodiscard]] Color Saturate(float delta) const
     {
         Vector3 hsv = ToHSV();
         hsv.Y = Math::Clamp(hsv.Y + delta, 0.0f, 1.0f);
@@ -273,7 +273,7 @@ public:
     /// <summary>
     /// 调整明度
     /// </summary>
-    Color Brighten(float delta) const
+    [[nodiscard]] Color Brighten(float delta) const
     {
         Vector3 hsv = ToHSV();
         hsv.Z = Math::Clamp(hsv.Z + delta, 0.0f, 1.0f);
@@ -285,37 +285,37 @@ public:
     /// <summary>
     /// RGBA 线性插值
     /// </summary>
-    static Color Lerp(const Color& a, const Color& b, float t)
+    [[nodiscard]] static Color Lerp(const Color& a, const Color& b, float t)
     {
-        return Color(
+        return {
             Math::Lerp(a.R, b.R, t),
             Math::Lerp(a.G, b.G, t),
             Math::Lerp(a.B, b.B, t),
             Math::Lerp(a.A, b.A, t)
-        );
+        };
     }
 
     /// <summary>
     /// RGB 线性插值，保持 Alpha
     /// </summary>
-    static Color LerpRGB(const Color& a, const Color& b, float t)
+    [[nodiscard]] static Color LerpRGB(const Color& a, const Color& b, float t)
     {
-        return Color(
+        return {
             Math::Lerp(a.R, b.R, t),
             Math::Lerp(a.G, b.G, t),
             Math::Lerp(a.B, b.B, t),
             a.A
-        );
+        };
     }
 
     /// <summary>
     /// HSV 空间插值（色相选择最短路径）
     /// </summary>
-    static Color LerpHSV(const Color& a, const Color& b, float t);
+    [[nodiscard]] static Color LerpHSV(const Color& a, const Color& b, float t);
 
 };
 
 // 标量乘法（左操作数）
-inline Color operator*(float scalar, const Color& color) { return color * scalar; }
+[[nodiscard]] inline Color operator*(float scalar, const Color& color) { return color * scalar; }
 
 } // namespace TE

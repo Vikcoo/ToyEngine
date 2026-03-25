@@ -27,7 +27,7 @@ struct Ray
     /// <summary>
     /// 获取射线上某点的位置
     /// </summary>
-    Vector3 GetPoint(float distance) const
+    [[nodiscard]] Vector3 GetPoint(float distance) const
     {
         return Origin + Direction * distance;
     }
@@ -57,16 +57,16 @@ struct Plane
     /// <summary>
     /// 从三点创建平面
     /// </summary>
-    static Plane FromPoints(const Vector3& a, const Vector3& b, const Vector3& c)
+    [[nodiscard]] static Plane FromPoints(const Vector3& a, const Vector3& b, const Vector3& c)
     {
         Vector3 normal = Vector3::Cross(b - a, c - a).Normalize();
-        return Plane(normal, a);
+        return {normal, a};
     }
 
     /// <summary>
     /// 点是否在平面的正面
     /// </summary>
-    bool IsInFront(const Vector3& point) const
+    [[nodiscard]] bool IsInFront(const Vector3& point) const
     {
         return SignedDistance(point) > 0.0f;
     }
@@ -74,7 +74,7 @@ struct Plane
     /// <summary>
     /// 点是否在平面的背面
     /// </summary>
-    bool IsBehind(const Vector3& point) const
+    [[nodiscard]] bool IsBehind(const Vector3& point) const
     {
         return SignedDistance(point) < 0.0f;
     }
@@ -82,7 +82,7 @@ struct Plane
     /// <summary>
     /// 点是否在平面上（考虑浮点误差）
     /// </summary>
-    bool IsOnPlane(const Vector3& point, float epsilon = 1e-5f) const
+    [[nodiscard]] bool IsOnPlane(const Vector3& point, float epsilon = 1e-5f) const
     {
         return std::abs(SignedDistance(point)) < epsilon;
     }
@@ -90,7 +90,7 @@ struct Plane
     /// <summary>
     /// 获取点到平面的有符号距离
     /// </summary>
-    float SignedDistance(const Vector3& point) const
+    [[nodiscard]] float SignedDistance(const Vector3& point) const
     {
         return Vector3::Dot(Normal, point) + Distance;
     }
@@ -98,7 +98,7 @@ struct Plane
     /// <summary>
     /// 获取点到平面的绝对距离
     /// </summary>
-    float DistanceToPoint(const Vector3& point) const
+    [[nodiscard]] float DistanceToPoint(const Vector3& point) const
     {
         return std::abs(SignedDistance(point));
     }
@@ -106,7 +106,7 @@ struct Plane
     /// <summary>
     /// 获取点在平面上的最近点
     /// </summary>
-    Vector3 ClosestPoint(const Vector3& point) const
+    [[nodiscard]] Vector3 ClosestPoint(const Vector3& point) const
     {
         return point - Normal * SignedDistance(point);
     }
@@ -117,7 +117,7 @@ struct Plane
     /// <param name="ray">射线</param>
     /// <param name="distance">输出交点距离（沿射线）</param>
     /// <returns>是否相交</returns>
-    bool IntersectRay(const Ray& ray, float& distance) const
+    [[nodiscard]] bool IntersectRay(const Ray& ray, float& distance) const
     {
         float denom = Vector3::Dot(Normal, ray.Direction);
         if (std::abs(denom) < 1e-6f)
@@ -133,7 +133,7 @@ struct Plane
     /// <summary>
     /// 射线与平面相交检测（包含交点位置）
     /// </summary>
-    bool IntersectRay(const Ray& ray, float& distance, Vector3& point) const
+    [[nodiscard]] bool IntersectRay(const Ray& ray, float& distance, Vector3& point) const
     {
         if (IntersectRay(ray, distance))
         {
@@ -146,9 +146,9 @@ struct Plane
     /// <summary>
     /// 翻转平面方向
     /// </summary>
-    Plane Flipped() const
+    [[nodiscard]] Plane Flipped() const
     {
-        return Plane(-Normal, -Distance);
+        return {-Normal, -Distance};
     }
 
     /// <summary>
@@ -188,24 +188,24 @@ struct BoundingBox
     /// <summary>
     /// 从中心和大小创建
     /// </summary>
-    static BoundingBox FromCenterExtents(const Vector3& center, const Vector3& extents)
+    [[nodiscard]] static BoundingBox FromCenterExtents(const Vector3& center, const Vector3& extents)
     {
-        return BoundingBox(center - extents, center + extents);
+        return {center - extents, center + extents};
     }
 
     /// <summary>
     /// 从中心和半宽创建（uniform）
     /// </summary>
-    static BoundingBox FromCenterHalfSize(const Vector3& center, float halfSize)
+    [[nodiscard]] static BoundingBox FromCenterHalfSize(const Vector3& center, float halfSize)
     {
         Vector3 ext(halfSize, halfSize, halfSize);
-        return BoundingBox(center - ext, center + ext);
+        return {center - ext, center + ext};
     }
 
     /// <summary>
     /// 获取中心点
     /// </summary>
-    Vector3 GetCenter() const
+    [[nodiscard]] Vector3 GetCenter() const
     {
         return (Min + Max) * 0.5f;
     }
@@ -213,7 +213,7 @@ struct BoundingBox
     /// <summary>
     /// 获取半边长（extents）
     /// </summary>
-    Vector3 GetExtents() const
+    [[nodiscard]] Vector3 GetExtents() const
     {
         return (Max - Min) * 0.5f;
     }
@@ -221,7 +221,7 @@ struct BoundingBox
     /// <summary>
     /// 获取大小
     /// </summary>
-    Vector3 GetSize() const
+    [[nodiscard]] Vector3 GetSize() const
     {
         return Max - Min;
     }
@@ -229,7 +229,7 @@ struct BoundingBox
     /// <summary>
     /// 获取对角线长度
     /// </summary>
-    float GetDiagonal() const
+    [[nodiscard]] float GetDiagonal() const
     {
         return GetSize().Length();
     }
@@ -237,7 +237,7 @@ struct BoundingBox
     /// <summary>
     /// 获取表面积
     /// </summary>
-    float GetSurfaceArea() const
+    [[nodiscard]] float GetSurfaceArea() const
     {
         Vector3 size = GetSize();
         return 2.0f * (size.X * size.Y + size.X * size.Z + size.Y * size.Z);
@@ -246,7 +246,7 @@ struct BoundingBox
     /// <summary>
     /// 获取体积
     /// </summary>
-    float GetVolume() const
+    [[nodiscard]] float GetVolume() const
     {
         Vector3 size = GetSize();
         return size.X * size.Y * size.Z;
@@ -255,7 +255,7 @@ struct BoundingBox
     /// <summary>
     /// 是否包含点
     /// </summary>
-    bool Contains(const Vector3& point) const
+    [[nodiscard]] bool Contains(const Vector3& point) const
     {
         return point.X >= Min.X && point.X <= Max.X &&
                point.Y >= Min.Y && point.Y <= Max.Y &&
@@ -265,7 +265,7 @@ struct BoundingBox
     /// <summary>
     /// 是否完全包含另一个包围盒
     /// </summary>
-    bool Contains(const BoundingBox& other) const
+    [[nodiscard]] bool Contains(const BoundingBox& other) const
     {
         return Contains(other.Min) && Contains(other.Max);
     }
@@ -273,7 +273,7 @@ struct BoundingBox
     /// <summary>
     /// 是否与另一个包围盒相交
     /// </summary>
-    bool Intersects(const BoundingBox& other) const
+    [[nodiscard]] bool Intersects(const BoundingBox& other) const
     {
         return Min.X <= other.Max.X && Max.X >= other.Min.X &&
                Min.Y <= other.Max.Y && Max.Y >= other.Min.Y &&
@@ -283,7 +283,7 @@ struct BoundingBox
     /// <summary>
     /// 射线相交检测
     /// </summary>
-    bool IntersectRay(const Ray& ray, float& distance) const
+    [[nodiscard]] bool IntersectRay(const Ray& ray, float& distance) const
     {
         float tmin = 0.0f;
         float tmax = 1e30f;
@@ -384,19 +384,19 @@ struct BoundingBox
     /// <summary>
     /// 获取最近点（在包围盒内的点或表面上的点）
     /// </summary>
-    Vector3 ClosestPoint(const Vector3& point) const
+    [[nodiscard]] Vector3 ClosestPoint(const Vector3& point) const
     {
-        return Vector3(
+        return {
             std::max(Min.X, std::min(point.X, Max.X)),
             std::max(Min.Y, std::min(point.Y, Max.Y)),
             std::max(Min.Z, std::min(point.Z, Max.Z))
-        );
+        };
     }
 
     /// <summary>
     /// 到点的平方距离
     /// </summary>
-    float DistanceSquared(const Vector3& point) const
+    [[nodiscard]] float DistanceSquared(const Vector3& point) const
     {
         Vector3 closest = ClosestPoint(point);
         return Vector3::DistanceSquared(point, closest);
@@ -405,7 +405,7 @@ struct BoundingBox
     /// <summary>
     /// 到点的距离
     /// </summary>
-    float Distance(const Vector3& point) const
+    [[nodiscard]] float Distance(const Vector3& point) const
     {
         return std::sqrt(DistanceSquared(point));
     }
@@ -434,15 +434,15 @@ struct BoundingSphere
     /// <summary>
     /// 从包围盒创建最小包围球
     /// </summary>
-    static BoundingSphere FromBox(const BoundingBox& box)
+    [[nodiscard]] static BoundingSphere FromBox(const BoundingBox& box)
     {
-        return BoundingSphere(box.GetCenter(), box.GetExtents().Length());
+        return {box.GetCenter(), box.GetExtents().Length()};
     }
 
     /// <summary>
     /// 是否包含点
     /// </summary>
-    bool Contains(const Vector3& point) const
+    [[nodiscard]] bool Contains(const Vector3& point) const
     {
         return Vector3::DistanceSquared(Center, point) <= Radius * Radius;
     }
@@ -450,7 +450,7 @@ struct BoundingSphere
     /// <summary>
     /// 是否完全包含另一个包围球
     /// </summary>
-    bool Contains(const BoundingSphere& other) const
+    [[nodiscard]] bool Contains(const BoundingSphere& other) const
     {
         float dist = Vector3::Distance(Center, other.Center);
         return dist + other.Radius <= Radius;
@@ -459,7 +459,7 @@ struct BoundingSphere
     /// <summary>
     /// 是否与另一个包围球相交
     /// </summary>
-    bool Intersects(const BoundingSphere& other) const
+    [[nodiscard]] bool Intersects(const BoundingSphere& other) const
     {
         float distSq = Vector3::DistanceSquared(Center, other.Center);
         float radSum = Radius + other.Radius;
@@ -469,7 +469,7 @@ struct BoundingSphere
     /// <summary>
     /// 是否与包围盒相交
     /// </summary>
-    bool Intersects(const BoundingBox& box) const
+    [[nodiscard]] bool Intersects(const BoundingBox& box) const
     {
         Vector3 closest = box.ClosestPoint(Center);
         return Vector3::DistanceSquared(Center, closest) <= Radius * Radius;
@@ -478,7 +478,7 @@ struct BoundingSphere
     /// <summary>
     /// 射线相交检测
     /// </summary>
-    bool IntersectRay(const Ray& ray, float& distance) const
+    [[nodiscard]] bool IntersectRay(const Ray& ray, float& distance) const
     {
         Vector3 oc = ray.Origin - Center;
         float a = Vector3::Dot(ray.Direction, ray.Direction);
@@ -509,7 +509,7 @@ struct BoundingSphere
     /// <summary>
     /// 射线相交检测（包含交点）
     /// </summary>
-    bool IntersectRay(const Ray& ray, float& distance, Vector3& point) const
+    [[nodiscard]] bool IntersectRay(const Ray& ray, float& distance, Vector3& point) const
     {
         if (IntersectRay(ray, distance))
         {
@@ -560,7 +560,7 @@ struct BoundingSphere
     /// <summary>
     /// 到点的距离（点在球外为正，球内为负）
     /// </summary>
-    float Distance(const Vector3& point) const
+    [[nodiscard]] float Distance(const Vector3& point) const
     {
         return Vector3::Distance(Center, point) - Radius;
     }
@@ -568,10 +568,10 @@ struct BoundingSphere
     /// <summary>
     /// 获取包围盒
     /// </summary>
-    BoundingBox ToBox() const
+    [[nodiscard]] BoundingBox ToBox() const
     {
         Vector3 ext(Radius, Radius, Radius);
-        return BoundingBox(Center - ext, Center + ext);
+        return {Center - ext, Center + ext};
     }
 };
 
@@ -580,7 +580,7 @@ struct BoundingSphere
 /// <summary>
 /// 计算三角形面积
 /// </summary>
-inline float TriangleArea(const Vector3& a, const Vector3& b, const Vector3& c)
+[[nodiscard]] inline float TriangleArea(const Vector3& a, const Vector3& b, const Vector3& c)
 {
     return Vector3::Cross(b - a, c - a).Length() * 0.5f;
 }
@@ -588,7 +588,7 @@ inline float TriangleArea(const Vector3& a, const Vector3& b, const Vector3& c)
 /// <summary>
 /// 计算三角形法线（归一化）
 /// </summary>
-inline Vector3 TriangleNormal(const Vector3& a, const Vector3& b, const Vector3& c)
+[[nodiscard]] inline Vector3 TriangleNormal(const Vector3& a, const Vector3& b, const Vector3& c)
 {
     return Vector3::Cross(b - a, c - a).Normalize();
 }
@@ -596,7 +596,7 @@ inline Vector3 TriangleNormal(const Vector3& a, const Vector3& b, const Vector3&
 /// <summary>
 /// 点到线段的最近点
 /// </summary>
-inline Vector3 ClosestPointOnSegment(const Vector3& point, const Vector3& a, const Vector3& b)
+[[nodiscard]] inline Vector3 ClosestPointOnSegment(const Vector3& point, const Vector3& a, const Vector3& b)
 {
     Vector3 ab = b - a;
     float t = Vector3::Dot(point - a, ab) / Vector3::Dot(ab, ab);
@@ -607,7 +607,7 @@ inline Vector3 ClosestPointOnSegment(const Vector3& point, const Vector3& a, con
 /// <summary>
 /// 点到线段的平方距离
 /// </summary>
-inline float DistancePointToSegmentSquared(const Vector3& point, const Vector3& a, const Vector3& b)
+[[nodiscard]] inline float DistancePointToSegmentSquared(const Vector3& point, const Vector3& a, const Vector3& b)
 {
     Vector3 closest = ClosestPointOnSegment(point, a, b);
     return Vector3::DistanceSquared(point, closest);
@@ -616,7 +616,7 @@ inline float DistancePointToSegmentSquared(const Vector3& point, const Vector3& 
 /// <summary>
 /// 球体与球体合并为最小包围球
 /// </summary>
-inline BoundingSphere MergeSpheres(const BoundingSphere& a, const BoundingSphere& b)
+[[nodiscard]] inline BoundingSphere MergeSpheres(const BoundingSphere& a, const BoundingSphere& b)
 {
     BoundingSphere result = a;
     result.Expand(b);
@@ -626,7 +626,7 @@ inline BoundingSphere MergeSpheres(const BoundingSphere& a, const BoundingSphere
 /// <summary>
 /// 包围盒与包围盒合并
 /// </summary>
-inline BoundingBox MergeBoxes(const BoundingBox& a, const BoundingBox& b)
+[[nodiscard]] inline BoundingBox MergeBoxes(const BoundingBox& a, const BoundingBox& b)
 {
     BoundingBox result = a;
     result.Expand(b);

@@ -8,7 +8,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
-#include <new>
 
 #if defined(_WIN32)
 // 避免 Windows 头文件定义 min/max 宏，破坏 std::min/std::max

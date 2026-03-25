@@ -19,7 +19,6 @@
 #include "PrimitiveComponent.h"
 #include "FScene.h"
 #include "SceneRenderer.h"
-#include "FStaticMeshSceneProxy.h"
 
 // Asset 模块
 #include "TStaticMesh.h"
@@ -318,7 +317,7 @@ void Engine::Run()
         m_LastFrameTime = now;
 
         // 限制最大 delta time（防止调试暂停时的时间跳跃）
-        const float MAX_DELTA_TIME = 0.1f;
+        constexpr float MAX_DELTA_TIME = 0.1f;
         m_DeltaTime = Math::Min(m_DeltaTime, MAX_DELTA_TIME);
 
         m_TotalTime += m_DeltaTime;

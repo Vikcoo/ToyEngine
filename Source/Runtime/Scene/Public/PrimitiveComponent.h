@@ -38,7 +38,7 @@ public:
     /// UE5 核心虚方法：每种可渲染组件返回不同类型的 SceneProxy
     /// @param device RHI 设备（用于在 Proxy 构造函数中创建 GPU 资源）
     /// @return 新创建的 SceneProxy 指针（所有权归 Component 管理）
-    virtual FPrimitiveSceneProxy* CreateSceneProxy(RHIDevice* device) { return nullptr; }
+    [[nodiscard]] virtual FPrimitiveSceneProxy* CreateSceneProxy(RHIDevice* device) { return nullptr; }
 
     /// 标记渲染状态脏
     /// 游戏逻辑修改 Transform 后调用此方法

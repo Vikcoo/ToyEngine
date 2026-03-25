@@ -40,28 +40,28 @@ struct Frustum
     /// 提取的平面法线指向视锥体内部
     /// </summary>
     /// <param name="viewProj">视图投影矩阵（View * Projection）</param>
-    static Frustum FromViewProjection(const Matrix4& viewProj);
+    [[nodiscard]] static Frustum FromViewProjection(const Matrix4& viewProj);
 
     /// <summary>
     /// 测试点是否在视锥体内
     /// </summary>
-    bool ContainsPoint(const Vector3& point) const;
+    [[nodiscard]] bool ContainsPoint(const Vector3& point) const;
 
     /// <summary>
     /// 测试轴对齐包围盒是否与视锥体相交
     /// 使用 P-vertex / N-vertex 优化，O(6) 复杂度
     /// </summary>
-    bool IntersectsAABB(const BoundingBox& box) const;
+    [[nodiscard]] bool IntersectsAABB(const BoundingBox& box) const;
 
     /// <summary>
     /// 测试包围球是否与视锥体相交
     /// </summary>
-    bool IntersectsSphere(const BoundingSphere& sphere) const;
+    [[nodiscard]] bool IntersectsSphere(const BoundingSphere& sphere) const;
 
     /// <summary>
     /// 获取指定索引的平面
     /// </summary>
-    const Plane& GetPlane(EFrustumPlane plane) const
+    [[nodiscard]] const Plane& GetPlane(EFrustumPlane plane) const
     {
         return Planes[static_cast<int>(plane)];
     }

@@ -60,7 +60,7 @@ public:
 
 private:
     /// 创建共享的 Shader 和 Pipeline
-    bool CreateShaderAndPipeline(RHIDevice* device);
+    [[nodiscard]] bool CreateShaderAndPipeline(RHIDevice* device);
 
     // 每个 Section 的 GPU 资源
     std::vector<FSectionGPUData>    m_SectionGPUData;
