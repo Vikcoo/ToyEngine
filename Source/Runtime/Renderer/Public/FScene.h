@@ -8,34 +8,35 @@
 
 #pragma once
 
+#include "FPrimitiveSceneProxy.h"
 #include "FViewInfo.h"
+#include "RenderSceneBridge.h"
+
+#include <memory>
+#include <unordered_map>
 #include <vector>
 
 namespace TE {
-
-class FPrimitiveSceneProxy;
 
 /// 渲染场景
 ///
 /// UE5 映射：
 /// - FScene: 存储所有 Primitive 的 SceneProxy 列表
 /// - 是 SceneRenderer 的数据来源
-///
-/// 注意：FScene 不拥有 Proxy 的内存（raw pointer），
-/// Proxy 的生命周期由 TPrimitiveComponent 管理
 class FScene
 {
 public:
     FScene() = default;
-    ~FScene() = default;
+    ~FScene();
 
-    /// 添加 Primitive Proxy 到渲染场景
-    /// 在 TPrimitiveComponent::RegisterToScene() 时调用
-    void AddPrimitive(FPrimitiveSceneProxy* proxy);
+    /// 添加 Primitive Proxy 到渲染场景，返回稳定句柄
+    [[nodiscard]] RenderPrimitiveHandle AddPrimitive(std::unique_ptr<FPrimitiveSceneProxy> proxy);
 
-    /// 从渲染场景移除 Primitive Proxy
-    /// 在 TPrimitiveComponent::UnregisterFromScene() 时调用
-    void RemovePrimitive(FPrimitiveSceneProxy* proxy);
+    /// 通过句柄移除 Primitive Proxy
+    void RemovePrimitive(RenderPrimitiveHandle handle);
+
+    /// 通过句柄更新 Primitive 世界矩阵
+    void UpdatePrimitiveWorldMatrix(RenderPrimitiveHandle handle, const Matrix4& worldMatrix);
 
     /// 获取所有 Primitive Proxy（SceneRenderer 遍历用）
     [[nodiscard]] const std::vector<FPrimitiveSceneProxy*>& GetPrimitives() const { return m_Primitives; }
@@ -45,8 +46,12 @@ public:
     [[nodiscard]] const FViewInfo& GetViewInfo() const { return m_ViewInfo; }
 
 private:
-    std::vector<FPrimitiveSceneProxy*>  m_Primitives;   // 所有渲染对象的 Proxy
-    FViewInfo                           m_ViewInfo;     // 当前帧的视图信息
+    void RebuildPrimitiveView();
+
+    RenderPrimitiveHandle m_NextHandle = InvalidRenderPrimitiveHandle + 1;
+    std::unordered_map<RenderPrimitiveHandle, std::unique_ptr<FPrimitiveSceneProxy>> m_PrimitiveStorage;
+    std::vector<FPrimitiveSceneProxy*> m_Primitives; // SceneRenderer 遍历视图
+    FViewInfo m_ViewInfo; // 当前帧的视图信息
 };
 
 } // namespace TE

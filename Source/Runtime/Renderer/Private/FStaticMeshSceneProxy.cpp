@@ -88,6 +88,8 @@ FStaticMeshSceneProxy::FStaticMeshSceneProxy(const TStaticMesh* staticMesh, RHID
     }
 }
 
+FStaticMeshSceneProxy::~FStaticMeshSceneProxy() = default;
+
 bool FStaticMeshSceneProxy::CreateShaderAndPipeline(RHIDevice* device)
 {
     // 使用 model shader（支持 Position + Normal + TexCoord + Color）

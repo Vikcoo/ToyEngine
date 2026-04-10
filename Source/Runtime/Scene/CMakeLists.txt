@@ -1,5 +1,6 @@
 # ToyEngine Scene Module
-# 游戏侧数据（对应 UE5 的 Scene/World/Actor/Component 体系）
+# 游戏侧数据（对应 UE5 的 World/Actor/Component 体系）
+# 通过 IRenderSceneBridge 与渲染侧解耦
 
 # Scene 静态库
 add_library(Scene STATIC
@@ -21,12 +22,11 @@ target_include_directories(Scene
         ${CMAKE_CURRENT_SOURCE_DIR}/Private
 )
 
-# 依赖 Core（Math/Transform）+ RHI（前向声明）+ Renderer（FScene/Proxy 类型）+ Asset（TStaticMesh）+ Input（TFlyCameraController）
+# 依赖 Core（Math/Transform）+ Asset（TStaticMesh）+ Input（TFlyCameraController）
+# 不再直接依赖 Renderer，实现游戏侧与渲染侧边界解耦
 target_link_libraries(Scene
     PUBLIC
         Core
-        RHI
-        Renderer
         Asset
         Input
 )

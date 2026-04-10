@@ -4,7 +4,7 @@
 //
 // 重构说明：
 // - 持有 shared_ptr<TStaticMesh> 资产引用（对应 UE5 中 UStaticMeshComponent 引用 UStaticMesh）
-// - CreateSceneProxy() 从 TStaticMesh 构建 FStaticMeshSceneProxy
+// - 通过 BuildRenderCreateInfo() 提供渲染创建数据，具体渲染对象由桥接层创建
 
 #pragma once
 
@@ -20,12 +20,12 @@ class TStaticMesh;
 ///
 /// UE5 映射：
 /// - UStaticMeshComponent: 引用 UStaticMesh 资源
-/// - CreateSceneProxy() 返回 FStaticMeshSceneProxy
+/// - 通过桥接层将网格数据映射到渲染侧镜像
 ///
 /// ToyEngine 简化版：
 /// - 持有 shared_ptr<TStaticMesh> 资产引用（多个组件可共享同一资产）
 /// - SetStaticMesh() 设置资产引用
-/// - CreateSceneProxy() 将 TStaticMesh 传给 FStaticMeshSceneProxy 构造
+/// - BuildRenderCreateInfo() 填充渲染创建信息
 class TMeshComponent : public TPrimitiveComponent
 {
 public:
@@ -38,8 +38,8 @@ public:
     /// 获取静态网格资产引用
     [[nodiscard]] const std::shared_ptr<TStaticMesh>& GetStaticMesh() const { return m_StaticMesh; }
 
-    /// 创建渲染侧 Proxy（override）
-    [[nodiscard]] FPrimitiveSceneProxy* CreateSceneProxy(RHIDevice* device) override;
+    /// 填充渲染创建信息（override）
+    [[nodiscard]] bool BuildRenderCreateInfo(RenderPrimitiveCreateInfo& outCreateInfo) const override;
 
 private:
     std::shared_ptr<TStaticMesh> m_StaticMesh;

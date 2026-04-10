@@ -1,61 +1,69 @@
 // ToyEngine Scene Module
 // TPrimitiveComponent 实现
-// 核心桥接：RegisterToScene / UnregisterFromScene / MarkRenderStateDirty
+// 核心桥接：RegisterToRenderScene / UnregisterFromRenderScene / MarkRenderStateDirty
 
 #include "PrimitiveComponent.h"
-#include "FScene.h"
-#include "FPrimitiveSceneProxy.h"
 #include "Log/Log.h"
 
 namespace TE {
 
 TPrimitiveComponent::~TPrimitiveComponent()
 {
-    // 析构时清理 Proxy
-    delete m_SceneProxy;
-    m_SceneProxy = nullptr;
+    // 如果组件析构时仍处于注册状态，主动反注册，避免渲染侧残留句柄
+    if (m_BoundRenderBridge && m_RenderPrimitiveHandle != InvalidRenderPrimitiveHandle)
+    {
+        m_BoundRenderBridge->DestroyPrimitive(m_RenderPrimitiveHandle);
+    }
+    m_BoundRenderBridge = nullptr;
+    m_RenderPrimitiveHandle = InvalidRenderPrimitiveHandle;
 }
 
-void TPrimitiveComponent::RegisterToScene(FScene* scene, RHIDevice* device)
+void TPrimitiveComponent::RegisterToRenderScene(IRenderSceneBridge* renderBridge)
 {
-    if (!scene)
+    if (!renderBridge)
     {
-        TE_LOG_WARN("[Scene] RegisterToScene called with null FScene");
+        TE_LOG_WARN("[Scene] RegisterToRenderScene called with null render bridge");
         return;
     }
 
-    // 如果已有 Proxy，先注销
-    if (m_SceneProxy)
+    // 如果已有渲染对象，先注销
+    if (m_RenderPrimitiveHandle != InvalidRenderPrimitiveHandle)
     {
-        UnregisterFromScene(scene);
+        UnregisterFromRenderScene(renderBridge);
     }
 
-    // 调用子类 override 的 CreateSceneProxy() 创建渲染镜像
-    m_SceneProxy = CreateSceneProxy(device);
-    if (m_SceneProxy)
+    RenderPrimitiveCreateInfo createInfo;
+    if (!BuildRenderCreateInfo(createInfo))
     {
-        // 初始化 Proxy 的 WorldMatrix
-        m_SceneProxy->SetWorldMatrix(GetWorldMatrix());
-
-        // 加入渲染场景
-        scene->AddPrimitive(m_SceneProxy);
-
-        TE_LOG_INFO("[Scene] TPrimitiveComponent registered to FScene");
+        TE_LOG_WARN("[Scene] BuildRenderCreateInfo failed");
+        return;
     }
-    else
+
+    createInfo.WorldMatrix = GetWorldMatrix();
+    m_RenderPrimitiveHandle = renderBridge->CreatePrimitive(createInfo);
+    if (m_RenderPrimitiveHandle == InvalidRenderPrimitiveHandle)
     {
-        TE_LOG_WARN("[Scene] CreateSceneProxy returned null");
+        TE_LOG_WARN("[Scene] Render bridge failed to create primitive");
+        return;
     }
+
+    m_BoundRenderBridge = renderBridge;
+    m_RenderStateDirty = false;
+    TE_LOG_INFO("[Scene] TPrimitiveComponent registered to render scene");
 }
 
-void TPrimitiveComponent::UnregisterFromScene(FScene* scene)
+void TPrimitiveComponent::UnregisterFromRenderScene(IRenderSceneBridge* renderBridge)
 {
-    if (m_SceneProxy && scene)
+    if (!renderBridge)
     {
-        scene->RemovePrimitive(m_SceneProxy);
-        delete m_SceneProxy;
-        m_SceneProxy = nullptr;
-        TE_LOG_INFO("[Scene] TPrimitiveComponent unregistered from FScene");
+        return;
+    }
+    if (m_RenderPrimitiveHandle != InvalidRenderPrimitiveHandle)
+    {
+        renderBridge->DestroyPrimitive(m_RenderPrimitiveHandle);
+        m_RenderPrimitiveHandle = InvalidRenderPrimitiveHandle;
+        m_BoundRenderBridge = nullptr;
+        TE_LOG_INFO("[Scene] TPrimitiveComponent unregistered from render scene");
     }
 }
 

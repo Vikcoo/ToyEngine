@@ -3,19 +3,18 @@
 // 对应 UE5 的 UWorld
 //
 // 拥有 Actor 列表，管理游戏侧数据的更新和与渲染侧的同步
-// 核心职责：Tick() 更新逻辑 + SyncToScene() 同步到 FScene
+// 核心职责：Tick() 更新逻辑 + SyncToScene() 同步到渲染桥接层
 
 #pragma once
 
 #include "Actor.h"
+#include "RenderSceneBridge.h"
 #include <vector>
 #include <memory>
 
 namespace TE {
 
-class FScene;
 class TPrimitiveComponent;
-class RHIDevice;
 
 /// 游戏世界
 ///
@@ -26,7 +25,7 @@ class RHIDevice;
 ///
 /// ToyEngine 扩展：
 /// - 维护已注册的 PrimitiveComponent 列表（用于 SyncToScene）
-/// - SyncToScene() 遍历脏 Component 将数据同步到渲染侧 Proxy
+/// - SyncToScene() 遍历脏 Component 将数据同步到渲染桥接层
 class TWorld
 {
 public:
@@ -54,18 +53,17 @@ public:
     /// 每帧逻辑更新（遍历所有 Actor 的 Tick）
     void Tick(float deltaTime);
 
-    /// 将脏 Component 的数据同步到渲染侧 Proxy
+    /// 将脏 Component 的数据同步到渲染桥接层
     /// 单线程版本：直接赋值（因为同一线程安全）
     /// 将来双线程：改为 Enqueue 命令到渲染线程
-    void SyncToScene(FScene* scene);
+    void SyncToScene();
 
-    /// 注册/反注册 PrimitiveComponent（由 Component 在 RegisterToScene 时调用）
+    /// 注册/反注册 PrimitiveComponent（由组件注册流程调用）
     void RegisterPrimitiveComponent(TPrimitiveComponent* comp);
     void UnregisterPrimitiveComponent(TPrimitiveComponent* comp);
 
-    /// 设置渲染场景和设备（AddActor 时用于自动注册 Proxy）
-    void SetScene(FScene* scene) { m_Scene = scene; }
-    void SetRHIDevice(RHIDevice* device) { m_RHIDevice = device; }
+    /// 设置渲染桥接对象（AddActor 时用于自动注册渲染对象）
+    void SetRenderSceneBridge(IRenderSceneBridge* renderBridge) { m_RenderSceneBridge = renderBridge; }
 
     /// 获取所有 Actor
     [[nodiscard]] const std::vector<std::unique_ptr<TActor>>& GetActors() const { return m_Actors; }
@@ -73,8 +71,7 @@ public:
 private:
     std::vector<std::unique_ptr<TActor>>    m_Actors;
     std::vector<TPrimitiveComponent*>       m_PrimitiveComponents;  // 所有已注册的可渲染组件
-    FScene*     m_Scene = nullptr;      // 渲染场景引用
-    RHIDevice*  m_RHIDevice = nullptr;  // RHI 设备引用
+    IRenderSceneBridge* m_RenderSceneBridge = nullptr; // 渲染桥接层引用
 };
 
 } // namespace TE

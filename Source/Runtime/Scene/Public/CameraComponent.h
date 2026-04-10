@@ -8,7 +8,7 @@
 #pragma once
 
 #include "SceneComponent.h"
-#include "FViewInfo.h"
+#include "SceneViewInfo.h"
 
 namespace TE {
 

@@ -3,22 +3,22 @@
 
 #include "MeshComponent.h"
 #include "TStaticMesh.h"
-#include "FStaticMeshSceneProxy.h"
 #include "Log/Log.h"
 
 namespace TE {
 
-FPrimitiveSceneProxy* TMeshComponent::CreateSceneProxy(RHIDevice* device)
+bool TMeshComponent::BuildRenderCreateInfo(RenderPrimitiveCreateInfo& outCreateInfo) const
 {
     if (!m_StaticMesh || !m_StaticMesh->IsValid())
     {
-        TE_LOG_WARN("[Scene] TMeshComponent::CreateSceneProxy called with invalid static mesh");
-        return nullptr;
+        TE_LOG_WARN("[Scene] TMeshComponent::BuildRenderCreateInfo called with invalid static mesh");
+        return false;
     }
 
-    // 创建 FStaticMeshSceneProxy，传入 TStaticMesh 资产和 RHIDevice
-    // Proxy 在构造函数中从 TStaticMesh 读取 Section 数据，创建 GPU 资源
-    return new FStaticMeshSceneProxy(m_StaticMesh.get(), device);
+    outCreateInfo.Kind = RenderPrimitiveKind::StaticMesh;
+    outCreateInfo.StaticMesh = m_StaticMesh;
+    outCreateInfo.WorldMatrix = GetWorldMatrix();
+    return true;
 }
 
 } // namespace TE

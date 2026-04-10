@@ -50,7 +50,7 @@ class FStaticMeshSceneProxy : public FPrimitiveSceneProxy
 public:
     /// 构造函数：从 TStaticMesh 资产创建 GPU 资源
     FStaticMeshSceneProxy(const TStaticMesh* staticMesh, RHIDevice* device);
-    ~FStaticMeshSceneProxy() override = default;
+    ~FStaticMeshSceneProxy() override;
 
     /// 收集绘制命令（每个 Section 一条）
     void GetMeshDrawCommands(std::vector<FMeshDrawCommand>& outCommands) const override;

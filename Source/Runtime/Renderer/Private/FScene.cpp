@@ -4,37 +4,64 @@
 #include "FScene.h"
 #include "FPrimitiveSceneProxy.h"
 #include "Log/Log.h"
-#include <algorithm>
 
 namespace TE {
 
-void FScene::AddPrimitive(FPrimitiveSceneProxy* proxy)
+FScene::~FScene() = default;
+
+RenderPrimitiveHandle FScene::AddPrimitive(std::unique_ptr<FPrimitiveSceneProxy> proxy)
 {
     if (!proxy)
     {
         TE_LOG_WARN("[Renderer] FScene::AddPrimitive called with null proxy");
-        return;
+        return InvalidRenderPrimitiveHandle;
     }
 
-    // 检查是否已存在（避免重复添加）
-    auto it = std::find(m_Primitives.begin(), m_Primitives.end(), proxy);
-    if (it != m_Primitives.end())
-    {
-        TE_LOG_WARN("[Renderer] FScene::AddPrimitive proxy already exists");
-        return;
-    }
-
-    m_Primitives.push_back(proxy);
-    TE_LOG_INFO("[Renderer] FScene::AddPrimitive, total primitives: {}", m_Primitives.size());
+    const RenderPrimitiveHandle handle = m_NextHandle++;
+    m_PrimitiveStorage.emplace(handle, std::move(proxy));
+    RebuildPrimitiveView();
+    TE_LOG_INFO("[Renderer] FScene::AddPrimitive handle={}, total primitives: {}", handle, m_PrimitiveStorage.size());
+    return handle;
 }
 
-void FScene::RemovePrimitive(FPrimitiveSceneProxy* proxy)
+void FScene::RemovePrimitive(RenderPrimitiveHandle handle)
 {
-    auto it = std::find(m_Primitives.begin(), m_Primitives.end(), proxy);
-    if (it != m_Primitives.end())
+    if (handle == InvalidRenderPrimitiveHandle)
     {
-        m_Primitives.erase(it);
-        TE_LOG_INFO("[Renderer] FScene::RemovePrimitive, total primitives: {}", m_Primitives.size());
+        return;
+    }
+    const auto it = m_PrimitiveStorage.find(handle);
+    if (it == m_PrimitiveStorage.end())
+    {
+        return;
+    }
+    m_PrimitiveStorage.erase(it);
+    RebuildPrimitiveView();
+    TE_LOG_INFO("[Renderer] FScene::RemovePrimitive handle={}, total primitives: {}", handle, m_PrimitiveStorage.size());
+}
+
+void FScene::UpdatePrimitiveWorldMatrix(RenderPrimitiveHandle handle, const Matrix4& worldMatrix)
+{
+    if (handle == InvalidRenderPrimitiveHandle)
+    {
+        return;
+    }
+    const auto it = m_PrimitiveStorage.find(handle);
+    if (it == m_PrimitiveStorage.end())
+    {
+        return;
+    }
+    it->second->SetWorldMatrix(worldMatrix);
+}
+
+void FScene::RebuildPrimitiveView()
+{
+    m_Primitives.clear();
+    m_Primitives.reserve(m_PrimitiveStorage.size());
+    for (auto& [handle, proxy] : m_PrimitiveStorage)
+    {
+        (void)handle;
+        m_Primitives.push_back(proxy.get());
     }
 }
 

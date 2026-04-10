@@ -4,8 +4,6 @@
 
 #include "World.h"
 #include "PrimitiveComponent.h"
-#include "FScene.h"
-#include "FPrimitiveSceneProxy.h"
 #include "Log/Log.h"
 #include <algorithm>
 
@@ -22,17 +20,17 @@ TActor* TWorld::AddActor(std::unique_ptr<TActor> actor)
 
     m_Actors.push_back(std::move(actor));
     TActor* ptr = m_Actors.back().get();
-    // 遍历 Actor 的所有组件，注册 PrimitiveComponent 到 FScene
+    // 遍历 Actor 的所有组件，注册 PrimitiveComponent 到渲染桥接层
     for (const auto& comp : ptr->GetComponents())
     {
         if (auto* primComp = dynamic_cast<TPrimitiveComponent*>(comp.get()))
         {
             RegisterPrimitiveComponent(primComp);
 
-            // 如果有 FScene 和 RHIDevice，自动注册到渲染场景
-            if (m_Scene && m_RHIDevice)
+            // 如果有渲染桥接对象，自动注册到渲染侧
+            if (m_RenderSceneBridge)
             {
-                primComp->RegisterToScene(m_Scene, m_RHIDevice);
+                primComp->RegisterToRenderScene(m_RenderSceneBridge);
             }
         }
     }
@@ -51,24 +49,20 @@ void TWorld::Tick(float deltaTime)
     }
 }
 
-void TWorld::SyncToScene(FScene* scene)
+void TWorld::SyncToScene()
 {
-    if (!scene)
+    if (!m_RenderSceneBridge)
         return;
 
     // 遍历所有已注册的 PrimitiveComponent
-    // 如果标记为脏，将 WorldMatrix 同步到 Proxy
+    // 如果标记为脏，将 WorldMatrix 同步到渲染桥接层
     for (auto* comp : m_PrimitiveComponents)
     {
-        if (comp->IsRenderStateDirty())
+        if (comp->IsRenderStateDirty() && comp->IsRegisteredToRenderScene())
         {
-            auto* proxy = comp->GetSceneProxy();
-            if (proxy)
-            {
-                // 单线程版本：直接赋值（安全）
-                // 将来双线程：改为 Enqueue 命令
-                proxy->SetWorldMatrix(comp->GetWorldMatrix());
-            }
+            // 单线程版本：直接更新（安全）
+            // 将来双线程：改为 Enqueue 命令
+            m_RenderSceneBridge->UpdatePrimitiveTransform(comp->GetRenderPrimitiveHandle(), comp->GetWorldMatrix());
             comp->ClearRenderStateDirty();
         }
     }

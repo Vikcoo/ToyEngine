@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "RenderSceneBridge.h"
+
 #include <memory>
 #include <chrono>
 
@@ -28,7 +30,7 @@ namespace TE {
 /// Engine::Tick(deltaTime)
 ///   → PollEvents()
 ///   → World::Tick(deltaTime)          // 逻辑更新（旋转立方体等）
-///   → World::SyncToScene(FScene)      // 脏 Component 同步到 Proxy
+///   → World::SyncToScene()            // 脏 Component 同步到渲染桥接层
 ///   → CameraComponent::BuildViewInfo  // 构建视图信息
 ///   → SceneRenderer::Render(FScene)   // 遍历 Proxy → 收集 DrawCmd → RHI 提交
 ///   → SwapBuffers()
@@ -105,6 +107,7 @@ private:
     // UE5 架构核心模块
     std::unique_ptr<TWorld>         m_World;            // 游戏世界（Actor/Component）
     std::unique_ptr<FScene>         m_Scene;            // 渲染场景（Proxy 容器）
+    std::unique_ptr<IRenderSceneBridge> m_RenderBridge; // 游戏侧到渲染侧的桥接对象
     std::unique_ptr<SceneRenderer>  m_SceneRenderer;    // 渲染调度器
 
     // 相机组件引用（用于每帧构建 ViewInfo）
