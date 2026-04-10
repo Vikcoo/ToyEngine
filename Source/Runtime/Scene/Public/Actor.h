@@ -70,7 +70,7 @@ public:
     [[nodiscard]] const Transform& GetTransform() const;
 
     /// 位置快捷访问（委托给 RootComponent）
-    void SetPosition(const Vector3& pos);
+    void SetPosition(const Vector3& pos) const;
     [[nodiscard]] Vector3 GetPosition() const;
 
     /// 名称

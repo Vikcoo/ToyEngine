@@ -416,7 +416,7 @@ inline Vector4 operator*(float scalar, const Vector4& vec) { return vec * scalar
 struct [[nodiscard]] Matrix3
 {
     // 3x3 矩阵，按列主序存储（与 glm 一致）
-    float M[3][3];
+    float M[3][3]{};
 
     // 构造函数
     Matrix3()
@@ -507,7 +507,7 @@ struct [[nodiscard]] Matrix3
 struct [[nodiscard]] Matrix4
 {
     // 4x4 矩阵，按列主序存储（与 glm 一致）
-    float M[4][4];
+    float M[4][4]{};
 
     // 构造函数
     Matrix4()
@@ -619,7 +619,7 @@ struct [[nodiscard]] Matrix4
     /// <summary>
     /// 快捷方法：获取旋转分量（去缩放后转为四元数）
     /// </summary>
-    Quat GetRotation() const;
+    Quat GetRotation() const; // NOLINT(*-use-nodiscard)
 
     /// <summary>
     /// 提取左上角 3x3 旋转/缩放矩阵

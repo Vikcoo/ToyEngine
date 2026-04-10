@@ -28,6 +28,9 @@ public:
     TCameraComponent() = default;
     ~TCameraComponent() override = default;
 
+    /// 相机专用 LookAt（相机局部前向约定为 -Z）
+    void LookAt(const Vector3& target, const Vector3& worldUp = Vector3::Up);
+
     /// 构建视图信息（每帧调用）
     /// 使用当前 Transform 的位置和朝向构建 View 矩阵
     /// 使用 FOV、Aspect、Near/Far 构建 Projection 矩阵

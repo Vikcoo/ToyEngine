@@ -1,5 +1,6 @@
 add_subdirectory(Core)
 add_subdirectory(Platform)
+add_subdirectory(Input)
 
 # RHI 模块：先编译后端实现，再编译抽象层（抽象层的工厂方法依赖后端）
 if(TE_RHI_OPENGL)

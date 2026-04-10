@@ -189,20 +189,12 @@ const Quat Quat::Identity(0.0f, 0.0f, 0.0f, 1.0f);
 // 从欧拉角构造
 Quat Quat::FromEuler(float yaw, float pitch, float roll)
 {
-    // yaw (Y), pitch (X), roll (Z)
-    float cy = std::cos(yaw * 0.5f);
-    float sy = std::sin(yaw * 0.5f);
-    float cp = std::cos(pitch * 0.5f);
-    float sp = std::sin(pitch * 0.5f);
-    float cr = std::cos(roll * 0.5f);
-    float sr = std::sin(roll * 0.5f);
-
-    return {
-        sr * cp * cy - cr * sp * sy,  // X
-        cr * sp * cy + sr * cp * sy,  // Y
-        cr * cp * sy - sr * sp * cy,  // Z
-        cr * cp * cy + sr * sp * sy   // W
-    };
+    // yaw(Y) then pitch(X) then roll(Z)
+    const glm::quat yawQuat = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::quat pitchQuat = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
+    const glm::quat rollQuat = glm::angleAxis(roll, glm::vec3(0.0f, 0.0f, 1.0f));
+    const glm::quat result = yawQuat * pitchQuat * rollQuat;
+    return Quat(result);
 }
 
 // 转换为旋转矩阵

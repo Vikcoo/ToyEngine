@@ -114,8 +114,8 @@ void Transform::SetForward(const Vector3& forward)
         up = Vector3::Right;
     }
 
-    Vector3 right = Vector3::Cross(up, forwardNorm).Normalize();
-    up = Vector3::Cross(forwardNorm, right);
+    Vector3 right = Vector3::Cross(forwardNorm, up).Normalize();
+    up = Vector3::Cross(right, forwardNorm);
 
     // 从正交基构造旋转矩阵，再转换为四元数
     // 旋转矩阵的列是右、上、前向
@@ -165,8 +165,8 @@ Vector3 Transform::GetEulerAnglesDegrees() const
 void Transform::LookAt(const Vector3& target, const Vector3& worldUp)
 {
     Vector3 forward = (target - Position).Normalize();
-    Vector3 right = Vector3::Cross(worldUp, forward).Normalize();
-    Vector3 up = Vector3::Cross(forward, right);
+    Vector3 right = Vector3::Cross(forward, worldUp).Normalize();
+    Vector3 up = Vector3::Cross(right, forward);
 
     // 从正交基构造旋转矩阵
     Matrix4 rotMatrix;
@@ -185,8 +185,8 @@ Transform Transform::LookAt(const Vector3& eye, const Vector3& center, const Vec
     // 使用成员函数指针或显式调用避免歧义
     // 这里直接复制成员函数 LookAt 的逻辑
     Vector3 forward = (center - eye).Normalize();
-    Vector3 right = Vector3::Cross(worldUp, forward).Normalize();
-    Vector3 up = Vector3::Cross(forward, right);
+    Vector3 right = Vector3::Cross(forward, worldUp).Normalize();
+    Vector3 up = Vector3::Cross(right, forward);
 
     Matrix4 rotMatrix;
     rotMatrix(0, 0) = right.X;  rotMatrix(0, 1) = right.Y;  rotMatrix(0, 2) = right.Z;

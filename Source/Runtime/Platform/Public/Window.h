@@ -20,6 +20,16 @@ struct WindowConfig {
 // 窗口事件回调类型定义
 using WindowResizeCallback = std::function<void(uint32_t width, uint32_t height)>;
 using KeyCallback = std::function<void(int key, int scancode, int action, int mods)>;
+using CursorPosCallback = std::function<void(double xpos, double ypos)>;
+using MouseButtonCallback = std::function<void(int button, int action, int mods)>;
+using ScrollCallback = std::function<void(double xoffset, double yoffset)>;
+
+enum class CursorMode
+{
+    Normal,
+    Hidden,
+    Disabled
+};
 
 // 窗口抽象接口
 class Window {
@@ -45,6 +55,11 @@ public:
     // 窗口事件回调设置
     virtual void SetResizeCallback(WindowResizeCallback callback) = 0;
     virtual void SetKeyCallback(KeyCallback callback) = 0;
+    virtual void SetCursorPosCallback(CursorPosCallback callback) = 0;
+    virtual void SetMouseButtonCallback(MouseButtonCallback callback) = 0;
+    virtual void SetScrollCallback(ScrollCallback callback) = 0;
+    virtual void SetCursorMode(CursorMode mode) = 0;
+    [[nodiscard]] virtual CursorMode GetCursorMode() const = 0;
 
     // OpenGL 双缓冲交换
     virtual void SwapBuffers() = 0;

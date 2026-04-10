@@ -83,6 +83,9 @@ GLFWWindow::GLFWWindow(const WindowConfig& config)
     glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, GLFWFramebufferSizeCallback);
     glfwSetKeyCallback(m_window, GLFWKeyCallback);
+    glfwSetCursorPosCallback(m_window, GLFWCursorPosCallback);
+    glfwSetMouseButtonCallback(m_window, GLFWMouseButtonCallback);
+    glfwSetScrollCallback(m_window, GLFWScrollCallback);
 
     TE_LOG_INFO("[Platform] Window created: \"{}\" ({}x{}, framebuffer: {}x{})",
                 m_title, m_width, m_height, m_fbWidth, m_fbHeight);
@@ -143,6 +146,54 @@ void GLFWWindow::SetKeyCallback(KeyCallback callback)
     m_keyCallback = std::move(callback);
 }
 
+void GLFWWindow::SetCursorPosCallback(CursorPosCallback callback)
+{
+    m_cursorPosCallback = std::move(callback);
+}
+
+void GLFWWindow::SetMouseButtonCallback(MouseButtonCallback callback)
+{
+    m_mouseButtonCallback = std::move(callback);
+}
+
+void GLFWWindow::SetScrollCallback(ScrollCallback callback)
+{
+    m_scrollCallback = std::move(callback);
+}
+
+void GLFWWindow::SetCursorMode(CursorMode mode)
+{
+    if (!m_window)
+    {
+        return;
+    }
+
+    int glfwMode = GLFW_CURSOR_NORMAL;
+    switch (mode)
+    {
+    case CursorMode::Normal:
+        glfwMode = GLFW_CURSOR_NORMAL;
+        break;
+    case CursorMode::Hidden:
+        glfwMode = GLFW_CURSOR_HIDDEN;
+        break;
+    case CursorMode::Disabled:
+        glfwMode = GLFW_CURSOR_DISABLED;
+        break;
+    default:
+        glfwMode = GLFW_CURSOR_NORMAL;
+        break;
+    }
+
+    glfwSetInputMode(m_window, GLFW_CURSOR, glfwMode);
+    m_cursorMode = mode;
+}
+
+CursorMode GLFWWindow::GetCursorMode() const
+{
+    return m_cursorMode;
+}
+
 // GLFW 静态回调（注意：FramebufferSizeCallback 的参数是帧缓冲区物理像素尺寸）
 void GLFWWindow::GLFWFramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -174,6 +225,33 @@ void GLFWWindow::GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int 
     if (self && self->m_keyCallback)
     {
         self->m_keyCallback(key, scancode, action, mods);
+    }
+}
+
+void GLFWWindow::GLFWCursorPosCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+    if (self && self->m_cursorPosCallback)
+    {
+        self->m_cursorPosCallback(xpos, ypos);
+    }
+}
+
+void GLFWWindow::GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+    if (self && self->m_mouseButtonCallback)
+    {
+        self->m_mouseButtonCallback(button, action, mods);
+    }
+}
+
+void GLFWWindow::GLFWScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    auto* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+    if (self && self->m_scrollCallback)
+    {
+        self->m_scrollCallback(xoffset, yoffset);
     }
 }
 

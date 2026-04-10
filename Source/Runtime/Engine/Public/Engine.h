@@ -10,6 +10,7 @@
 // 前向声明
 namespace TE {
     class Window;
+    class InputManager;
     class RHIDevice;
     class RHICommandBuffer;
     class TWorld;
@@ -95,6 +96,7 @@ private:
 
     // Platform 子系统
     std::unique_ptr<Window> m_Window;
+    std::unique_ptr<InputManager> m_InputManager;
 
     // RHI 子系统（全局单例资源）
     std::unique_ptr<RHIDevice>          m_RHIDevice;

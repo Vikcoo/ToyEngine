@@ -19,9 +19,9 @@ TActor* TWorld::AddActor(std::unique_ptr<TActor> actor)
         return nullptr;
     }
 
-    TActor* ptr = actor.get();
-    m_Actors.push_back(std::move(actor));
 
+    m_Actors.push_back(std::move(actor));
+    TActor* ptr = m_Actors.back().get();
     // 遍历 Actor 的所有组件，注册 PrimitiveComponent 到 FScene
     for (const auto& comp : ptr->GetComponents())
     {

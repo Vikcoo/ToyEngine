@@ -32,8 +32,7 @@ const Transform& TActor::GetTransform() const
     return s_DefaultTransform;
 }
 
-void TActor::SetPosition(const Vector3& pos)
-{
+void TActor::SetPosition(const Vector3& pos) const {
     if (m_RootComponent)
         m_RootComponent->SetPosition(pos);
 }

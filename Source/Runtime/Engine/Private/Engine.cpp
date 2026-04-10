@@ -16,9 +16,11 @@
 #include "Actor.h"
 #include "MeshComponent.h"
 #include "CameraComponent.h"
+#include "FlyCameraController.h"
 #include "PrimitiveComponent.h"
 #include "FScene.h"
 #include "SceneRenderer.h"
+#include "InputManager.h"
 
 // Asset 模块
 #include "TStaticMesh.h"
@@ -93,7 +95,11 @@ void Engine::Init()
 
     TE_LOG_INFO("UE5 architecture modules created: World + FScene + SceneRenderer");
 
-    // 6. 构建游戏场景
+    // 6. 初始化输入系统
+    m_InputManager = std::make_unique<InputManager>();
+    m_InputManager->Init(m_Window.get());
+
+    // 7. 构建游戏场景
     BuildScene();
 
     // 重置时间
@@ -181,6 +187,18 @@ void Engine::BuildScene()
     meshComp->SetStaticMesh(m_LoadedMesh);
 
     // ========================================
+    // 创建第二个模型 Actor（位于主模型上方，缩放为 0.5）
+    // ========================================
+    auto meshActorTop = std::make_unique<TActor>();
+    meshActorTop->SetName("MeshActorTop");
+
+    auto* meshCompTop = meshActorTop->AddComponent<TMeshComponent>();
+    meshCompTop->SetName("ModelMeshTop");
+    meshCompTop->SetStaticMesh(m_LoadedMesh);
+    meshCompTop->SetScale(Vector3(0.5f, 0.5f, 0.5f));
+    meshCompTop->SetPosition(Vector3(0.0f, 1.5f, 0.0f));
+
+    // ========================================
     // 创建相机 Actor
     // ========================================
     auto cameraActor = std::make_unique<TActor>();
@@ -202,20 +220,27 @@ void Engine::BuildScene()
     }
 
     // 相机位置：在模型右上前方观察
-    cameraComp->SetPosition(Vector3(2.0f, 2.0f, 3.0f));
+    cameraComp->SetPosition(Vector3(0.0f, 0.0f, 3.0f));
     // 朝向原点
-    cameraComp->GetTransform().LookAt(Vector3::Zero);
+    cameraComp->LookAt(Vector3::Zero);
 
     // 保存相机组件引用
     m_CameraComponent = cameraComp;
+
+    // FlyCamera 控制器（默认视口）
+    auto* flyCamCtrl = cameraActor->AddComponent<TFlyCameraController>();
+    flyCamCtrl->SetName("FlyCameraController");
+    flyCamCtrl->SetInputManager(m_InputManager.get());
+    flyCamCtrl->SetWindow(m_Window.get());
 
     // ========================================
     // 将 Actor 添加到 World
     // ========================================
     m_World->AddActor(std::move(meshActor));
+    m_World->AddActor(std::move(meshActorTop));
     m_World->AddActor(std::move(cameraActor));
 
-    TE_LOG_INFO("Game scene built: MeshActor ({}) + CameraActor",
+    TE_LOG_INFO("Game scene built: MeshActor + MeshActorTop ({}) + CameraActor",
                 m_LoadedMesh ? m_LoadedMesh->GetName() : "default_cube");
 }
 
@@ -294,6 +319,7 @@ void Engine::ShutdownRHI()
     m_RHIDevice.reset();
 
     m_CameraComponent = nullptr;
+    m_InputManager.reset();
 
     TE_LOG_INFO("RHI shutdown complete");
 }
@@ -351,6 +377,12 @@ void Engine::Tick(float deltaTime)
     }
 
     // 2. World::Tick - 逻辑更新
+    if (m_InputManager)
+    {
+        m_InputManager->Tick();
+    }
+
+    // 3. World::Tick - 逻辑更新
     // 让模型每帧旋转
     if (m_World)
     {
@@ -372,6 +404,7 @@ void Engine::Tick(float deltaTime)
                     if (auto* primComp = dynamic_cast<TPrimitiveComponent*>(comp.get()))
                     {
                         primComp->MarkRenderStateDirty();
+
                     }
                 }
             }
@@ -380,13 +413,13 @@ void Engine::Tick(float deltaTime)
         m_World->Tick(deltaTime);
     }
 
-    // 3. SyncToScene - 脏 Component 同步到 Proxy
+    // 4. SyncToScene - 脏 Component 同步到 Proxy
     if (m_World && m_Scene)
     {
         m_World->SyncToScene(m_Scene.get());
     }
 
-    // 4. 更新 ViewInfo（从 CameraComponent 构建）
+    // 5. 更新 ViewInfo（从 CameraComponent 构建）
     if (m_CameraComponent && m_Scene)
     {
         // 更新视口尺寸（以防窗口大小改变）
@@ -402,13 +435,18 @@ void Engine::Tick(float deltaTime)
         m_Scene->SetViewInfo(viewInfo);
     }
 
-    // 5. SceneRenderer::Render - 遍历 Proxy → DrawCmd → RHI 提交
+    // 6. SceneRenderer::Render - 遍历 Proxy → DrawCmd → RHI 提交
     if (m_SceneRenderer && m_Scene && m_CommandBuffer)
     {
         m_SceneRenderer->Render(m_Scene.get(), m_RHIDevice.get(), m_CommandBuffer.get());
     }
 
-    // 6. 交换缓冲区
+    if (m_InputManager)
+    {
+        m_InputManager->PostTick();
+    }
+
+    // 7. 交换缓冲区
     if (m_Window)
     {
         m_Window->SwapBuffers();
@@ -434,6 +472,11 @@ void Engine::Tick(float deltaTime)
 void Engine::Shutdown()
 {
     TE_LOG_INFO("Shutting down ToyEngine...");
+
+    if (m_InputManager)
+    {
+        m_InputManager->Shutdown();
+    }
 
     // 逆序关闭子系统
     ShutdownRHI();

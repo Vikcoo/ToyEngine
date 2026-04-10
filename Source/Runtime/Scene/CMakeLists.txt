@@ -8,6 +8,7 @@ add_library(Scene STATIC
     Private/PrimitiveComponent.cpp
     Private/MeshComponent.cpp
     Private/CameraComponent.cpp
+    Private/FlyCameraController.cpp
     Private/Actor.cpp
     Private/World.cpp
 )
@@ -20,11 +21,12 @@ target_include_directories(Scene
         ${CMAKE_CURRENT_SOURCE_DIR}/Private
 )
 
-# 依赖 Core（Math/Transform）+ RHI（前向声明）+ Renderer（FScene/Proxy 类型）+ Asset（TStaticMesh）
+# 依赖 Core（Math/Transform）+ RHI（前向声明）+ Renderer（FScene/Proxy 类型）+ Asset（TStaticMesh）+ Input（TFlyCameraController）
 target_link_libraries(Scene
     PUBLIC
         Core
         RHI
         Renderer
         Asset
+        Input
 )

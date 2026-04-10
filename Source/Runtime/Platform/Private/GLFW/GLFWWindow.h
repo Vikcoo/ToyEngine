@@ -24,6 +24,11 @@ public:
 
     void SetResizeCallback(WindowResizeCallback callback) override;
     void SetKeyCallback(KeyCallback callback) override;
+    void SetCursorPosCallback(CursorPosCallback callback) override;
+    void SetMouseButtonCallback(MouseButtonCallback callback) override;
+    void SetScrollCallback(ScrollCallback callback) override;
+    void SetCursorMode(CursorMode mode) override;
+    [[nodiscard]] CursorMode GetCursorMode() const override;
 
     void SwapBuffers() override;
     void SetVSync(bool enabled) override;
@@ -37,13 +42,20 @@ private:
     uint32_t m_fbWidth = 0;   // 帧缓冲区物理像素宽度
     uint32_t m_fbHeight = 0;  // 帧缓冲区物理像素高度
     bool m_vsyncEnabled = true;  // macOS OpenGL 默认开启 VSync
+    CursorMode m_cursorMode = CursorMode::Normal;
 
     WindowResizeCallback m_resizeCallback;
     KeyCallback m_keyCallback;
+    CursorPosCallback m_cursorPosCallback;
+    MouseButtonCallback m_mouseButtonCallback;
+    ScrollCallback m_scrollCallback;
 
     // GLFW 静态回调
     static void GLFWFramebufferSizeCallback(GLFWwindow* window, int width, int height);
     static void GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void GLFWCursorPosCallback(GLFWwindow* window, double xpos, double ypos);
+    static void GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+    static void GLFWScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 };
 
 } // namespace TE
