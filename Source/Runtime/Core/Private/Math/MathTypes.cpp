@@ -2,9 +2,88 @@
 // 数学类型实现 - MathTypes.h 的方法实现
 
 #include "Math/MathTypes.h"
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
 namespace TE {
+
+namespace {
+
+glm::vec3 ToGlm(const Vector3& v)
+{
+    return {v.X, v.Y, v.Z};
+}
+
+glm::mat3 ToGlm(const Matrix3& m)
+{
+    glm::mat3 result(1.0f);
+    for (int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
+            result[i][j] = m.M[i][j];
+        }
+    }
+    return result;
+}
+
+glm::mat4 ToGlm(const Matrix4& m)
+{
+    glm::mat4 result(1.0f);
+    for (int i = 0; i < 4; ++i)
+    {
+        for (int j = 0; j < 4; ++j)
+        {
+            result[i][j] = m.M[i][j];
+        }
+    }
+    return result;
+}
+
+glm::quat ToGlm(const Quat& q)
+{
+    return {q.W, q.X, q.Y, q.Z};
+}
+
+Matrix3 FromGlm(const glm::mat3& m)
+{
+    Matrix3 result(0.0f);
+    for (int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
+            result.M[i][j] = m[i][j];
+        }
+    }
+    return result;
+}
+
+Matrix4 FromGlm(const glm::mat4& m)
+{
+    Matrix4 result(0.0f);
+    for (int i = 0; i < 4; ++i)
+    {
+        for (int j = 0; j < 4; ++j)
+        {
+            result.M[i][j] = m[i][j];
+        }
+    }
+    return result;
+}
+
+Quat FromGlm(const glm::quat& q)
+{
+    return {q.x, q.y, q.z, q.w};
+}
+
+} // namespace
 
 // ==================== Vector2 常量 ====================
 const Vector2 Vector2::Zero(0.0f, 0.0f);
@@ -30,15 +109,15 @@ const Matrix3 Matrix3::Zero(0.0f);
 // Matrix3 逆矩阵
 Matrix3 Matrix3::Inverse() const
 {
-    auto glmMat = static_cast<glm::mat3>(*this);
+    glm::mat3 glmMat = ToGlm(*this);
     glm::mat3 inv = glm::inverse(glmMat);
-    return Matrix3(inv);
+    return FromGlm(inv);
 }
 
 // Matrix3 行列式
 float Matrix3::Determinant() const
 {
-    auto glmMat = static_cast<glm::mat3>(*this);
+    glm::mat3 glmMat = ToGlm(*this);
     return glm::determinant(glmMat);
 }
 
@@ -49,15 +128,15 @@ const Matrix4 Matrix4::Zero(0.0f);
 // Matrix4 逆矩阵
 Matrix4 Matrix4::Inverse() const
 {
-    auto glmMat = static_cast<glm::mat4>(*this);
+    glm::mat4 glmMat = ToGlm(*this);
     glm::mat4 inv = glm::inverse(glmMat);
-    return Matrix4(inv);
+    return FromGlm(inv);
 }
 
 // Matrix4 行列式
 float Matrix4::Determinant() const
 {
-    auto glmMat = static_cast<glm::mat4>(*this);
+    glm::mat4 glmMat = ToGlm(*this);
     return glm::determinant(glmMat);
 }
 
@@ -73,7 +152,7 @@ Matrix3 Matrix4::GetNormalMatrix() const
 // Matrix4 分解为 TRS 分量
 bool Matrix4::Decompose(Vector3& outTranslation, Quat& outRotation, Vector3& outScale) const
 {
-    auto glmMat = static_cast<glm::mat4>(*this);
+    glm::mat4 glmMat = ToGlm(*this);
     glm::vec3 scale;
     glm::quat rotation;
     glm::vec3 translation;
@@ -137,36 +216,36 @@ Matrix3 Matrix4::ToMatrix3() const
 // Matrix4 变换辅助函数
 Matrix4 Matrix4::Translate(const Vector3& translation)
 {
-    glm::mat4 result = glm::translate(glm::mat4(1.0f), static_cast<glm::vec3>(translation));
-    return Matrix4(result);
+    glm::mat4 result = glm::translate(glm::mat4(1.0f), ToGlm(translation));
+    return FromGlm(result);
 }
 
 Matrix4 Matrix4::Rotate(float angleRadians, const Vector3& axis)
 {
-    glm::mat4 result = glm::rotate(glm::mat4(1.0f), angleRadians, static_cast<glm::vec3>(axis));
-    return Matrix4(result);
+    glm::mat4 result = glm::rotate(glm::mat4(1.0f), angleRadians, ToGlm(axis));
+    return FromGlm(result);
 }
 
 Matrix4 Matrix4::Scale(const Vector3& scale)
 {
-    glm::mat4 result = glm::scale(glm::mat4(1.0f), static_cast<glm::vec3>(scale));
-    return Matrix4(result);
+    glm::mat4 result = glm::scale(glm::mat4(1.0f), ToGlm(scale));
+    return FromGlm(result);
 }
 
 Matrix4 Matrix4::LookAt(const Vector3& eye, const Vector3& center, const Vector3& up)
 {
     glm::mat4 result = glm::lookAt(
-        static_cast<glm::vec3>(eye),
-        static_cast<glm::vec3>(center),
-        static_cast<glm::vec3>(up)
+        ToGlm(eye),
+        ToGlm(center),
+        ToGlm(up)
     );
-    return Matrix4(result);
+    return FromGlm(result);
 }
 
 Matrix4 Matrix4::Perspective(float fovRadians, float aspect, float nearPlane, float farPlane)
 {
     glm::mat4 result = glm::perspective(fovRadians, aspect, nearPlane, farPlane);
-    return Matrix4(result);
+    return FromGlm(result);
 }
 
 Matrix4 Matrix4::PerspectiveGL(float fovRadians, float aspect, float nearPlane, float farPlane)
@@ -174,13 +253,13 @@ Matrix4 Matrix4::PerspectiveGL(float fovRadians, float aspect, float nearPlane, 
     // glm::perspectiveNO 强制使用 [-1, 1] 深度范围（NO = Negative One to One）
     // 无论 GLM_FORCE_DEPTH_ZERO_TO_ONE 宏如何设置
     glm::mat4 result = glm::perspectiveNO(fovRadians, aspect, nearPlane, farPlane);
-    return Matrix4(result);
+    return FromGlm(result);
 }
 
 Matrix4 Matrix4::Orthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane)
 {
     glm::mat4 result = glm::ortho(left, right, bottom, top, nearPlane, farPlane);
-    return Matrix4(result);
+    return FromGlm(result);
 }
 
 // ==================== Quat 常量 ====================
@@ -194,22 +273,22 @@ Quat Quat::FromEuler(float yaw, float pitch, float roll)
     const glm::quat pitchQuat = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
     const glm::quat rollQuat = glm::angleAxis(roll, glm::vec3(0.0f, 0.0f, 1.0f));
     const glm::quat result = yawQuat * pitchQuat * rollQuat;
-    return Quat(result);
+    return FromGlm(result);
 }
 
 // 转换为旋转矩阵
 Matrix4 Quat::ToMatrix4() const
 {
-    auto glmQuat = static_cast<glm::quat>(*this);
+    glm::quat glmQuat = ToGlm(*this);
     glm::mat4 result = glm::mat4_cast(glmQuat);
-    return Matrix4(result);
+    return FromGlm(result);
 }
 
 Matrix3 Quat::ToMatrix3() const
 {
-    auto glmQuat = static_cast<glm::quat>(*this);
+    glm::quat glmQuat = ToGlm(*this);
     glm::mat3 result = glm::mat3_cast(glmQuat);
-    return Matrix3(result);
+    return FromGlm(result);
 }
 
 // 转换为欧拉角
@@ -244,10 +323,10 @@ Vector3 Quat::ToEulerAngles() const
 // 球面线性插值
 Quat Quat::Slerp(const Quat& a, const Quat& b, float t)
 {
-    auto glmA = static_cast<glm::quat>(a);
-    auto glmB = static_cast<glm::quat>(b);
+    glm::quat glmA = ToGlm(a);
+    glm::quat glmB = ToGlm(b);
     glm::quat result = glm::slerp(glmA, glmB, t);
-    return Quat(result);
+    return FromGlm(result);
 }
 
 // 获取旋转轴和角度

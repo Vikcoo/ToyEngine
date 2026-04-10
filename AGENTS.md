@@ -26,6 +26,8 @@
 - 在本仓库中使用 AI 或终端执行 CMake 构建时，默认使用 CLion 自带工具链，不要先切换到其他编译器再分析问题。
 - 推荐使用以下 CMake 可执行文件：
   - `C:\Program Files\JetBrains\CLion 2025.3.3\bin\cmake\win\x64\bin\cmake.exe`
+- 默认使用 `Release` 构建进行编译验证、性能排查和常规可用性确认；只有在明确需要调试符号、断点调试或排查 Debug 专属行为时，才切换到 `Debug`。
+- 未特别说明时，优先使用 `cmake-build-release` 作为默认构建目录，不要默认回落到 `cmake-build-debug`。
 - 如果使用 CLion 自带 MinGW 工具链，构建前必须确认以下目录已经加入当前进程的 `PATH`：
   - `C:\Program Files\JetBrains\CLion 2025.3.3\bin\mingw\bin`
 - 如果直接调用 `cmake --build` 或 `g++.exe` 失败，必须先检查当前会话是否缺少上述 `PATH`，不要先假设源码有误。

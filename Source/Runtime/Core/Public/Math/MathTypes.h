@@ -3,14 +3,6 @@
 
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <cmath>
 #include <algorithm>
 
@@ -33,10 +25,6 @@ struct [[nodiscard]] Vector2
     Vector2() : X(0.0f), Y(0.0f) {}
     Vector2(float x, float y) : X(x), Y(y) {}
     explicit Vector2(float scalar) : X(scalar), Y(scalar) {}
-
-    // 从 glm 构造/转换
-    explicit Vector2(const glm::vec2& v) : X(v.x), Y(v.y) {}
-    operator glm::vec2() const { return {X, Y}; }
 
     // 常量
     static const Vector2 Zero;
@@ -126,10 +114,6 @@ struct [[nodiscard]] Vector3
     Vector3() : X(0.0f), Y(0.0f), Z(0.0f) {}
     Vector3(float x, float y, float z) : X(x), Y(y), Z(z) {}
     explicit Vector3(float scalar) : X(scalar), Y(scalar), Z(scalar) {}
-
-    // 从 glm 构造/转换
-    explicit Vector3(const glm::vec3& v) : X(v.x), Y(v.y), Z(v.z) {}
-    operator glm::vec3() const { return {X, Y, Z}; }
 
     // 常量
     static const Vector3 Zero;
@@ -327,10 +311,6 @@ struct [[nodiscard]] Vector4
     explicit Vector4(float scalar) : X(scalar), Y(scalar), Z(scalar), W(scalar) {}
     Vector4(const Vector3& xyz, float w) : X(xyz.X), Y(xyz.Y), Z(xyz.Z), W(w) {}
 
-    // 从 glm 构造/转换
-    explicit Vector4(const glm::vec4& v) : X(v.x), Y(v.y), Z(v.z), W(v.w) {}
-    operator glm::vec4() const { return {X, Y, Z, W}; }
-
     // 获取 XYZ 部分作为 Vector3
     Vector3 GetXYZ() const { return {X, Y, Z}; }
 
@@ -434,23 +414,6 @@ struct [[nodiscard]] Matrix3
                 M[i][j] = (i == j) ? diagonal : 0.0f;
     }
 
-    // 从 glm 构造/转换
-    explicit Matrix3(const glm::mat3& m)
-    {
-        for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j)
-                M[i][j] = m[i][j];
-    }
-
-    operator glm::mat3() const
-    {
-        glm::mat3 result;
-        for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j)
-                result[i][j] = M[i][j];
-        return result;
-    }
-
     // 常量
     static const Matrix3 Identity;
     static const Matrix3 Zero;
@@ -523,23 +486,6 @@ struct [[nodiscard]] Matrix4
         for (int i = 0; i < 4; ++i)
             for (int j = 0; j < 4; ++j)
                 M[i][j] = (i == j) ? diagonal : 0.0f;
-    }
-
-    // 从 glm 构造/转换
-    explicit Matrix4(const glm::mat4& m)
-    {
-        for (int i = 0; i < 4; ++i)
-            for (int j = 0; j < 4; ++j)
-                M[i][j] = m[i][j];
-    }
-
-    operator glm::mat4() const
-    {
-        glm::mat4 result;
-        for (int i = 0; i < 4; ++i)
-            for (int j = 0; j < 4; ++j)
-                result[i][j] = M[i][j];
-        return result;
     }
 
     // 常量
@@ -664,10 +610,6 @@ struct [[nodiscard]] Quat
 
     // 从欧拉角构造（yaw, pitch, roll）
     static Quat FromEuler(float yaw, float pitch, float roll);
-
-    // 从 glm 构造/转换
-    explicit Quat(const glm::quat& q) : X(q.x), Y(q.y), Z(q.z), W(q.w) {}
-    operator glm::quat() const { return {W, X, Y, Z}; }
 
     // 常量
     static const Quat Identity;
