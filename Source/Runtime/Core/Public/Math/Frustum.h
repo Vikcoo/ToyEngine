@@ -4,7 +4,6 @@
 #pragma once
 
 #include "Geometry.h"
-#include "MathUtils.h"
 
 namespace TE {
 

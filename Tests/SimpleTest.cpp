@@ -1,4 +1,5 @@
 // ToyEngine - 内存分配器最小回归测试（多线程 / 对齐 realloc / Shutdown 竞态）
+#include "Log/Log.h"
 #include "Memory/Memory.h"
 
 #include <atomic>

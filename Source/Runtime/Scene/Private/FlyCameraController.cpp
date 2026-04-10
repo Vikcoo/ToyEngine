@@ -8,7 +8,7 @@
 #include "InputManager.h"
 #include "InputKeys.h"
 #include "Window.h"
-#include "Math/MathUtils.h"
+#include "Math/ScalarMath.h"
 
 namespace TE
 {

@@ -3,7 +3,7 @@
 // 构建 FViewInfo（View + Projection 矩阵）
 
 #include "CameraComponent.h"
-#include "Math/MathUtils.h"
+#include "Math/ScalarMath.h"
 #include "Log/Log.h"
 
 namespace TE {

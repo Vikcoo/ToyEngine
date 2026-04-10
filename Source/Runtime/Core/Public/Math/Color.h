@@ -4,7 +4,7 @@
 #pragma once
 
 #include "MathTypes.h"
-#include "MathUtils.h"
+#include "ScalarMath.h"
 #include <cstdint>
 
 namespace TE {
