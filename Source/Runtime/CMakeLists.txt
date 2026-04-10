@@ -2,7 +2,9 @@ add_subdirectory(Core)
 add_subdirectory(Platform)
 add_subdirectory(Input)
 
-# RHI 模块：先编译后端实现，再编译抽象层（抽象层的工厂方法依赖后端）
+# RHI 相关模块：
+# - OpenGLRHI 提供具体后端实现与后端装配入口
+# - RHI 仅保留抽象接口，不反向依赖具体后端
 if(TE_RHI_OPENGL)
     add_subdirectory(OpenGLRHI)
 endif()

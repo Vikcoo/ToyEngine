@@ -1,21 +1,12 @@
-// ToyEngine RHI Module
-// RHI 工厂方法实现 - 根据编译选项创建对应后端的 Device
+// ToyEngine Engine Module
+// RHI Device 装配逻辑（外层模块负责选择具体后端）
 
 #include "RHIDevice.h"
 #include "Log/Log.h"
 
-// 根据编译选项引入对应后端头文件
 #if defined(TE_RHI_BACKEND_OPENGL)
-    #include "OpenGLDevice.h"
+    #include "OpenGLRHIEntry.h"
 #endif
-
-// #if defined(TE_RHI_BACKEND_VULKAN)
-//     #include "VulkanDevice.h"
-// #endif
-
-// #if defined(TE_RHI_BACKEND_D3D12)
-//     #include "D3D12Device.h"
-// #endif
 
 namespace TE {
 
@@ -23,15 +14,15 @@ std::unique_ptr<RHIDevice> RHIDevice::Create()
 {
 #if defined(TE_RHI_BACKEND_OPENGL)
     TE_LOG_INFO("[RHI] Creating OpenGL RHI Device");
-    return std::make_unique<OpenGLDevice>();
+    return CreateOpenGLRHIDevice();
 
 // #elif defined(TE_RHI_BACKEND_VULKAN)
 //     TE_LOG_INFO("[RHI] Creating Vulkan RHI Device");
-//     return std::make_unique<VulkanDevice>();
+//     return CreateVulkanRHIDevice();
 
 // #elif defined(TE_RHI_BACKEND_D3D12)
 //     TE_LOG_INFO("[RHI] Creating D3D12 RHI Device");
-//     return std::make_unique<D3D12Device>();
+//     return CreateD3D12RHIDevice();
 
 #else
     TE_LOG_ERROR("[RHI] No RHI backend enabled! Enable TE_RHI_OPENGL, TE_RHI_VULKAN, or TE_RHI_D3D12 in CMake.");
