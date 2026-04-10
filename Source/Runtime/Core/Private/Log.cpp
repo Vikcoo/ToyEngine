@@ -2,6 +2,10 @@
 // 日志系统实现
 
 #include "../Public/Log/Log.h"
+
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#include "spdlog/spdlog.h"
+#include "spdlog/common.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/async.h"
@@ -11,6 +15,27 @@ namespace TE {
 
 // 全局spdlog日志器
 static std::shared_ptr<spdlog::logger> s_Logger = nullptr;
+
+spdlog::level::level_enum ToSpdlogLevel(const LogLevel level)
+{
+    switch (level)
+    {
+    case LogLevel::Trace:
+        return spdlog::level::trace;
+    case LogLevel::Debug:
+        return spdlog::level::debug;
+    case LogLevel::Info:
+        return spdlog::level::info;
+    case LogLevel::Warn:
+        return spdlog::level::warn;
+    case LogLevel::Error:
+        return spdlog::level::err;
+    case LogLevel::Critical:
+        return spdlog::level::critical;
+    default:
+        return spdlog::level::info;
+    }
+}
 
 void Log::Init()
 {
@@ -56,14 +81,13 @@ Log& Log::GetInstance()
     return instance;
 }
 
-void Log::LogInternal(const spdlog::source_loc& loc, const spdlog::level::level_enum lvl,
-                     const spdlog::memory_buf_t& buffer)
+void Log::LogInternal(const LogSourceLocation loc, const LogLevel lvl, const std::string_view message)
 {
     if (s_Logger)
     {
-        s_Logger->log(loc, lvl, spdlog::string_view_t(buffer.data(), buffer.size()));
+        const spdlog::source_loc sourceLoc{loc.File, loc.Line, loc.Function};
+        s_Logger->log(sourceLoc, ToSpdlogLevel(lvl), message);
     }
 }
 
 } // namespace TE
-

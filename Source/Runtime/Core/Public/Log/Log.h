@@ -1,17 +1,34 @@
 // ToyEngine Core Module
-// 日志系统 - 基于spdlog的封装
+// 日志系统 - 对外仅暴露引擎自有接口
 
 #pragma once
 
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
-
-#include "spdlog/spdlog.h"
-#include "spdlog/common.h"
+#include <format>
+#include <string>
+#include <string_view>
+#include <utility>
 
 namespace TE {
 
+enum class LogLevel
+{
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Critical
+};
+
+struct LogSourceLocation
+{
+    const char* File;
+    int Line;
+    const char* Function;
+};
+
 /// <summary>
-/// 日志管理器 - 封装spdlog，提供统一的日志接口
+/// 日志管理器 - 对外提供稳定日志接口，具体后端隐藏在私有实现中
 /// </summary>
 class Log {
 public:
@@ -33,33 +50,28 @@ public:
     /// 模板日志函数 - 支持格式化输出
     /// </summary>
     template<typename... Args>
-    void LogMessage(spdlog::source_loc loc, spdlog::level::level_enum lvl, 
-                    spdlog::format_string_t<Args...> fmt, Args&&... args)
+    void LogMessage(LogSourceLocation loc, LogLevel lvl,
+                    std::format_string<Args...> fmt, Args&&... args)
     {
-        spdlog::memory_buf_t buf;
-        fmt::vformat_to(fmt::appender(buf), fmt, fmt::make_format_args(args...));
-        LogInternal(loc, lvl, buf);
+        LogInternal(loc, lvl, std::format(fmt, std::forward<Args>(args)...));
     }
 
 private:
     Log() = default;
     
-    static void LogInternal(const spdlog::source_loc& loc, spdlog::level::level_enum lvl,
-                    const spdlog::memory_buf_t& buffer);
+    static void LogInternal(LogSourceLocation loc, LogLevel lvl, std::string_view message);
 };
 
 // 内部宏 - 简化日志调用
 #define TE_LOG_CALL(level, ...) \
-    TE::Log::GetInstance().LogMessage(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, level, __VA_ARGS__)
+    TE::Log::GetInstance().LogMessage(TE::LogSourceLocation{__FILE__, __LINE__, __func__}, level, __VA_ARGS__)
 
 // 公共日志宏
-#define TE_LOG_TRACE(...)    TE_LOG_CALL(spdlog::level::trace, __VA_ARGS__)
-#define TE_LOG_DEBUG(...)    TE_LOG_CALL(spdlog::level::debug, __VA_ARGS__)
-#define TE_LOG_INFO(...)     TE_LOG_CALL(spdlog::level::info, __VA_ARGS__)
-#define TE_LOG_WARN(...)     TE_LOG_CALL(spdlog::level::warn, __VA_ARGS__)
-#define TE_LOG_ERROR(...)    TE_LOG_CALL(spdlog::level::err, __VA_ARGS__)
-#define TE_LOG_CRITICAL(...) TE_LOG_CALL(spdlog::level::critical, __VA_ARGS__)
+#define TE_LOG_TRACE(...)    TE_LOG_CALL(TE::LogLevel::Trace, __VA_ARGS__)
+#define TE_LOG_DEBUG(...)    TE_LOG_CALL(TE::LogLevel::Debug, __VA_ARGS__)
+#define TE_LOG_INFO(...)     TE_LOG_CALL(TE::LogLevel::Info, __VA_ARGS__)
+#define TE_LOG_WARN(...)     TE_LOG_CALL(TE::LogLevel::Warn, __VA_ARGS__)
+#define TE_LOG_ERROR(...)    TE_LOG_CALL(TE::LogLevel::Error, __VA_ARGS__)
+#define TE_LOG_CRITICAL(...) TE_LOG_CALL(TE::LogLevel::Critical, __VA_ARGS__)
 
 } // namespace TE
-
-
