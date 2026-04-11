@@ -1,6 +1,6 @@
 add_executable(Sandbox Main.cpp)
 
-target_link_libraries(Sandbox PRIVATE Engine)
+target_link_libraries(Sandbox PRIVATE Engine Asset Scene)
 
 target_compile_definitions(Sandbox PRIVATE
     TE_PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}/"

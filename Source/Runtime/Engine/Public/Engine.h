@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <chrono>
+#include <functional>
 
 // 前向声明
 namespace TE {
@@ -19,7 +20,6 @@ namespace TE {
     class FScene;
     class SceneRenderer;
     class TCameraComponent;
-    class TStaticMesh;
 }
 
 namespace TE {
@@ -29,7 +29,8 @@ namespace TE {
 /// 数据流（每帧）：
 /// Engine::Tick(deltaTime)
 ///   → PollEvents()
-///   → World::Tick(deltaTime)          // 逻辑更新（旋转立方体等）
+///   → 应用层 FrameUpdateCallback      // Sandbox/应用逻辑
+///   → World::Tick(deltaTime)          // 逻辑更新
 ///   → World::SyncToScene()            // 脏 Component 同步到渲染桥接层
 ///   → CameraComponent::BuildViewInfo  // 构建视图信息
 ///   → SceneRenderer::Render(FScene)   // 遍历 Proxy → 收集 DrawCmd → RHI 提交
@@ -45,7 +46,7 @@ public:
     [[nodiscard]] static Engine& Get();
 
     /// 初始化所有子系统
-    /// 顺序：Log → Memory → Window → RHI → World/FScene/SceneRenderer → 构建场景
+    /// 顺序：Log → Memory → Window → RHI → World/FScene/SceneRenderer → 应用层场景回调
     void Init();
 
     /// 运行主循环（阻塞直到退出）
@@ -65,6 +66,10 @@ public:
 
     /// 获取 RHI 设备
     [[nodiscard]] RHIDevice* GetRHIDevice() const { return m_RHIDevice.get(); }
+    /// 获取输入管理器
+    [[nodiscard]] InputManager* GetInputManager() const { return m_InputManager.get(); }
+    /// 获取游戏世界
+    [[nodiscard]] TWorld* GetWorld() const { return m_World.get(); }
 
     /// 获取当前帧时间（秒）
     [[nodiscard]] float GetDeltaTime() const { return m_DeltaTime; }
@@ -75,6 +80,13 @@ public:
     /// 获取当前帧数
     [[nodiscard]] uint64_t GetFrameCount() const { return m_FrameCount; }
 
+    /// 应用层场景初始化回调（通常由 Sandbox 注册）
+    void SetSceneSetupCallback(std::function<void(Engine&)> callback);
+    /// 应用层每帧逻辑回调（在 World::Tick 前执行）
+    void SetFrameUpdateCallback(std::function<void(Engine&, float)> callback);
+    /// 设置当前主相机组件（用于构建 ViewInfo）
+    void SetActiveCameraComponent(TCameraComponent* camera) { m_CameraComponent = camera; }
+
 private:
     Engine() = default;
     ~Engine() = default;
@@ -83,12 +95,6 @@ private:
 
     /// 初始化 RHI 子系统（创建 Device 和 CommandBuffer）
     [[nodiscard]] bool InitRHI();
-
-    /// 构建游戏场景（创建 World、Actor、Component）
-    void BuildScene();
-
-    /// 创建默认立方体网格（用于无外部模型文件时的 fallback）
-    [[nodiscard]] static std::shared_ptr<TStaticMesh> CreateDefaultCubeMesh();
 
     /// 关闭 RHI 子系统
     void ShutdownRHI();
@@ -112,10 +118,8 @@ private:
 
     // 相机组件引用（用于每帧构建 ViewInfo）
     TCameraComponent* m_CameraComponent = nullptr;
-
-    // 已加载的静态网格资产（Engine 持有所有权，Component 通过 shared_ptr 共享引用）
-    // 对应 UE5 中 FAssetManager 管理的资产
-    std::shared_ptr<TStaticMesh> m_LoadedMesh;
+    std::function<void(Engine&)> m_SceneSetupCallback;
+    std::function<void(Engine&, float)> m_FrameUpdateCallback;
 
     // 运行状态
     bool m_Running = false;
