@@ -20,7 +20,7 @@ add_subdirectory(RHI)
 add_subdirectory(Asset)
 
 # UE5 架构模块：Scene（游戏侧数据）和 Renderer（渲染侧数据 + 渲染器）
-# Renderer 依赖 Scene 暴露的桥接接口，因此 Scene 先于 Renderer
+# Renderer 依赖 Scene 暴露的渲染场景接口，因此 Scene 先于 Renderer
 add_subdirectory(Scene)
 add_subdirectory(Renderer)
 

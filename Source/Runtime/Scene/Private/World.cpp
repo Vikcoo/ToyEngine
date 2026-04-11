@@ -20,17 +20,17 @@ TActor* TWorld::AddActor(std::unique_ptr<TActor> actor)
 
     m_Actors.push_back(std::move(actor));
     TActor* ptr = m_Actors.back().get();
-    // 遍历 Actor 的所有组件，注册 PrimitiveComponent 到渲染桥接层
+    // 遍历 Actor 的所有组件，注册 PrimitiveComponent 到渲染场景接口
     for (const auto& comp : ptr->GetComponents())
     {
         if (auto* primComp = dynamic_cast<TPrimitiveComponent*>(comp.get()))
         {
             RegisterPrimitiveComponent(primComp);
 
-            // 如果有渲染桥接对象，自动注册到渲染侧
-            if (m_RenderSceneBridge)
+            // 如果有渲染场景对象，自动注册到渲染侧
+            if (m_RenderScene)
             {
-                primComp->RegisterToRenderScene(m_RenderSceneBridge);
+                primComp->RegisterToRenderScene(m_RenderScene);
             }
         }
     }
@@ -51,18 +51,18 @@ void TWorld::Tick(float deltaTime)
 
 void TWorld::SyncToScene()
 {
-    if (!m_RenderSceneBridge)
+    if (!m_RenderScene)
         return;
 
     // 遍历所有已注册的 PrimitiveComponent
-    // 如果标记为脏，将 WorldMatrix 同步到渲染桥接层
+    // 如果标记为脏，将 WorldMatrix 同步到渲染场景接口
     for (auto* comp : m_PrimitiveComponents)
     {
         if (comp->IsRenderStateDirty() && comp->IsRegisteredToRenderScene())
         {
             // 单线程版本：直接更新（安全）
             // 将来双线程：改为 Enqueue 命令
-            m_RenderSceneBridge->UpdatePrimitiveTransform(comp->GetRenderPrimitiveHandle(), comp->GetWorldMatrix());
+            m_RenderScene->UpdatePrimitiveTransform(comp->GetRenderPrimitiveHandle(), comp->GetWorldMatrix());
             comp->ClearRenderStateDirty();
         }
     }

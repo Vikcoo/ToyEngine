@@ -4,7 +4,7 @@
 //
 // 重构说明：
 // - 持有 shared_ptr<TStaticMesh> 资产引用（对应 UE5 中 UStaticMeshComponent 引用 UStaticMesh）
-// - 通过 BuildRenderCreateInfo() 提供渲染创建数据，具体渲染对象由桥接层创建
+// - 通过 BuildRenderCreateInfo() 提供渲染创建数据，具体渲染对象由渲染场景接口创建
 
 #pragma once
 
@@ -20,7 +20,7 @@ class TStaticMesh;
 ///
 /// UE5 映射：
 /// - UStaticMeshComponent: 引用 UStaticMesh 资源
-/// - 通过桥接层将网格数据映射到渲染侧镜像
+/// - 通过渲染场景接口将网格数据映射到渲染侧镜像
 ///
 /// ToyEngine 简化版：
 /// - 持有 shared_ptr<TStaticMesh> 资产引用（多个组件可共享同一资产）

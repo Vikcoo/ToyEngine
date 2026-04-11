@@ -27,6 +27,7 @@ struct FMeshDrawCommand
     RHIPipeline*    Pipeline = nullptr;         // 图形管线（Shader + 状态）
     RHIBuffer*      VertexBuffer = nullptr;     // 顶点缓冲区
     RHIBuffer*      IndexBuffer = nullptr;      // 索引缓冲区
+    uint32_t        FirstIndex = 0;             // 起始索引偏移（全局 IndexBuffer 中的位置）
     uint32_t        IndexCount = 0;             // 索引数量
     Matrix4         WorldMatrix;                // 物体的世界变换矩阵（Model 矩阵）
 };

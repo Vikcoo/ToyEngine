@@ -195,7 +195,7 @@ void SceneRenderer::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& comm
         cmdBuf->SetUniformVec3("u_LightColor", &lightColor.X);
 
         // --- 提交绘制 ---
-        cmdBuf->DrawIndexed(cmd.IndexCount);
+        cmdBuf->DrawIndexed(cmd.IndexCount, cmd.FirstIndex);
         ++drawCallCount;
     }
 

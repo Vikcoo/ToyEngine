@@ -3,12 +3,12 @@
 // 对应 UE5 的 UWorld
 //
 // 拥有 Actor 列表，管理游戏侧数据的更新和与渲染侧的同步
-// 核心职责：Tick() 更新逻辑 + SyncToScene() 同步到渲染桥接层
+// 核心职责：Tick() 更新逻辑 + SyncToScene() 同步到渲染场景接口
 
 #pragma once
 
 #include "Actor.h"
-#include "RenderSceneBridge.h"
+#include "RenderScene.h"
 #include <vector>
 #include <memory>
 
@@ -25,7 +25,7 @@ class TPrimitiveComponent;
 ///
 /// ToyEngine 扩展：
 /// - 维护已注册的 PrimitiveComponent 列表（用于 SyncToScene）
-/// - SyncToScene() 遍历脏 Component 将数据同步到渲染桥接层
+/// - SyncToScene() 遍历脏 Component 将数据同步到渲染场景接口
 class TWorld
 {
 public:
@@ -53,7 +53,7 @@ public:
     /// 每帧逻辑更新（遍历所有 Actor 的 Tick）
     void Tick(float deltaTime);
 
-    /// 将脏 Component 的数据同步到渲染桥接层
+    /// 将脏 Component 的数据同步到渲染场景接口
     /// 单线程版本：直接赋值（因为同一线程安全）
     /// 将来双线程：改为 Enqueue 命令到渲染线程
     void SyncToScene();
@@ -62,8 +62,8 @@ public:
     void RegisterPrimitiveComponent(TPrimitiveComponent* comp);
     void UnregisterPrimitiveComponent(TPrimitiveComponent* comp);
 
-    /// 设置渲染桥接对象（AddActor 时用于自动注册渲染对象）
-    void SetRenderSceneBridge(IRenderSceneBridge* renderBridge) { m_RenderSceneBridge = renderBridge; }
+    /// 设置渲染场景接口（AddActor 时用于自动注册渲染对象）
+    void SetRenderScene(IRenderScene* renderScene) { m_RenderScene = renderScene; }
 
     /// 获取所有 Actor
     [[nodiscard]] const std::vector<std::unique_ptr<TActor>>& GetActors() const { return m_Actors; }
@@ -71,7 +71,7 @@ public:
 private:
     std::vector<std::unique_ptr<TActor>>    m_Actors;
     std::vector<TPrimitiveComponent*>       m_PrimitiveComponents;  // 所有已注册的可渲染组件
-    IRenderSceneBridge* m_RenderSceneBridge = nullptr; // 渲染桥接层引用
+    IRenderScene* m_RenderScene = nullptr; // 渲染场景接口引用
 };
 
 } // namespace TE

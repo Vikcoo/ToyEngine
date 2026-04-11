@@ -1,6 +1,6 @@
 # ToyEngine Scene Module
 # 游戏侧数据（对应 UE5 的 World/Actor/Component 体系）
-# 通过 IRenderSceneBridge 与渲染侧解耦
+# 通过 IRenderScene 与渲染侧解耦
 
 # Scene 静态库
 add_library(Scene STATIC

@@ -15,7 +15,6 @@
 #include "CameraComponent.h"
 #include "FScene.h"
 #include "SceneRenderer.h"
-#include "RenderSceneBridgeFactory.h"
 #include "InputManager.h"
 
 namespace TE {
@@ -75,15 +74,14 @@ void Engine::Init()
     }
 
     // 5. 创建 UE5 架构核心模块
-    m_Scene = std::make_unique<FScene>();
-    m_RenderBridge = CreateRenderSceneBridge(m_Scene.get(), m_RHIDevice.get());
+    m_Scene = std::make_unique<FScene>(m_RHIDevice.get());
     m_SceneRenderer = std::make_unique<SceneRenderer>();
     m_World = std::make_unique<TWorld>();
 
-    // 设置 World 的渲染桥接对象
-    m_World->SetRenderSceneBridge(m_RenderBridge.get());
+    // 设置 World 的渲染场景接口
+    m_World->SetRenderScene(m_Scene.get());
 
-    TE_LOG_INFO("UE5 architecture modules created: World + RenderBridge + FScene + SceneRenderer");
+    TE_LOG_INFO("UE5 architecture modules created: World + FScene + SceneRenderer");
 
     // 6. 初始化输入系统
     m_InputManager = std::make_unique<InputManager>();
@@ -144,7 +142,6 @@ void Engine::ShutdownRHI()
 
     // 先销毁 UE5 架构模块（其中 Proxy 持有 RHI 资源）
     m_World.reset();
-    m_RenderBridge.reset();
     m_SceneRenderer.reset();
     m_Scene.reset();
 
@@ -228,7 +225,7 @@ void Engine::Tick(float deltaTime)
         m_World->Tick(deltaTime);
     }
 
-    // 5. SyncToScene - 脏 Component 同步到渲染桥接层
+    // 5. SyncToScene - 脏 Component 同步到渲染场景接口
     if (m_World && m_Scene)
     {
         m_World->SyncToScene();

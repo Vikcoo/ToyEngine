@@ -4,8 +4,9 @@
 //
 // 核心设计理念（UE5 Game/Render 数据分离）：
 // - 游戏侧有 TPrimitiveComponent，持有逻辑数据（Transform、网格引用等）
-// - 渲染侧有 FPrimitiveSceneProxy，持有 GPU 资源（VBO/IBO/Pipeline 等）
-// - 两者是独立的对象，通过 SyncToScene() 桥接数据
+// - 渲染侧有 FPrimitiveSceneProxy，持有实例级渲染快照（Transform、可见性、资源引用）
+// - GPU 资源由独立 RenderData/Renderer 层管理，SceneProxy 仅持有引用
+// - 两者是独立的对象，通过 SyncToScene() 同步数据
 // - 单线程版本中直接赋值同步；将来双线程改为命令队列异步同步
 
 #pragma once

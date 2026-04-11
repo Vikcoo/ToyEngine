@@ -9,8 +9,9 @@
 #pragma once
 
 #include "FPrimitiveSceneProxy.h"
+#include "FStaticMeshRenderData.h"
 #include "FViewInfo.h"
-#include "RenderSceneBridge.h"
+#include "RenderScene.h"
 
 #include <memory>
 #include <unordered_map>
@@ -18,25 +19,30 @@
 
 namespace TE {
 
+class RHIDevice;
+class RHIPipeline;
+class RHIShader;
+class TStaticMesh;
+
 /// 渲染场景
 ///
 /// UE5 映射：
 /// - FScene: 存储所有 Primitive 的 SceneProxy 列表
 /// - 是 SceneRenderer 的数据来源
-class FScene
+class FScene : public IRenderScene
 {
 public:
-    FScene() = default;
+    explicit FScene(RHIDevice* device);
     ~FScene();
 
-    /// 添加 Primitive Proxy 到渲染场景，返回稳定句柄
-    [[nodiscard]] RenderPrimitiveHandle AddPrimitive(std::unique_ptr<FPrimitiveSceneProxy> proxy);
+    /// 创建 Primitive Proxy 并添加到渲染场景，返回稳定句柄
+    [[nodiscard]] RenderPrimitiveHandle CreatePrimitive(const RenderPrimitiveCreateInfo& createInfo) override;
 
     /// 通过句柄移除 Primitive Proxy
-    void RemovePrimitive(RenderPrimitiveHandle handle);
+    void DestroyPrimitive(RenderPrimitiveHandle handle) override;
 
     /// 通过句柄更新 Primitive 世界矩阵
-    void UpdatePrimitiveWorldMatrix(RenderPrimitiveHandle handle, const Matrix4& worldMatrix);
+    void UpdatePrimitiveTransform(RenderPrimitiveHandle handle, const Matrix4& worldMatrix) override;
 
     /// 获取所有 Primitive Proxy（SceneRenderer 遍历用）
     [[nodiscard]] const std::vector<FPrimitiveSceneProxy*>& GetPrimitives() const { return m_Primitives; }
@@ -46,11 +52,19 @@ public:
     [[nodiscard]] const FViewInfo& GetViewInfo() const { return m_ViewInfo; }
 
 private:
+    [[nodiscard]] bool EnsureStaticMeshPipeline();
+    [[nodiscard]] std::shared_ptr<const FStaticMeshRenderData> GetOrCreateStaticMeshRenderData(const std::shared_ptr<TStaticMesh>& staticMesh);
+    [[nodiscard]] RenderPrimitiveHandle InsertPrimitive(std::unique_ptr<FPrimitiveSceneProxy> proxy);
     void RebuildPrimitiveView();
 
+    RHIDevice* m_Device = nullptr;
     RenderPrimitiveHandle m_NextHandle = InvalidRenderPrimitiveHandle + 1;
     std::unordered_map<RenderPrimitiveHandle, std::unique_ptr<FPrimitiveSceneProxy>> m_PrimitiveStorage;
     std::vector<FPrimitiveSceneProxy*> m_Primitives; // SceneRenderer 遍历视图
+    std::unordered_map<const TStaticMesh*, std::weak_ptr<const FStaticMeshRenderData>> m_StaticMeshRenderDataCache;
+    std::unique_ptr<RHIShader> m_StaticMeshVertexShader;
+    std::unique_ptr<RHIShader> m_StaticMeshFragmentShader;
+    std::unique_ptr<RHIPipeline> m_StaticMeshPipeline;
     FViewInfo m_ViewInfo; // 当前帧的视图信息
 };
 

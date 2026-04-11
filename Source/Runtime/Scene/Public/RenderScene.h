@@ -1,5 +1,5 @@
 // ToyEngine Scene Module
-// 游戏侧到渲染侧的桥接接口
+// 游戏侧到渲染侧的场景接口
 
 #pragma once
 
@@ -27,12 +27,12 @@ struct RenderPrimitiveCreateInfo
     Matrix4 WorldMatrix = Matrix4::Identity;
 };
 
-/// 游戏线程视角的渲染桥接接口。
+/// 游戏线程视角的渲染场景接口。
 /// Scene 模块只依赖该接口，不直接依赖 Renderer 的具体实现类型。
-class IRenderSceneBridge
+class IRenderScene
 {
 public:
-    virtual ~IRenderSceneBridge() = default;
+    virtual ~IRenderScene() = default;
 
     [[nodiscard]] virtual RenderPrimitiveHandle CreatePrimitive(const RenderPrimitiveCreateInfo& createInfo) = 0;
     virtual void UpdatePrimitiveTransform(RenderPrimitiveHandle handle, const Matrix4& worldMatrix) = 0;
