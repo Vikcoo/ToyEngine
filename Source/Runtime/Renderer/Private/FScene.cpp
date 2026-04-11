@@ -28,61 +28,26 @@ FScene::FScene(RHIDevice* device)
 
 FScene::~FScene() = default;
 
-RenderPrimitiveHandle FScene::CreatePrimitive(const RenderPrimitiveCreateInfo& createInfo)
+bool FScene::AddPrimitive(const TPrimitiveComponent* primitiveComponent, std::unique_ptr<FPrimitiveSceneProxy> proxy)
 {
-    if (!m_Device)
+    if (!primitiveComponent || !proxy)
     {
-        TE_LOG_ERROR("[Renderer] FScene::CreatePrimitive called with null RHIDevice");
-        return InvalidRenderPrimitiveHandle;
+        TE_LOG_WARN("[Renderer] FScene::AddPrimitive called with null primitive/proxy");
+        return false;
     }
 
-    switch (createInfo.Kind)
-    {
-    case RenderPrimitiveKind::StaticMesh:
-    {
-        if (!createInfo.StaticMesh || !createInfo.StaticMesh->IsValid())
-        {
-            TE_LOG_WARN("[Renderer] FScene::CreatePrimitive static mesh create info is invalid");
-            return InvalidRenderPrimitiveHandle;
-        }
-
-        if (!EnsureStaticMeshPipeline())
-        {
-            TE_LOG_ERROR("[Renderer] FScene failed to initialize static mesh pipeline");
-            return InvalidRenderPrimitiveHandle;
-        }
-
-        auto renderData = GetOrCreateStaticMeshRenderData(createInfo.StaticMesh);
-        if (!renderData || !renderData->IsValid())
-        {
-            TE_LOG_WARN("[Renderer] FScene failed to create static mesh render data");
-            return InvalidRenderPrimitiveHandle;
-        }
-
-        auto proxy = std::make_unique<FStaticMeshSceneProxy>(std::move(renderData), m_StaticMeshPipeline.get());
-        if (!proxy->IsValid())
-        {
-            TE_LOG_WARN("[Renderer] FScene failed to create valid static mesh scene proxy");
-            return InvalidRenderPrimitiveHandle;
-        }
-
-        proxy->SetWorldMatrix(createInfo.WorldMatrix);
-        return InsertPrimitive(std::move(proxy));
-    }
-    default:
-        TE_LOG_WARN("[Renderer] FScene::CreatePrimitive unsupported primitive kind");
-        return InvalidRenderPrimitiveHandle;
-    }
+    RemovePrimitive(primitiveComponent);
+    return InsertPrimitive(primitiveComponent, std::move(proxy));
 }
 
-void FScene::DestroyPrimitive(RenderPrimitiveHandle handle)
+void FScene::RemovePrimitive(const TPrimitiveComponent* primitiveComponent)
 {
-    if (handle == InvalidRenderPrimitiveHandle)
+    if (!primitiveComponent)
     {
         return;
     }
 
-    const auto it = m_PrimitiveStorage.find(handle);
+    const auto it = m_PrimitiveStorage.find(primitiveComponent);
     if (it == m_PrimitiveStorage.end())
     {
         return;
@@ -90,23 +55,62 @@ void FScene::DestroyPrimitive(RenderPrimitiveHandle handle)
 
     m_PrimitiveStorage.erase(it);
     RebuildPrimitiveView();
-    TE_LOG_INFO("[Renderer] FScene::DestroyPrimitive handle={}, total primitives: {}", handle, m_PrimitiveStorage.size());
+    TE_LOG_INFO("[Renderer] FScene::RemovePrimitive component={}, total primitives: {}",
+                static_cast<const void*>(primitiveComponent), m_PrimitiveStorage.size());
 }
 
-void FScene::UpdatePrimitiveTransform(RenderPrimitiveHandle handle, const Matrix4& worldMatrix)
+void FScene::UpdatePrimitiveTransform(const TPrimitiveComponent* primitiveComponent, const Matrix4& worldMatrix)
 {
-    if (handle == InvalidRenderPrimitiveHandle)
+    if (!primitiveComponent)
     {
         return;
     }
 
-    const auto it = m_PrimitiveStorage.find(handle);
+    const auto it = m_PrimitiveStorage.find(primitiveComponent);
     if (it == m_PrimitiveStorage.end())
     {
         return;
     }
 
     it->second->SetWorldMatrix(worldMatrix);
+}
+
+std::shared_ptr<const FStaticMeshRenderData> FScene::GetStaticMeshRenderData(const std::shared_ptr<TStaticMesh>& staticMesh)
+{
+    if (!m_Device || !staticMesh)
+    {
+        return nullptr;
+    }
+
+    const TStaticMesh* key = staticMesh.get();
+    const auto found = m_StaticMeshRenderDataCache.find(key);
+    if (found != m_StaticMeshRenderDataCache.end())
+    {
+        auto cached = found->second.lock();
+        if (cached && cached->IsValid())
+        {
+            return cached;
+        }
+    }
+
+    auto newRenderData = FStaticMeshRenderData::Create(*staticMesh, *m_Device);
+    if (!newRenderData || !newRenderData->IsValid())
+    {
+        return nullptr;
+    }
+
+    m_StaticMeshRenderDataCache[key] = newRenderData;
+    return newRenderData;
+}
+
+RHIPipeline* FScene::GetStaticMeshPipeline()
+{
+    if (!EnsureStaticMeshPipeline())
+    {
+        TE_LOG_ERROR("[Renderer] FScene failed to initialize static mesh pipeline");
+        return nullptr;
+    }
+    return m_StaticMeshPipeline.get();
 }
 
 bool FScene::EnsureStaticMeshPipeline()
@@ -166,56 +170,28 @@ bool FScene::EnsureStaticMeshPipeline()
     return m_StaticMeshPipeline && m_StaticMeshPipeline->IsValid();
 }
 
-std::shared_ptr<const FStaticMeshRenderData> FScene::GetOrCreateStaticMeshRenderData(const std::shared_ptr<TStaticMesh>& staticMesh)
+bool FScene::InsertPrimitive(const TPrimitiveComponent* primitiveComponent, std::unique_ptr<FPrimitiveSceneProxy> proxy)
 {
-    if (!m_Device || !staticMesh)
+    if (!primitiveComponent || !proxy)
     {
-        return nullptr;
+        TE_LOG_WARN("[Renderer] FScene::InsertPrimitive called with null primitive/proxy");
+        return false;
     }
 
-    const TStaticMesh* key = staticMesh.get();
-    const auto found = m_StaticMeshRenderDataCache.find(key);
-    if (found != m_StaticMeshRenderDataCache.end())
-    {
-        auto cached = found->second.lock();
-        if (cached && cached->IsValid())
-        {
-            return cached;
-        }
-    }
-
-    auto newRenderData = FStaticMeshRenderData::Create(*staticMesh, *m_Device);
-    if (!newRenderData || !newRenderData->IsValid())
-    {
-        return nullptr;
-    }
-
-    m_StaticMeshRenderDataCache[key] = newRenderData;
-    return newRenderData;
-}
-
-RenderPrimitiveHandle FScene::InsertPrimitive(std::unique_ptr<FPrimitiveSceneProxy> proxy)
-{
-    if (!proxy)
-    {
-        TE_LOG_WARN("[Renderer] FScene::InsertPrimitive called with null proxy");
-        return InvalidRenderPrimitiveHandle;
-    }
-
-    const RenderPrimitiveHandle handle = m_NextHandle++;
-    m_PrimitiveStorage.emplace(handle, std::move(proxy));
+    m_PrimitiveStorage[primitiveComponent] = std::move(proxy);
     RebuildPrimitiveView();
-    TE_LOG_INFO("[Renderer] FScene::InsertPrimitive handle={}, total primitives: {}", handle, m_PrimitiveStorage.size());
-    return handle;
+    TE_LOG_INFO("[Renderer] FScene::InsertPrimitive component={}, total primitives: {}",
+                static_cast<const void*>(primitiveComponent), m_PrimitiveStorage.size());
+    return true;
 }
 
 void FScene::RebuildPrimitiveView()
 {
     m_Primitives.clear();
     m_Primitives.reserve(m_PrimitiveStorage.size());
-    for (auto& [handle, proxy] : m_PrimitiveStorage)
+    for (auto& [primitiveComponent, proxy] : m_PrimitiveStorage)
     {
-        (void)handle;
+        (void)primitiveComponent;
         m_Primitives.push_back(proxy.get());
     }
 }

@@ -23,7 +23,7 @@
 ### 方案选择
 
 采用“桥接接口 + 句柄同步 + 渲染侧持有对象”的组合方案：
-- `Scene` 新增 `IRenderSceneBridge` 接口与 `RenderPrimitiveHandle`
+- `World`（当时目录名为 `Scene`）新增 `IRenderSceneBridge` 接口与 `RenderPrimitiveHandle`
 - `TPrimitiveComponent` 从 `CreateSceneProxy` 改为 `BuildRenderCreateInfo`
 - `TWorld` 改为持有桥接接口指针
 - `FScene` 改为持有 `unique_ptr<FPrimitiveSceneProxy>`
@@ -38,14 +38,14 @@
 
 - 新增桥接接口：
   - `Source/Runtime/Scene/Public/RenderSceneBridge.h`
-- `Scene` 侧重构：
-  - `Source/Runtime/Scene/Public/PrimitiveComponent.h`
-  - `Source/Runtime/Scene/Private/PrimitiveComponent.cpp`
-  - `Source/Runtime/Scene/Public/MeshComponent.h`
-  - `Source/Runtime/Scene/Private/MeshComponent.cpp`
-  - `Source/Runtime/Scene/Public/World.h`
-  - `Source/Runtime/Scene/Private/World.cpp`
-  - `Source/Runtime/Scene/CMakeLists.txt`
+- `World` 侧重构：
+  - `Source/Runtime/World/Public/PrimitiveComponent.h`
+  - `Source/Runtime/World/Private/PrimitiveComponent.cpp`
+  - `Source/Runtime/World/Public/MeshComponent.h`
+  - `Source/Runtime/World/Private/MeshComponent.cpp`
+  - `Source/Runtime/World/Public/World.h`
+  - `Source/Runtime/World/Private/World.cpp`
+  - `Source/Runtime/World/CMakeLists.txt`
 - `Renderer` 侧重构：
   - `Source/Runtime/Renderer/Public/FScene.h`
   - `Source/Runtime/Renderer/Private/FScene.cpp`
@@ -53,7 +53,7 @@
   - `Source/Runtime/Renderer/Private/RenderSceneBridge.cpp`
   - `Source/Runtime/Renderer/CMakeLists.txt`
 - 视图信息归位：
-  - 新增 `Source/Runtime/Scene/Public/SceneViewInfo.h`
+  - 新增 `Source/Runtime/World/Public/SceneViewInfo.h`
   - `CameraComponent` 改为依赖 `SceneViewInfo.h`
   - `Renderer/Public/FViewInfo.h` 改为兼容转发头
 - `Engine` 装配更新：
@@ -62,7 +62,7 @@
 
 ## 改造收益
 
-- `Scene` 不再直接依赖 `Renderer` 的 Proxy 类型，模块边界方向正确。
+- `World` 不再直接依赖 `Renderer` 的 Proxy 类型，模块边界方向正确。
 - 游戏侧不再直接 `new/delete` 渲染对象，生命周期集中在渲染侧。
 - `World` 不再直接持有 `FScene*` 和 `RHIDevice*`，同步职责收敛为桥接接口调用。
 - 后续引入命令队列时，可在桥接层演进，不必回到组件层改 API。

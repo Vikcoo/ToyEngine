@@ -11,7 +11,7 @@
 ## 方案与取舍
 
 第一阶段采用“内核保留 + 应用注入”的拆分方案：
-- `Engine` 保留：初始化、主循环、`World/Scene/Renderer` 调度、FPS 统计
+- `Engine` 保留：初始化、主循环、`World/Renderer` 调度、FPS 统计
 - `Engine` 新增应用注入点：
   - `SetSceneSetupCallback`
   - `SetFrameUpdateCallback`

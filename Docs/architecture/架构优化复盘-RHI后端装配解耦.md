@@ -3,8 +3,8 @@
 ## 背景与问题
 
 在优化前，`RHI` 模块存在“抽象层反向依赖具体后端”的问题：
-- `RHI` 会直接链接 `OpenGLRHI`
-- `RHI` 工厂实现会直接包含 `OpenGLRHI/Private/OpenGLDevice.h`
+- `RHI` 会直接链接 `RHIOpenGL`
+- `RHI` 工厂实现会直接包含 `RHIOpenGL/Private/OpenGLDevice.h`
 
 这导致模块边界方向错误：理论上应由外层装配模块依赖抽象层和具体后端，而不是抽象层反向依赖实现层。
 
@@ -20,8 +20,8 @@
 ### 方案选择
 
 采用“后端提供公开装配入口，外层负责调用装配入口”的方式：
-- 在 `OpenGLRHI/Public` 增加 `CreateOpenGLRHIDevice()` 声明
-- 在 `OpenGLRHI/Private` 实现该入口并创建 `OpenGLDevice`
+- 在 `RHIOpenGL/Public` 增加 `CreateRHIOpenGLDevice()` 声明
+- 在 `RHIOpenGL/Private` 实现该入口并创建 `OpenGLDevice`
 - 在 `Engine` 新增 `RHIDevice::Create()` 实现，按编译开关选择后端入口
 
 ### 关键取舍
@@ -36,15 +36,15 @@
 - 收敛 `RHI` 模块依赖：
   - `Source/Runtime/RHI/CMakeLists.txt`
 - 新增 OpenGL 后端公开装配入口：
-  - `Source/Runtime/OpenGLRHI/Public/OpenGLRHIEntry.h`
-  - `Source/Runtime/OpenGLRHI/Private/OpenGLRHIEntry.cpp`
+  - `Source/Runtime/RHIOpenGL/Public/RHIOpenGLEntry.h`
+  - `Source/Runtime/RHIOpenGL/Private/RHIOpenGLEntry.cpp`
 - 将 `RHIDevice::Create()` 实现迁移到外层装配：
   - `Source/Runtime/Engine/Private/RHIDeviceFactory.cpp`
   - `Source/Runtime/Engine/CMakeLists.txt`
 
 ## 改造收益
 
-- `RHI` 抽象层边界变清晰：不再直接依赖 `OpenGLRHI`。
+- `RHI` 抽象层边界变清晰：不再直接依赖 `RHIOpenGL`。
 - 后端私有头不再被抽象层引用，后端实现细节收敛在后端模块内部。
 - 后续接入 Vulkan / D3D12 时，可以复用同一模式（后端公开装配入口 + 外层装配）。
 - 减少了“抽象层修改牵连具体后端”或“后端细节污染抽象层”的风险。

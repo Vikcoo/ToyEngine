@@ -5,8 +5,6 @@
 # Renderer 静态库
 add_library(Renderer STATIC
     # 实现文件
-    Private/FStaticMeshRenderData.cpp
-    Private/FStaticMeshSceneProxy.cpp
     Private/FScene.cpp
     Private/SceneRenderer.cpp
 )
@@ -19,12 +17,13 @@ target_include_directories(Renderer
         ${CMAKE_CURRENT_SOURCE_DIR}/Private
 )
 
-# 依赖 Core（Math 类型）、RHI（接口）、Scene（渲染场景接口）和 Asset（TStaticMesh 类型）
+# 依赖 Core（Math 类型）、RHI（接口）、World（渲染场景接口）和 Asset（TStaticMesh 类型）
 target_link_libraries(Renderer
     PUBLIC
         Core
         RHI
-        Scene
+        World
+        RenderCore
         Asset
 )
 

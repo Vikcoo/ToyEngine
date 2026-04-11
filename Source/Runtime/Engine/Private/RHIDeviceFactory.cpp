@@ -5,7 +5,7 @@
 #include "Log/Log.h"
 
 #if defined(TE_RHI_BACKEND_OPENGL)
-    #include "OpenGLRHIEntry.h"
+    #include "RHIOpenGLEntry.h"
 #endif
 
 namespace TE {
@@ -13,8 +13,8 @@ namespace TE {
 std::unique_ptr<RHIDevice> RHIDevice::Create()
 {
 #if defined(TE_RHI_BACKEND_OPENGL)
-    TE_LOG_INFO("[RHI] Creating OpenGL RHI Device");
-    return CreateOpenGLRHIDevice();
+    TE_LOG_INFO("[RHI] Creating RHIOpenGL Device");
+    return CreateRHIOpenGLDevice();
 
 // #elif defined(TE_RHI_BACKEND_VULKAN)
 //     TE_LOG_INFO("[RHI] Creating Vulkan RHI Device");
