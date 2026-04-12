@@ -121,12 +121,12 @@ void SetupSandboxScene(TE::Engine& engine)
         return;
     }
 
-    auto loadedMesh = LoadOrCreateDemoMesh("");
+    auto loadedMesh = LoadOrCreateDemoMesh("orientation_cube.obj");
     auto loadedMeshTop = std::make_shared<TE::StaticMesh>(*loadedMesh);
 
     const std::string textureDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Textures/";
-    const std::string textureA = textureDir + "rust_cpp.png";
-    const std::string textureB = textureDir + "viking_room.png";
+    const std::string textureA = textureDir + "orientation_cube_atlas.png";
+    const std::string textureB = textureDir + "orientation_cube_atlas.png";
 
     if (std::filesystem::exists(textureA))
     {
@@ -178,7 +178,7 @@ void SetupSandboxScene(TE::Engine& engine)
         );
     }
 
-    cameraComp->SetPosition(TE::Vector3(0.0f, 0.0f, 3.0f));
+    cameraComp->SetPosition(TE::Vector3(0.0f, 0.0f, 6.0f));
     cameraComp->LookAt(TE::Vector3::Zero);
 
     auto* flyCamCtrl = cameraActor->AddComponent<TE::FlyCameraController>();
