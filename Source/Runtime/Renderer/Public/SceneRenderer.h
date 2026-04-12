@@ -5,14 +5,14 @@
 // 负责渲染的调度流程：
 // 1. 从 FScene 获取所有 SceneProxy
 // 2. 遍历每个 Proxy，调用 GetMeshDrawCommand() 收集绘制命令
-// 3. 按 Pipeline → VBO → IBO 排序（减少状态切换）
+// 3. 按 PipelineKey → VBO → IBO 排序（减少状态切换）
 // 4. 通过 RHI CommandBuffer 设置渲染状态并提交绘制（跳过冗余绑定）
 //
 // 在 UE5 中，SceneRenderer 负责整个渲染管线（PrePass → BasePass → Lighting → PostProcess）
 // 在 ToyEngine 单线程版本中，我们只实现最简单的 Forward 渲染（一个 Pass）
 //
-// Draw Call Batching 优化（UE5: FMeshDrawCommand Sort & Merge）：
-// - 按 Pipeline 指针排序，使相同 Pipeline 的绘制命令相邻
+// Draw Call Batching 优化（UE5: MeshPass 构建后按状态桶提交）：
+// - 按 PipelineKey 排序，使同类绘制命令相邻
 // - 提交时跟踪上一次绑定的 Pipeline/VBO/IBO，跳过冗余绑定
 // - 这减少了 glUseProgram / glBindVertexArray / 深度状态设置 等昂贵操作
 
@@ -44,7 +44,8 @@ struct RHIRenderPassBeginInfo;
 /// Engine::Tick() → SceneRenderer::Render(FScene, Device, CmdBuf)
 ///   → 遍历 FScene::GetPrimitives()
 ///   → 每个 Proxy::GetMeshDrawCommand()
-///   → SortDrawCommands() ← 按 Pipeline/VBO/IBO 排序
+///   → SortDrawCommands() ← 按 PipelineKey/VBO/IBO 排序
+///   → Scene 解析 PipelineKey -> Pipeline
 ///   → CmdBuf::BindPipeline/BindVBO/BindIBO/SetUniform(MVP)/DrawIndexed
 ///     （跳过与上一条相同的 Pipeline/VBO/IBO 绑定）
 class FSceneRenderer
@@ -69,7 +70,7 @@ private:
     /// 收集所有 Proxy 的绘制命令
     void GatherMeshDrawCommands(const FScene* scene, std::vector<FMeshDrawCommand>& outCommands);
 
-    /// 按 Pipeline → VBO → IBO 排序绘制命令（减少状态切换）
+    /// 按 PipelineKey → VBO → IBO 排序绘制命令（减少状态切换）
     /// 对应 UE5 的 FMeshDrawCommand::SortByStateBuckets
     void SortDrawCommands(std::vector<FMeshDrawCommand>& commands);
 

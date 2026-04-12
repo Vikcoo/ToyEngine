@@ -34,7 +34,7 @@ public:
     ~PrimitiveComponent() override;
 
     /// CreateSceneProxy 语义：子类直接创建具体渲染代理
-    [[nodiscard]] virtual std::unique_ptr<FPrimitiveSceneProxy> CreateSceneProxy(IRenderScene& renderScene) const { return nullptr; }
+    [[nodiscard]] virtual std::unique_ptr<FPrimitiveSceneProxy> CreateSceneProxy() const { return nullptr; }
 
     /// 标记渲染状态脏
     /// 游戏逻辑修改 Transform 后调用此方法

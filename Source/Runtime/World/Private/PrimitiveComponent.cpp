@@ -50,7 +50,7 @@ void PrimitiveComponent::RegisterToRenderScene(IRenderScene* renderScene)
         UnregisterFromRenderScene(renderScene);
     }
 
-    auto proxy = CreateSceneProxy(*renderScene);
+    auto proxy = CreateSceneProxy();
     if (!proxy)
     {
         TE_LOG_WARN("[Scene] CreateSceneProxy failed");

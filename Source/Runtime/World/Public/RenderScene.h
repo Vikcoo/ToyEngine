@@ -11,9 +11,6 @@
 namespace TE {
 
 class FPrimitiveSceneProxy;
-class FStaticMeshRenderData;
-class RHIPipeline;
-class StaticMesh;
 class PrimitiveComponent;
 
 /// 游戏线程视角的渲染场景接口。
@@ -28,10 +25,6 @@ public:
                                             std::unique_ptr<FPrimitiveSceneProxy> proxy) = 0;
     virtual void UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId, const Matrix4& worldMatrix) = 0;
     virtual void RemovePrimitive(FPrimitiveComponentId primitiveComponentId) = 0;
-
-    [[nodiscard]] virtual std::shared_ptr<const FStaticMeshRenderData> GetStaticMeshRenderData(
-        const std::shared_ptr<StaticMesh>& staticMesh) = 0;
-    [[nodiscard]] virtual RHIPipeline* GetStaticMeshPipeline() = 0;
 };
 
 } // namespace TE

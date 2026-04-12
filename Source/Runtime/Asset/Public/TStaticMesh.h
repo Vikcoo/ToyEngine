@@ -60,7 +60,8 @@ struct FMeshSection
 ///   → 创建 TStaticMesh，填充 Section 数据
 ///   → 返回 shared_ptr<TStaticMesh>
 ///   → TMeshComponent::SetStaticMesh() 引用
-///   → FStaticMeshSceneProxy 在构造时读取 Section 创建 GPU 资源
+///   → FStaticMeshSceneProxy 在构造时只保存资产引用
+///   → Renderer 侧资源准备阶段再将资产解析为 GPU 资源
 class StaticMesh
 {
 public:

@@ -9,16 +9,21 @@
 
 namespace TE {
 
-class RHIPipeline;
 class RHIBuffer;
+
+enum class EMeshPipelineKey : uint8_t
+{
+    StaticMeshLit = 0,
+};
 
 struct FMeshDrawCommand
 {
-    RHIPipeline* Pipeline = nullptr;
+    EMeshPipelineKey PipelineKey = EMeshPipelineKey::StaticMeshLit;
     RHIBuffer* VertexBuffer = nullptr;
     RHIBuffer* IndexBuffer = nullptr;
     uint32_t FirstIndex = 0;
     uint32_t IndexCount = 0;
+    uint32_t MaterialIndex = 0;
     Matrix4 WorldMatrix = Matrix4::Identity;
 };
 

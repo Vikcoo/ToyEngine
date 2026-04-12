@@ -5,6 +5,7 @@
 # Renderer 静态库
 add_library(Renderer STATIC
     # 实现文件
+    Private/RenderResourceManager.cpp
     Private/RendererScene.cpp
     Private/SceneRenderer.cpp
 )

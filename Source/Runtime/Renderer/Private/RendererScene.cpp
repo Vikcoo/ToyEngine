@@ -1,28 +1,16 @@
 // ToyEngine Renderer Module
-// FScene 实现 - 渲染场景与资产级渲染资源管理
+// FScene 实现 - 渲染场景容器与 Primitive 生命周期管理
 
 #include "RendererScene.h"
 
+#include "RenderResourceManager.h"
 #include "StaticMeshSceneProxy.h"
 #include "Log/Log.h"
-#include "RHIDevice.h"
-#include "RHIPipeline.h"
-#include "RHIShader.h"
-#include "RHITypes.h"
-#include "TStaticMesh.h"
-
-#include <cstddef>
-#include <string>
-
-// 模型 Shader 路径前缀宏（由 CMake 传递）
-#ifndef TE_PROJECT_ROOT_DIR
-    #define TE_PROJECT_ROOT_DIR ""
-#endif
 
 namespace TE {
 
 FScene::FScene(RHIDevice* device)
-    : m_Device(device)
+    : m_RenderResourceManager(std::make_unique<FRenderResourceManager>(device))
 {
 }
 
@@ -35,6 +23,12 @@ bool FScene::AddPrimitive(const PrimitiveComponent* primitiveComponent,
     if (!primitiveComponent || !proxy || !primitiveComponentId.IsValid())
     {
         TE_LOG_WARN("[Renderer] FScene::AddPrimitive called with invalid primitive/proxy/id");
+        return false;
+    }
+
+    if (!PrepareProxyResources(*proxy))
+    {
+        TE_LOG_WARN("[Renderer] FScene::AddPrimitive failed to prepare proxy resources");
         return false;
     }
 
@@ -56,6 +50,10 @@ void FScene::RemovePrimitive(FPrimitiveComponentId primitiveComponentId)
     }
 
     m_PrimitiveStorage.erase(it);
+    if (m_RenderResourceManager)
+    {
+        m_RenderResourceManager->PurgeExpiredStaticMeshRenderData();
+    }
     RebuildPrimitiveView();
     TE_LOG_INFO("[Renderer] FScene::RemovePrimitive id={}, total primitives: {}",
                 primitiveComponentId.Value, m_PrimitiveStorage.size());
@@ -82,99 +80,35 @@ void FScene::UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId
     proxy->SetWorldMatrix(worldMatrix);
 }
 
-std::shared_ptr<const FStaticMeshRenderData> FScene::GetStaticMeshRenderData(const std::shared_ptr<StaticMesh>& staticMesh)
+RHIPipeline* FScene::ResolvePreparedPipeline(EMeshPipelineKey pipelineKey) const
 {
-    if (!m_Device || !staticMesh)
+    if (!m_RenderResourceManager)
     {
         return nullptr;
     }
-
-    const StaticMesh* key = staticMesh.get();
-    const auto found = m_StaticMeshRenderDataCache.find(key);
-    if (found != m_StaticMeshRenderDataCache.end())
-    {
-        auto cached = found->second.lock();
-        if (cached && cached->IsValid())
-        {
-            return cached;
-        }
-    }
-
-    auto newRenderData = FStaticMeshRenderData::Create(*staticMesh, *m_Device);
-    if (!newRenderData || !newRenderData->IsValid())
-    {
-        return nullptr;
-    }
-
-    m_StaticMeshRenderDataCache[key] = newRenderData;
-    return newRenderData;
+    return m_RenderResourceManager->GetPreparedPipeline(pipelineKey);
 }
 
-RHIPipeline* FScene::GetStaticMeshPipeline()
+bool FScene::PrepareProxyResources(FPrimitiveSceneProxy& proxy)
 {
-    if (!EnsureStaticMeshPipeline())
-    {
-        TE_LOG_ERROR("[Renderer] FScene failed to initialize static mesh pipeline");
-        return nullptr;
-    }
-    return m_StaticMeshPipeline.get();
-}
-
-bool FScene::EnsureStaticMeshPipeline()
-{
-    if (m_StaticMeshPipeline && m_StaticMeshPipeline->IsValid())
+    auto* staticMeshProxy = dynamic_cast<FStaticMeshSceneProxy*>(&proxy);
+    if (!staticMeshProxy)
     {
         return true;
     }
 
-    if (!m_Device)
+    if (!m_RenderResourceManager)
     {
         return false;
     }
 
-    const std::string shaderDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Shaders/OpenGL/";
-
-    RHIShaderDesc vsDesc;
-    vsDesc.stage = RHIShaderStage::Vertex;
-    vsDesc.filePath = shaderDir + "model.vert";
-    vsDesc.debugName = "Model_VS";
-    m_StaticMeshVertexShader = m_Device->CreateShader(vsDesc);
-
-    RHIShaderDesc fsDesc;
-    fsDesc.stage = RHIShaderStage::Fragment;
-    fsDesc.filePath = shaderDir + "model.frag";
-    fsDesc.debugName = "Model_FS";
-    m_StaticMeshFragmentShader = m_Device->CreateShader(fsDesc);
-
-    if (!m_StaticMeshVertexShader || !m_StaticMeshFragmentShader)
+    if (!m_RenderResourceManager->PrepareStaticMeshProxy(*staticMeshProxy))
     {
+        TE_LOG_WARN("[Renderer] FScene::PrepareProxyResources failed for FStaticMeshSceneProxy");
         return false;
     }
 
-    RHIPipelineDesc pipelineDesc;
-    pipelineDesc.vertexShader = m_StaticMeshVertexShader.get();
-    pipelineDesc.fragmentShader = m_StaticMeshFragmentShader.get();
-    pipelineDesc.topology = RHIPrimitiveTopology::TriangleList;
-
-    RHIVertexBindingDesc binding;
-    binding.binding = 0;
-    binding.stride = sizeof(FStaticMeshVertex);
-    pipelineDesc.vertexInput.bindings.push_back(binding);
-
-    pipelineDesc.vertexInput.attributes.push_back({0, RHIFormat::Float3, offsetof(FStaticMeshVertex, Position)});
-    pipelineDesc.vertexInput.attributes.push_back({1, RHIFormat::Float3, offsetof(FStaticMeshVertex, Normal)});
-    pipelineDesc.vertexInput.attributes.push_back({2, RHIFormat::Float2, offsetof(FStaticMeshVertex, TexCoord)});
-    pipelineDesc.vertexInput.attributes.push_back({3, RHIFormat::Float3, offsetof(FStaticMeshVertex, Color)});
-
-    pipelineDesc.depthStencil.depthTestEnable = true;
-    pipelineDesc.depthStencil.depthWriteEnable = true;
-    pipelineDesc.depthStencil.depthCompareOp = RHICompareOp::Less;
-    pipelineDesc.rasterization.cullMode = RHICullMode::Back;
-    pipelineDesc.rasterization.frontFace = RHIFrontFace::CounterClockwise;
-    pipelineDesc.debugName = "StaticMesh_Pipeline";
-
-    m_StaticMeshPipeline = m_Device->CreatePipeline(pipelineDesc);
-    return m_StaticMeshPipeline && m_StaticMeshPipeline->IsValid();
+    return true;
 }
 
 bool FScene::InsertPrimitive(FPrimitiveComponentId primitiveComponentId,

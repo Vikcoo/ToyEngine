@@ -27,7 +27,7 @@ class FPrimitiveSceneProxy;
 /// ToyEngine 简化版：
 /// - 持有 shared_ptr<TStaticMesh> 资产引用（多个组件可共享同一资产）
 /// - SetStaticMesh() 设置资产引用
-/// - CreateSceneProxy() 构造 FStaticMeshSceneProxy
+/// - CreateSceneProxy() 构造 FStaticMeshSceneProxy（仅携带实例描述，不直接获取 GPU 资源）
 class MeshComponent : public PrimitiveComponent
 {
 public:
@@ -41,7 +41,7 @@ public:
     [[nodiscard]] const std::shared_ptr<StaticMesh>& GetStaticMesh() const { return m_StaticMesh; }
 
     /// 创建静态网格渲染代理（override）
-    [[nodiscard]] std::unique_ptr<FPrimitiveSceneProxy> CreateSceneProxy(IRenderScene& renderScene) const override;
+    [[nodiscard]] std::unique_ptr<FPrimitiveSceneProxy> CreateSceneProxy() const override;
 
 private:
     std::shared_ptr<StaticMesh> m_StaticMesh;
