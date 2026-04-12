@@ -26,21 +26,13 @@ namespace {
 std::shared_ptr<TE::StaticMesh> LoadOrCreateDemoMesh(const std::string& modelName)
 {
     const std::string modelDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Models/";
-    const std::vector<std::string> candidateFiles = {
-        modelDir + "model.obj",
-        modelDir + "model.fbx",
-        modelDir + "model.gltf",
-        modelDir + "model.glb",
-    };
     const std::string meshPath = modelDir + modelName;
-
 
     if (auto loaded = TE::FAssetImporter::ImportStaticMesh(meshPath))
     {
         TE_LOG_INFO("[Sandbox] Loaded model from: {}", modelName);
         return loaded;
     }
-
 
     TE_LOG_INFO("[Sandbox] No external model found, creating default cube mesh");
 
@@ -129,7 +121,7 @@ void SetupSandboxScene(TE::Engine& engine)
         return;
     }
 
-    auto loadedMesh = LoadOrCreateDemoMesh("viking_room.obj");
+    auto loadedMesh = LoadOrCreateDemoMesh("");
     auto loadedMeshTop = std::make_shared<TE::StaticMesh>(*loadedMesh);
 
     const std::string textureDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Textures/";
@@ -237,7 +229,7 @@ int main()
 {
     TE::Engine& engine = TE::Engine::Get();
     engine.SetSceneSetupCallback(SetupSandboxScene);
-    engine.SetFrameUpdateCallback(TickSandboxScene);
+    //engine.SetFrameUpdateCallback(TickSandboxScene);
 
     engine.Init();
     engine.Run();
