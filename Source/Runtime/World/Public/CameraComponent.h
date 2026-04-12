@@ -22,11 +22,11 @@ namespace TE {
 /// - 持有 FOV、AspectRatio、NearPlane、FarPlane
 /// - BuildViewInfo() 使用自身 Transform 构建 View 矩阵，
 ///   结合投影参数构建 Projection 矩阵，返回 FViewInfo
-class TCameraComponent : public TSceneComponent
+class CameraComponent : public SceneComponent
 {
 public:
-    TCameraComponent() = default;
-    ~TCameraComponent() override = default;
+    CameraComponent() = default;
+    ~CameraComponent() override = default;
 
     /// 相机专用 LookAt（相机局部前向约定为 -Z）
     void LookAt(const Vector3& target, const Vector3& worldUp = Vector3::Up);

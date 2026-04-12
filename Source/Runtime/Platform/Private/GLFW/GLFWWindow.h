@@ -8,9 +8,9 @@ struct GLFWwindow;
 
 namespace TE {
 
-class GLFWWindow final : public Window {
+class GLFWWindow final : public IWindow {
 public:
-    explicit GLFWWindow(const WindowConfig& config);
+    explicit GLFWWindow(const FWindowConfig& config);
     ~GLFWWindow() override;
 
     void PollEvents() override;

@@ -22,7 +22,7 @@
 
 namespace {
 
-std::shared_ptr<TE::TStaticMesh> LoadOrCreateDemoMesh()
+std::shared_ptr<TE::StaticMesh> LoadOrCreateDemoMesh()
 {
     const std::string modelDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Models/";
     const std::vector<std::string> candidateFiles = {
@@ -44,7 +44,7 @@ std::shared_ptr<TE::TStaticMesh> LoadOrCreateDemoMesh()
 
     TE_LOG_INFO("[Sandbox] No external model found, creating default cube mesh");
 
-    auto mesh = std::make_shared<TE::TStaticMesh>();
+    auto mesh = std::make_shared<TE::StaticMesh>();
     mesh->SetName("DefaultCube");
 
     TE::FMeshSection section;
@@ -111,23 +111,23 @@ void SetupSandboxScene(TE::Engine& engine)
 
     auto loadedMesh = LoadOrCreateDemoMesh();
 
-    auto meshActor = std::make_unique<TE::TActor>();
+    auto meshActor = std::make_unique<TE::Actor>();
     meshActor->SetName("MeshActor");
-    auto* meshComp = meshActor->AddComponent<TE::TMeshComponent>();
+    auto* meshComp = meshActor->AddComponent<TE::MeshComponent>();
     meshComp->SetName("ModelMesh");
     meshComp->SetStaticMesh(loadedMesh);
 
-    auto meshActorTop = std::make_unique<TE::TActor>();
+    auto meshActorTop = std::make_unique<TE::Actor>();
     meshActorTop->SetName("MeshActorTop");
-    auto* meshCompTop = meshActorTop->AddComponent<TE::TMeshComponent>();
+    auto* meshCompTop = meshActorTop->AddComponent<TE::MeshComponent>();
     meshCompTop->SetName("ModelMeshTop");
     meshCompTop->SetStaticMesh(loadedMesh);
     meshCompTop->SetScale(TE::Vector3(0.5f, 0.5f, 0.5f));
     meshCompTop->SetPosition(TE::Vector3(0.0f, 1.5f, 0.0f));
 
-    auto cameraActor = std::make_unique<TE::TActor>();
+    auto cameraActor = std::make_unique<TE::Actor>();
     cameraActor->SetName("CameraActor");
-    auto* cameraComp = cameraActor->AddComponent<TE::TCameraComponent>();
+    auto* cameraComp = cameraActor->AddComponent<TE::CameraComponent>();
     cameraComp->SetName("MainCamera");
     cameraComp->SetFOV(60.0f);
     cameraComp->SetNearPlane(0.1f);
@@ -144,7 +144,7 @@ void SetupSandboxScene(TE::Engine& engine)
     cameraComp->SetPosition(TE::Vector3(0.0f, 0.0f, 3.0f));
     cameraComp->LookAt(TE::Vector3::Zero);
 
-    auto* flyCamCtrl = cameraActor->AddComponent<TE::TFlyCameraController>();
+    auto* flyCamCtrl = cameraActor->AddComponent<TE::FlyCameraController>();
     flyCamCtrl->SetName("FlyCameraController");
     flyCamCtrl->SetInputManager(engine.GetInputManager());
     flyCamCtrl->SetWindow(engine.GetWindow());
@@ -177,7 +177,7 @@ void TickSandboxScene(TE::Engine& engine, float deltaTime)
 
             for (const auto& comp : actor->GetComponents())
             {
-                if (auto* primComp = dynamic_cast<TE::TPrimitiveComponent*>(comp.get()))
+                if (auto* primComp = dynamic_cast<TE::PrimitiveComponent*>(comp.get()))
                 {
                     primComp->MarkRenderStateDirty();
                 }

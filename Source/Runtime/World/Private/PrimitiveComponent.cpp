@@ -20,12 +20,12 @@ FPrimitiveComponentId AllocatePrimitiveComponentId()
 }
 } // namespace
 
-TPrimitiveComponent::TPrimitiveComponent()
+PrimitiveComponent::PrimitiveComponent()
     : m_PrimitiveComponentId(AllocatePrimitiveComponentId())
 {
 }
 
-TPrimitiveComponent::~TPrimitiveComponent()
+PrimitiveComponent::~PrimitiveComponent()
 {
     // 如果组件析构时仍处于注册状态，主动反注册，避免渲染侧残留对象
     if (m_BoundRenderScene && m_IsRegisteredToRenderScene)
@@ -36,7 +36,7 @@ TPrimitiveComponent::~TPrimitiveComponent()
     m_IsRegisteredToRenderScene = false;
 }
 
-void TPrimitiveComponent::RegisterToRenderScene(IRenderScene* renderScene)
+void PrimitiveComponent::RegisterToRenderScene(IRenderScene* renderScene)
 {
     if (!renderScene)
     {
@@ -70,7 +70,7 @@ void TPrimitiveComponent::RegisterToRenderScene(IRenderScene* renderScene)
     TE_LOG_INFO("[Scene] TPrimitiveComponent registered to render scene");
 }
 
-void TPrimitiveComponent::UnregisterFromRenderScene(IRenderScene* renderScene)
+void PrimitiveComponent::UnregisterFromRenderScene(IRenderScene* renderScene)
 {
     if (!renderScene)
     {

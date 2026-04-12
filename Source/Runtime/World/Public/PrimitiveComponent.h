@@ -27,11 +27,11 @@ namespace TE {
 /// - RegisterToRenderScene() 时由组件创建具体 SceneProxy，再交给 IRenderScene 注册
 /// - MarkRenderStateDirty() 设置脏标记
 /// - World::SyncToScene() 遍历脏 Component，将 WorldMatrix 同步到渲染场景接口
-class TPrimitiveComponent : public TSceneComponent
+class PrimitiveComponent : public SceneComponent
 {
 public:
-    TPrimitiveComponent();
-    ~TPrimitiveComponent() override;
+    PrimitiveComponent();
+    ~PrimitiveComponent() override;
 
     /// CreateSceneProxy 语义：子类直接创建具体渲染代理
     [[nodiscard]] virtual std::unique_ptr<FPrimitiveSceneProxy> CreateSceneProxy(IRenderScene& renderScene) const { return nullptr; }

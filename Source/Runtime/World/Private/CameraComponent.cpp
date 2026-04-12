@@ -8,7 +8,7 @@
 
 namespace TE {
 
-void TCameraComponent::LookAt(const Vector3& target, const Vector3& worldUp)
+void CameraComponent::LookAt(const Vector3& target, const Vector3& worldUp)
 {
     const Vector3& eye = m_Transform.Position;
     if ((target - eye).LengthSquared() <= 1e-8f)
@@ -22,7 +22,7 @@ void TCameraComponent::LookAt(const Vector3& target, const Vector3& worldUp)
     m_Transform.Rotation = worldTransform.Rotation.Normalize();
 }
 
-FViewInfo TCameraComponent::BuildViewInfo() const
+FViewInfo CameraComponent::BuildViewInfo() const
 {
     FViewInfo viewInfo;
 

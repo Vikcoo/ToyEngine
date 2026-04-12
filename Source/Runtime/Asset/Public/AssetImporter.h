@@ -15,7 +15,7 @@
 
 namespace TE {
 
-class TStaticMesh;
+class StaticMesh;
 
 /// 模型加载器
 ///
@@ -41,7 +41,7 @@ public:
     /// 3. 每个 aiMesh → FMeshSection（提取 Position/Normal/UV/Color/Indices）
     /// 4. 对缺失属性做 fallback（无 Normal → (0,0,1)，无 UV → (0,0)，无 Color → 白色）
     /// 5. 组装 TStaticMesh 返回
-    [[nodiscard]] static std::shared_ptr<TStaticMesh> ImportStaticMesh(const std::string& filePath);
+    [[nodiscard]] static std::shared_ptr<StaticMesh> ImportStaticMesh(const std::string& filePath);
 };
 
 } // namespace TE

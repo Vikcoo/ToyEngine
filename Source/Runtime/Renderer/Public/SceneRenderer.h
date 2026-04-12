@@ -47,11 +47,11 @@ struct RHIRenderPassBeginInfo;
 ///   → SortDrawCommands() ← 按 Pipeline/VBO/IBO 排序
 ///   → CmdBuf::BindPipeline/BindVBO/BindIBO/SetUniform(MVP)/DrawIndexed
 ///     （跳过与上一条相同的 Pipeline/VBO/IBO 绑定）
-class SceneRenderer
+class FSceneRenderer
 {
 public:
-    SceneRenderer() = default;
-    ~SceneRenderer() = default;
+    FSceneRenderer() = default;
+    ~FSceneRenderer() = default;
 
     /// 渲染整个场景
     /// @param scene  渲染场景（包含 Proxy 列表和 ViewInfo）

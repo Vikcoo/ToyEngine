@@ -61,11 +61,11 @@ struct FMeshSection
 ///   → 返回 shared_ptr<TStaticMesh>
 ///   → TMeshComponent::SetStaticMesh() 引用
 ///   → FStaticMeshSceneProxy 在构造时读取 Section 创建 GPU 资源
-class TStaticMesh
+class StaticMesh
 {
 public:
-    TStaticMesh() = default;
-    ~TStaticMesh() = default;
+    StaticMesh() = default;
+    ~StaticMesh() = default;
 
     // ==================== 查询接口 ====================
 

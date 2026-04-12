@@ -7,9 +7,9 @@
 
 namespace TE {
 
-Transform TActor::s_DefaultTransform;
+Transform Actor::s_DefaultTransform;
 
-void TActor::Tick(float deltaTime)
+void Actor::Tick(float deltaTime)
 {
     // 遍历所有组件调用 Tick
     for (auto& comp : m_Components)
@@ -18,26 +18,26 @@ void TActor::Tick(float deltaTime)
     }
 }
 
-Transform& TActor::GetTransform()
+Transform& Actor::GetTransform()
 {
     if (m_RootComponent)
         return m_RootComponent->GetTransform();
     return s_DefaultTransform;
 }
 
-const Transform& TActor::GetTransform() const
+const Transform& Actor::GetTransform() const
 {
     if (m_RootComponent)
         return m_RootComponent->GetTransform();
     return s_DefaultTransform;
 }
 
-void TActor::SetPosition(const Vector3& pos) const {
+void Actor::SetPosition(const Vector3& pos) const {
     if (m_RootComponent)
         m_RootComponent->SetPosition(pos);
 }
 
-Vector3 TActor::GetPosition() const
+Vector3 Actor::GetPosition() const
 {
     if (m_RootComponent)
         return m_RootComponent->GetPosition();

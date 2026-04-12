@@ -10,7 +10,7 @@
 
 namespace TE {
 
-std::shared_ptr<FStaticMeshRenderData> FStaticMeshRenderData::Create(const TStaticMesh& staticMesh, RHIDevice& device)
+std::shared_ptr<FStaticMeshRenderData> FStaticMeshRenderData::Create(const StaticMesh& staticMesh, RHIDevice& device)
 {
     if (!staticMesh.IsValid())
     {

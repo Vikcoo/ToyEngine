@@ -5,7 +5,7 @@
 
 namespace TE {
 
-bool TStaticMesh::IsValid() const
+bool StaticMesh::IsValid() const
 {
     if (m_Sections.empty())
         return false;
@@ -18,7 +18,7 @@ bool TStaticMesh::IsValid() const
     return false;
 }
 
-uint32_t TStaticMesh::GetTotalVertexCount() const
+uint32_t StaticMesh::GetTotalVertexCount() const
 {
     uint32_t total = 0;
     for (const auto& section : m_Sections)
@@ -28,7 +28,7 @@ uint32_t TStaticMesh::GetTotalVertexCount() const
     return total;
 }
 
-uint32_t TStaticMesh::GetTotalIndexCount() const
+uint32_t StaticMesh::GetTotalIndexCount() const
 {
     uint32_t total = 0;
     for (const auto& section : m_Sections)
@@ -38,7 +38,7 @@ uint32_t TStaticMesh::GetTotalIndexCount() const
     return total;
 }
 
-void TStaticMesh::AddSection(FMeshSection section)
+void StaticMesh::AddSection(FMeshSection section)
 {
     m_Sections.push_back(std::move(section));
 }

@@ -13,7 +13,7 @@
 namespace TE
 {
 
-void TFlyCameraController::Tick(float deltaTime)
+void FlyCameraController::Tick(float deltaTime)
 {
     if (!m_Input || deltaTime <= 0.0f)
     {
@@ -36,16 +36,16 @@ void TFlyCameraController::Tick(float deltaTime)
     ProcessMovement(deltaTime, *targetTransform);
 }
 
-void TFlyCameraController::InitializeFromCurrentTransform(Transform& transform)
+void FlyCameraController::InitializeFromCurrentTransform(Transform& transform)
 {
     const Vector3 forward = (-transform.GetForward()).Normalize();
     m_Pitch = Math::Asin(Math::Clamp(forward.Y, -1.0f, 1.0f));
     m_Yaw = Math::Atan2(forward.X, forward.Z);
 }
 
-Transform* TFlyCameraController::FindTargetTransform() const
+Transform* FlyCameraController::FindTargetTransform() const
 {
-    TActor* owner = GetOwner();
+    Actor* owner = GetOwner();
     if (!owner)
     {
         return nullptr;
@@ -53,7 +53,7 @@ Transform* TFlyCameraController::FindTargetTransform() const
 
     for (const auto& component : owner->GetComponents())
     {
-        if (auto* cameraComponent = dynamic_cast<TCameraComponent*>(component.get()))
+        if (auto* cameraComponent = dynamic_cast<CameraComponent*>(component.get()))
         {
             return &cameraComponent->GetTransform();
         }
@@ -61,7 +61,7 @@ Transform* TFlyCameraController::FindTargetTransform() const
 
     for (const auto& component : owner->GetComponents())
     {
-        if (auto* sceneComponent = dynamic_cast<TSceneComponent*>(component.get()))
+        if (auto* sceneComponent = dynamic_cast<SceneComponent*>(component.get()))
         {
             return &sceneComponent->GetTransform();
         }
@@ -70,7 +70,7 @@ Transform* TFlyCameraController::FindTargetTransform() const
     return nullptr;
 }
 
-void TFlyCameraController::ProcessLook(float deltaTime, Transform& transform)
+void FlyCameraController::ProcessLook(float deltaTime, Transform& transform)
 {
     (void)deltaTime;
 
@@ -124,7 +124,7 @@ void TFlyCameraController::ProcessLook(float deltaTime, Transform& transform)
     transform.Rotation = Quat::FromEuler(m_Yaw + Math::PI, -m_Pitch, 0.0f).Normalize();
 }
 
-void TFlyCameraController::ProcessMovement(float deltaTime, Transform& transform)
+void FlyCameraController::ProcessMovement(float deltaTime, Transform& transform)
 {
     const Vector2 scrollDelta = m_Input->GetScrollDelta();
     if (scrollDelta.Y != 0.0f)

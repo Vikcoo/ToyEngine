@@ -9,20 +9,20 @@
 namespace TE
 {
 
-class InputManager;
-class Window;
+class FInputManager;
+class IWindow;
 class Transform;
 
-class TFlyCameraController : public TComponent
+class FlyCameraController : public Component
 {
 public:
-    TFlyCameraController() = default;
-    ~TFlyCameraController() override = default;
+    FlyCameraController() = default;
+    ~FlyCameraController() override = default;
 
     void Tick(float deltaTime) override;
 
-    void SetInputManager(InputManager* inputManager) { m_Input = inputManager; }
-    void SetWindow(Window* window) { m_Window = window; }
+    void SetInputManager(FInputManager* inputManager) { m_Input = inputManager; }
+    void SetWindow(IWindow* window) { m_Window = window; }
 
     void SetMoveSpeed(float speed) { m_MoveSpeed = speed; }
     void SetLookSensitivity(float sensitivity) { m_LookSensitivity = sensitivity; }
@@ -40,8 +40,8 @@ private:
     void ProcessMovement(float deltaTime, Transform& transform);
 
 private:
-    InputManager* m_Input = nullptr;
-    Window* m_Window = nullptr;
+    FInputManager* m_Input = nullptr;
+    IWindow* m_Window = nullptr;
 
     float m_MoveSpeed = 5.0f;
     float m_LookSensitivity = 0.15f;

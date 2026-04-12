@@ -11,7 +11,7 @@ namespace TE {
 
 static bool s_glfwInitialized = false;
 
-GLFWWindow::GLFWWindow(const WindowConfig& config)
+GLFWWindow::GLFWWindow(const FWindowConfig& config)
     : m_title(config.title), m_width(config.width), m_height(config.height)
 {
     // 初始化 GLFW（只做一次）
@@ -256,7 +256,7 @@ void GLFWWindow::GLFWScrollCallback(GLFWwindow* window, double xoffset, double y
 }
 
 // 工厂方法（内联，不需要单独的 PlatformFactory.cpp）
-std::unique_ptr<Window> Window::Create(const WindowConfig& config)
+std::unique_ptr<IWindow> IWindow::Create(const FWindowConfig& config)
 {
     return std::make_unique<GLFWWindow>(config);
 }

@@ -101,7 +101,7 @@ static FMeshSection ProcessAiMesh(const aiMesh* mesh)
 /// 递归遍历 Assimp 场景节点树，收集所有网格
 /// 这对应 UE5 中 FBX Importer 遍历 FbxNode 树的过程
 static void ProcessAiNode(const aiNode* node, const aiScene* scene,
-                           std::shared_ptr<TStaticMesh>& outMesh)
+                           std::shared_ptr<StaticMesh>& outMesh)
 {
     // 处理当前节点的所有网格
     for (unsigned int i = 0; i < node->mNumMeshes; ++i)
@@ -118,7 +118,7 @@ static void ProcessAiNode(const aiNode* node, const aiScene* scene,
     }
 }
 
-std::shared_ptr<TStaticMesh> FAssetImporter::ImportStaticMesh(const std::string& filePath)
+std::shared_ptr<StaticMesh> FAssetImporter::ImportStaticMesh(const std::string& filePath)
 {
     TE_LOG_INFO("[Asset] Importing static mesh: {}", filePath);
 
@@ -148,7 +148,7 @@ std::shared_ptr<TStaticMesh> FAssetImporter::ImportStaticMesh(const std::string&
     }
 
     // 创建 TStaticMesh 资产
-    auto staticMesh = std::make_shared<TStaticMesh>();
+    auto staticMesh = std::make_shared<StaticMesh>();
 
     // 从文件路径提取名称
     std::filesystem::path path(filePath);

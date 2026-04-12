@@ -10,14 +10,14 @@
 
 // 前向声明
 namespace TE {
-    class Window;
-    class InputManager;
+    class IWindow;
+    class FInputManager;
     class RHIDevice;
     class RHICommandBuffer;
-    class TWorld;
+    class World;
     class FScene;
-    class SceneRenderer;
-    class TCameraComponent;
+    class FSceneRenderer;
+    class CameraComponent;
 }
 
 namespace TE {
@@ -60,14 +60,14 @@ public:
     [[nodiscard]] bool IsRunning() const { return m_Running; }
 
     /// 获取窗口
-    [[nodiscard]] Window* GetWindow() const { return m_Window.get(); }
+    [[nodiscard]] IWindow* GetWindow() const { return m_Window.get(); }
 
     /// 获取 RHI 设备
     [[nodiscard]] RHIDevice* GetRHIDevice() const { return m_RHIDevice.get(); }
     /// 获取输入管理器
-    [[nodiscard]] InputManager* GetInputManager() const { return m_InputManager.get(); }
+    [[nodiscard]] FInputManager* GetInputManager() const { return m_InputManager.get(); }
     /// 获取游戏世界
-    [[nodiscard]] TWorld* GetWorld() const { return m_World.get(); }
+    [[nodiscard]] World* GetWorld() const { return m_World.get(); }
 
     /// 获取当前帧时间（秒）
     [[nodiscard]] float GetDeltaTime() const { return m_DeltaTime; }
@@ -83,7 +83,7 @@ public:
     /// 应用层每帧逻辑回调（在 World::Tick 前执行）
     void SetFrameUpdateCallback(std::function<void(Engine&, float)> callback);
     /// 设置当前主相机组件（用于构建 ViewInfo）
-    void SetActiveCameraComponent(TCameraComponent* camera) { m_CameraComponent = camera; }
+    void SetActiveCameraComponent(CameraComponent* camera) { m_CameraComponent = camera; }
 
 private:
     Engine() = default;
@@ -101,20 +101,20 @@ private:
     void Tick(float deltaTime);
 
     // Platform 子系统
-    std::unique_ptr<Window> m_Window;
-    std::unique_ptr<InputManager> m_InputManager;
+    std::unique_ptr<IWindow> m_Window;
+    std::unique_ptr<FInputManager> m_InputManager;
 
     // RHI 子系统（全局单例资源）
     std::unique_ptr<RHIDevice>          m_RHIDevice;
     std::unique_ptr<RHICommandBuffer>   m_CommandBuffer;
 
     // UE5 架构核心模块
-    std::unique_ptr<TWorld>         m_World;            // 游戏世界（Actor/Component）
+    std::unique_ptr<World>         m_World;            // 游戏世界（Actor/Component）
     std::unique_ptr<FScene>         m_Scene;            // 渲染场景（Proxy 容器）
-    std::unique_ptr<SceneRenderer>  m_SceneRenderer;    // 渲染调度器
+    std::unique_ptr<FSceneRenderer>  m_SceneRenderer;    // 渲染调度器
 
     // 相机组件引用（用于每帧构建 ViewInfo）
-    TCameraComponent* m_CameraComponent = nullptr;
+    CameraComponent* m_CameraComponent = nullptr;
     std::function<void(Engine&)> m_SceneSetupCallback;
     std::function<void(Engine&, float)> m_FrameUpdateCallback;
 

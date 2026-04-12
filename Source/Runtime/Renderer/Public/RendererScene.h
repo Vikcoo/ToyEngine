@@ -23,8 +23,8 @@ namespace TE {
 class RHIDevice;
 class RHIPipeline;
 class RHIShader;
-class TStaticMesh;
-class TPrimitiveComponent;
+class StaticMesh;
+class PrimitiveComponent;
 
 /// 渲染场景
 ///
@@ -38,7 +38,7 @@ public:
     ~FScene();
 
     /// 注册由游戏侧组件创建好的 Primitive Proxy
-    [[nodiscard]] bool AddPrimitive(const TPrimitiveComponent* primitiveComponent,
+    [[nodiscard]] bool AddPrimitive(const PrimitiveComponent* primitiveComponent,
                                     FPrimitiveComponentId primitiveComponentId,
                                     std::unique_ptr<FPrimitiveSceneProxy> proxy) override;
 
@@ -49,7 +49,7 @@ public:
     void UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId, const Matrix4& worldMatrix) override;
 
     [[nodiscard]] std::shared_ptr<const FStaticMeshRenderData> GetStaticMeshRenderData(
-        const std::shared_ptr<TStaticMesh>& staticMesh) override;
+        const std::shared_ptr<StaticMesh>& staticMesh) override;
     [[nodiscard]] RHIPipeline* GetStaticMeshPipeline() override;
 
     /// 获取所有 Primitive Proxy（SceneRenderer 遍历用）
@@ -62,14 +62,14 @@ public:
 private:
     [[nodiscard]] bool EnsureStaticMeshPipeline();
     [[nodiscard]] bool InsertPrimitive(FPrimitiveComponentId primitiveComponentId,
-                                       const TPrimitiveComponent* primitiveComponent,
+                                       const PrimitiveComponent* primitiveComponent,
                                        std::unique_ptr<FPrimitiveSceneProxy> proxy);
     void RebuildPrimitiveView();
 
     RHIDevice* m_Device = nullptr;
     std::unordered_map<FPrimitiveComponentId, std::unique_ptr<FPrimitiveSceneInfo>, FPrimitiveComponentIdHash> m_PrimitiveStorage;
     std::vector<FPrimitiveSceneProxy*> m_Primitives; // SceneRenderer 遍历视图
-    std::unordered_map<const TStaticMesh*, std::weak_ptr<const FStaticMeshRenderData>> m_StaticMeshRenderDataCache;
+    std::unordered_map<const StaticMesh*, std::weak_ptr<const FStaticMeshRenderData>> m_StaticMeshRenderDataCache;
     std::unique_ptr<RHIShader> m_StaticMeshVertexShader;
     std::unique_ptr<RHIShader> m_StaticMeshFragmentShader;
     std::unique_ptr<RHIPipeline> m_StaticMeshPipeline;

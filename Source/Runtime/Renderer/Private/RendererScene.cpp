@@ -28,7 +28,7 @@ FScene::FScene(RHIDevice* device)
 
 FScene::~FScene() = default;
 
-bool FScene::AddPrimitive(const TPrimitiveComponent* primitiveComponent,
+bool FScene::AddPrimitive(const PrimitiveComponent* primitiveComponent,
                           FPrimitiveComponentId primitiveComponentId,
                           std::unique_ptr<FPrimitiveSceneProxy> proxy)
 {
@@ -82,14 +82,14 @@ void FScene::UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId
     proxy->SetWorldMatrix(worldMatrix);
 }
 
-std::shared_ptr<const FStaticMeshRenderData> FScene::GetStaticMeshRenderData(const std::shared_ptr<TStaticMesh>& staticMesh)
+std::shared_ptr<const FStaticMeshRenderData> FScene::GetStaticMeshRenderData(const std::shared_ptr<StaticMesh>& staticMesh)
 {
     if (!m_Device || !staticMesh)
     {
         return nullptr;
     }
 
-    const TStaticMesh* key = staticMesh.get();
+    const StaticMesh* key = staticMesh.get();
     const auto found = m_StaticMeshRenderDataCache.find(key);
     if (found != m_StaticMeshRenderDataCache.end())
     {
@@ -178,7 +178,7 @@ bool FScene::EnsureStaticMeshPipeline()
 }
 
 bool FScene::InsertPrimitive(FPrimitiveComponentId primitiveComponentId,
-                             const TPrimitiveComponent* primitiveComponent,
+                             const PrimitiveComponent* primitiveComponent,
                              std::unique_ptr<FPrimitiveSceneProxy> proxy)
 {
     if (!primitiveComponent || !proxy || !primitiveComponentId.IsValid())

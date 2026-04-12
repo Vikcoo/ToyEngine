@@ -14,7 +14,7 @@
 
 namespace TE {
 
-class TPrimitiveComponent;
+class PrimitiveComponent;
 
 /// 游戏世界
 ///
@@ -26,22 +26,22 @@ class TPrimitiveComponent;
 /// ToyEngine 扩展：
 /// - 维护已注册的 PrimitiveComponent 列表（用于 SyncToScene）
 /// - SyncToScene() 遍历脏 Component 将数据同步到渲染场景接口
-class TWorld
+class World
 {
 public:
-    TWorld() = default;
-    ~TWorld() = default;
+    World() = default;
+    ~World() = default;
 
     // 禁止拷贝
-    TWorld(const TWorld&) = delete;
-    TWorld& operator=(const TWorld&) = delete;
+    World(const World&) = delete;
+    World& operator=(const World&) = delete;
 
     /// 添加 Actor 到世界
     /// 添加后会遍历其 PrimitiveComponent 注册到 FScene
-    TActor* AddActor(std::unique_ptr<TActor> actor);
+    Actor* AddActor(std::unique_ptr<Actor> actor);
 
     /// 创建 Actor（模板方法）
-    template<typename T = TActor, typename... Args>
+    template<typename T = Actor, typename... Args>
     [[nodiscard]] T* SpawnActor(Args&&... args)
     {
         auto actor = std::make_unique<T>(std::forward<Args>(args)...);
@@ -59,18 +59,18 @@ public:
     void SyncToScene();
 
     /// 注册/反注册 PrimitiveComponent（由组件注册流程调用）
-    void RegisterPrimitiveComponent(TPrimitiveComponent* comp);
-    void UnregisterPrimitiveComponent(TPrimitiveComponent* comp);
+    void RegisterPrimitiveComponent(PrimitiveComponent* comp);
+    void UnregisterPrimitiveComponent(PrimitiveComponent* comp);
 
     /// 设置渲染场景接口（AddActor 时用于自动注册渲染对象）
     void SetRenderScene(IRenderScene* renderScene) { m_RenderScene = renderScene; }
 
     /// 获取所有 Actor
-    [[nodiscard]] const std::vector<std::unique_ptr<TActor>>& GetActors() const { return m_Actors; }
+    [[nodiscard]] const std::vector<std::unique_ptr<Actor>>& GetActors() const { return m_Actors; }
 
 private:
-    std::vector<std::unique_ptr<TActor>>    m_Actors;
-    std::vector<TPrimitiveComponent*>       m_PrimitiveComponents;  // 所有已注册的可渲染组件
+    std::vector<std::unique_ptr<Actor>>    m_Actors;
+    std::vector<PrimitiveComponent*>       m_PrimitiveComponents;  // 所有已注册的可渲染组件
     IRenderScene* m_RenderScene = nullptr; // 渲染场景接口引用
 };
 

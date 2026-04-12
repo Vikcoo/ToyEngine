@@ -45,14 +45,14 @@ void Engine::Init()
     TE_LOG_INFO("Memory system initialized");
 
     // 3. 创建窗口（会同时创建 OpenGL Context 并加载 glad）
-    WindowConfig config{
+    FWindowConfig config{
         "ToyEngine - Model Loading (UE5 Architecture)",
         1280,
         720,
         true,
     };
 
-    m_Window = Window::Create(config);
+    m_Window = IWindow::Create(config);
     if (!m_Window)
     {
         TE_LOG_ERROR("Failed to create window!");
@@ -75,8 +75,8 @@ void Engine::Init()
 
     // 5. 创建 UE5 架构核心模块
     m_Scene = std::make_unique<FScene>(m_RHIDevice.get());
-    m_SceneRenderer = std::make_unique<SceneRenderer>();
-    m_World = std::make_unique<TWorld>();
+    m_SceneRenderer = std::make_unique<FSceneRenderer>();
+    m_World = std::make_unique<World>();
 
     // 设置 World 的渲染场景接口
     m_World->SetRenderScene(m_Scene.get());
@@ -84,7 +84,7 @@ void Engine::Init()
     TE_LOG_INFO("UE5 architecture modules created: World + FScene + SceneRenderer");
 
     // 6. 初始化输入系统
-    m_InputManager = std::make_unique<InputManager>();
+    m_InputManager = std::make_unique<FInputManager>();
     m_InputManager->Init(m_Window.get());
 
     // 重置时间

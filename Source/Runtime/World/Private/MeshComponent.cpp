@@ -9,7 +9,7 @@
 
 namespace TE {
 
-std::unique_ptr<FPrimitiveSceneProxy> TMeshComponent::CreateSceneProxy(IRenderScene& renderScene) const
+std::unique_ptr<FPrimitiveSceneProxy> MeshComponent::CreateSceneProxy(IRenderScene& renderScene) const
 {
     if (!m_StaticMesh || !m_StaticMesh->IsValid())
     {

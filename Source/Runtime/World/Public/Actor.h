@@ -15,7 +15,7 @@
 
 namespace TE {
 
-class TSceneComponent;
+class SceneComponent;
 
 /// 实体类
 ///
@@ -28,15 +28,15 @@ class TSceneComponent;
 /// - 持有 Component 列表（vector of unique_ptr<TComponent>）
 /// - 第一个 TSceneComponent 自动成为 RootComponent
 /// - Tick() 遍历所有组件调用其 Tick()
-class TActor
+class Actor
 {
 public:
-    TActor() = default;
-    virtual ~TActor() = default;
+    Actor() = default;
+    virtual ~Actor() = default;
 
     // 禁止拷贝
-    TActor(const TActor&) = delete;
-    TActor& operator=(const TActor&) = delete;
+    Actor(const Actor&) = delete;
+    Actor& operator=(const Actor&) = delete;
 
     /// 添加组件（模板方法，返回 raw 指针便于后续操作）
     template<typename T, typename... Args>
@@ -49,7 +49,7 @@ public:
         // 如果是 SceneComponent 且没有 RootComponent，自动设为 Root
         if (!m_RootComponent)
         {
-            if (auto* sceneComp = dynamic_cast<TSceneComponent*>(ptr))
+            if (auto* sceneComp = dynamic_cast<SceneComponent*>(ptr))
             {
                 m_RootComponent = sceneComp;
             }
@@ -63,7 +63,7 @@ public:
     virtual void Tick(float deltaTime);
 
     /// 获取所有组件
-    [[nodiscard]] const std::vector<std::unique_ptr<TComponent>>& GetComponents() const { return m_Components; }
+    [[nodiscard]] const std::vector<std::unique_ptr<Component>>& GetComponents() const { return m_Components; }
 
     /// 获取 RootComponent 的 Transform（Actor 的位置/旋转/缩放）
     [[nodiscard]] Transform& GetTransform();
@@ -78,8 +78,8 @@ public:
     [[nodiscard]] const std::string& GetName() const { return m_Name; }
 
 private:
-    std::vector<std::unique_ptr<TComponent>>    m_Components;
-    TSceneComponent*                            m_RootComponent = nullptr;
+    std::vector<std::unique_ptr<Component>>    m_Components;
+    SceneComponent*                            m_RootComponent = nullptr;
     std::string                                 m_Name;
 
     // 当没有 RootComponent 时使用的默认 Transform

@@ -39,7 +39,7 @@
 
 namespace TE {
 
-void SceneRenderer::Render(const FScene* scene, RHIDevice* device, RHICommandBuffer* cmdBuf)
+void FSceneRenderer::Render(const FScene* scene, RHIDevice* device, RHICommandBuffer* cmdBuf)
 {
     if (!scene || !cmdBuf)
     {
@@ -89,7 +89,7 @@ void SceneRenderer::Render(const FScene* scene, RHIDevice* device, RHICommandBuf
     cmdBuf->End();
 }
 
-void SceneRenderer::GatherMeshDrawCommands(const FScene* scene,
+void FSceneRenderer::GatherMeshDrawCommands(const FScene* scene,
                                             std::vector<FMeshDrawCommand>& outCommands)
 {
     const auto& primitives = scene->GetPrimitives();
@@ -101,7 +101,7 @@ void SceneRenderer::GatherMeshDrawCommands(const FScene* scene,
     }
 }
 
-void SceneRenderer::SortDrawCommands(std::vector<FMeshDrawCommand>& commands)
+void FSceneRenderer::SortDrawCommands(std::vector<FMeshDrawCommand>& commands)
 {
     // 按 Pipeline → VBO → IBO 指针值排序
     // 这保证了相同 Pipeline 的命令连续，相同 VBO/IBO 的命令也尽量连续
@@ -125,7 +125,7 @@ void SceneRenderer::SortDrawCommands(std::vector<FMeshDrawCommand>& commands)
         });
 }
 
-void SceneRenderer::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& commands,
+void FSceneRenderer::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& commands,
                                         const FScene* scene,
                                         RHICommandBuffer* cmdBuf)
 {

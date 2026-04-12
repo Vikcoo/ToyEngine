@@ -11,7 +11,7 @@
 
 namespace TE {
 
-class TActor;  // 前向声明
+class Actor;  // 前向声明
 
 /// 组件基类
 ///
@@ -20,29 +20,29 @@ class TActor;  // 前向声明
 /// - 提供 BeginPlay()、Tick()、EndPlay() 生命周期
 ///
 /// ToyEngine 简化版：只保留 Tick() 和 Owner 关系
-class TComponent
+class Component
 {
 public:
-    TComponent() = default;
-    virtual ~TComponent() = default;
+    Component() = default;
+    virtual ~Component() = default;
 
     // 禁止拷贝
-    TComponent(const TComponent&) = delete;
-    TComponent& operator=(const TComponent&) = delete;
+    Component(const Component&) = delete;
+    Component& operator=(const Component&) = delete;
 
     /// 每帧更新（子类 override）
     virtual void Tick(float deltaTime) {}
 
     /// 获取/设置所属 Actor
-    void SetOwner(TActor* owner) { m_Owner = owner; }
-    [[nodiscard]] TActor* GetOwner() const { return m_Owner; }
+    void SetOwner(Actor* owner) { m_Owner = owner; }
+    [[nodiscard]] Actor* GetOwner() const { return m_Owner; }
 
     /// 调试名称
     void SetName(const std::string& name) { m_Name = name; }
     [[nodiscard]] const std::string& GetName() const { return m_Name; }
 
 protected:
-    TActor*     m_Owner = nullptr;
+    Actor*     m_Owner = nullptr;
     std::string m_Name;
 };
 

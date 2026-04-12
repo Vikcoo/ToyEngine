@@ -19,11 +19,11 @@ namespace TE {
 /// - 提供 GetComponentToWorld() 返回世界变换
 ///
 /// ToyEngine 简化版：直接持有 Transform，GetWorldMatrix() 返回 TRS 矩阵
-class TSceneComponent : public TComponent
+class SceneComponent : public Component
 {
 public:
-    TSceneComponent() = default;
-    ~TSceneComponent() override = default;
+    SceneComponent() = default;
+    ~SceneComponent() override = default;
 
     /// 获取本地 Transform（相对于 Actor 根组件）
     [[nodiscard]] Transform& GetTransform() { return m_Transform; }

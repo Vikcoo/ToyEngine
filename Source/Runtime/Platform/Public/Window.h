@@ -10,7 +10,7 @@
 namespace TE {
 
 // 窗口配置
-struct WindowConfig {
+struct FWindowConfig {
     std::string title = "ToyEngine";
     uint32_t width = 1280;
     uint32_t height = 720;
@@ -32,9 +32,9 @@ enum class CursorMode
 };
 
 // 窗口抽象接口
-class Window {
+class IWindow {
 public:
-    virtual ~Window() = default;
+    virtual ~IWindow() = default;
 
     // 窗口生命周期
     virtual void PollEvents() = 0;
@@ -72,10 +72,10 @@ public:
     [[nodiscard]] virtual bool IsVSyncEnabled() const = 0;
 
     // 工厂方法 - 根据平台自动创建合适的窗口实现
-    [[nodiscard]] static std::unique_ptr<Window> Create(const WindowConfig& config = WindowConfig());
+    [[nodiscard]] static std::unique_ptr<IWindow> Create(const FWindowConfig& config = FWindowConfig());
 
 protected:
-    Window() = default;
+    IWindow() = default;
 };
 
 } // namespace TE

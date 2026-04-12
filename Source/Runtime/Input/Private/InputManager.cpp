@@ -8,7 +8,7 @@
 namespace TE
 {
 
-void InputManager::Init(Window* window)
+void FInputManager::Init(IWindow* window)
 {
     if (m_Initialized)
     {
@@ -41,7 +41,7 @@ void InputManager::Init(Window* window)
     m_Initialized = true;
 }
 
-void InputManager::Shutdown()
+void FInputManager::Shutdown()
 {
     if (!m_Initialized)
     {
@@ -73,7 +73,7 @@ void InputManager::Shutdown()
     m_Initialized = false;
 }
 
-void InputManager::Tick()
+void FInputManager::Tick()
 {
     if (!m_Initialized)
     {
@@ -93,7 +93,7 @@ void InputManager::Tick()
     }
 }
 
-void InputManager::PostTick()
+void FInputManager::PostTick()
 {
     if (!m_Initialized)
     {
@@ -107,37 +107,37 @@ void InputManager::PostTick()
     m_ScrollDelta = Vector2::Zero;
 }
 
-bool InputManager::IsKeyDown(int key) const
+bool FInputManager::IsKeyDown(int key) const
 {
     return GetState(m_KeyStates, key);
 }
 
-bool InputManager::IsKeyJustPressed(int key) const
+bool FInputManager::IsKeyJustPressed(int key) const
 {
     return GetState(m_KeyJustPressed, key);
 }
 
-bool InputManager::IsKeyJustReleased(int key) const
+bool FInputManager::IsKeyJustReleased(int key) const
 {
     return GetState(m_KeyJustReleased, key);
 }
 
-bool InputManager::IsMouseButtonDown(int button) const
+bool FInputManager::IsMouseButtonDown(int button) const
 {
     return GetState(m_MouseButtonStates, button);
 }
 
-bool InputManager::IsMouseButtonJustPressed(int button) const
+bool FInputManager::IsMouseButtonJustPressed(int button) const
 {
     return GetState(m_MouseButtonJustPressed, button);
 }
 
-bool InputManager::IsMouseButtonJustReleased(int button) const
+bool FInputManager::IsMouseButtonJustReleased(int button) const
 {
     return GetState(m_MouseButtonJustReleased, button);
 }
 
-void InputManager::OnKeyEvent(int key, int scancode, int action, int mods)
+void FInputManager::OnKeyEvent(int key, int scancode, int action, int mods)
 {
     (void)scancode;
     (void)mods;
@@ -168,7 +168,7 @@ void InputManager::OnKeyEvent(int key, int scancode, int action, int mods)
     }
 }
 
-void InputManager::OnMouseButtonEvent(int button, int action, int mods)
+void FInputManager::OnMouseButtonEvent(int button, int action, int mods)
 {
     (void)mods;
 
@@ -192,17 +192,17 @@ void InputManager::OnMouseButtonEvent(int button, int action, int mods)
     }
 }
 
-void InputManager::OnCursorPosEvent(double xpos, double ypos)
+void FInputManager::OnCursorPosEvent(double xpos, double ypos)
 {
     m_MousePosition = Vector2(static_cast<float>(xpos), static_cast<float>(ypos));
 }
 
-void InputManager::OnScrollEvent(double xoffset, double yoffset)
+void FInputManager::OnScrollEvent(double xoffset, double yoffset)
 {
     m_ScrollDelta += Vector2(static_cast<float>(xoffset), static_cast<float>(yoffset));
 }
 
-bool InputManager::GetState(const std::unordered_map<int, bool>& states, int code)
+bool FInputManager::GetState(const std::unordered_map<int, bool>& states, int code)
 {
     const auto it = states.find(code);
     return it != states.end() ? it->second : false;

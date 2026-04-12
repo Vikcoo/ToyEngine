@@ -11,7 +11,7 @@ namespace TE {
 
 class RHIBuffer;
 class RHIDevice;
-class TStaticMesh;
+class StaticMesh;
 
 struct FStaticMeshSectionRange
 {
@@ -29,7 +29,7 @@ public:
     FStaticMeshRenderData(const FStaticMeshRenderData&) = delete;
     FStaticMeshRenderData& operator=(const FStaticMeshRenderData&) = delete;
 
-    [[nodiscard]] static std::shared_ptr<FStaticMeshRenderData> Create(const TStaticMesh& staticMesh, RHIDevice& device);
+    [[nodiscard]] static std::shared_ptr<FStaticMeshRenderData> Create(const StaticMesh& staticMesh, RHIDevice& device);
 
     [[nodiscard]] bool IsValid() const;
 

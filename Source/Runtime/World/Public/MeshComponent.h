@@ -15,7 +15,7 @@
 namespace TE {
 
 // 前向声明
-class TStaticMesh;
+class StaticMesh;
 class FPrimitiveSceneProxy;
 
 /// 网格组件
@@ -28,23 +28,23 @@ class FPrimitiveSceneProxy;
 /// - 持有 shared_ptr<TStaticMesh> 资产引用（多个组件可共享同一资产）
 /// - SetStaticMesh() 设置资产引用
 /// - CreateSceneProxy() 构造 FStaticMeshSceneProxy
-class TMeshComponent : public TPrimitiveComponent
+class MeshComponent : public PrimitiveComponent
 {
 public:
-    TMeshComponent() = default;
-    ~TMeshComponent() override = default;
+    MeshComponent() = default;
+    ~MeshComponent() override = default;
 
     /// 设置静态网格资产（对应 UE5 的 UStaticMeshComponent::SetStaticMesh）
-    void SetStaticMesh(std::shared_ptr<TStaticMesh> mesh) { m_StaticMesh = std::move(mesh); }
+    void SetStaticMesh(std::shared_ptr<StaticMesh> mesh) { m_StaticMesh = std::move(mesh); }
 
     /// 获取静态网格资产引用
-    [[nodiscard]] const std::shared_ptr<TStaticMesh>& GetStaticMesh() const { return m_StaticMesh; }
+    [[nodiscard]] const std::shared_ptr<StaticMesh>& GetStaticMesh() const { return m_StaticMesh; }
 
     /// 创建静态网格渲染代理（override）
     [[nodiscard]] std::unique_ptr<FPrimitiveSceneProxy> CreateSceneProxy(IRenderScene& renderScene) const override;
 
 private:
-    std::shared_ptr<TStaticMesh> m_StaticMesh;
+    std::shared_ptr<StaticMesh> m_StaticMesh;
 };
 
 } // namespace TE

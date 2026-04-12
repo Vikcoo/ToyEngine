@@ -9,18 +9,18 @@
 namespace TE
 {
 
-class Window;
+class IWindow;
 
-class InputManager
+class FInputManager
 {
 public:
-    InputManager() = default;
-    ~InputManager() = default;
+    FInputManager() = default;
+    ~FInputManager() = default;
 
-    InputManager(const InputManager&) = delete;
-    InputManager& operator=(const InputManager&) = delete;
+    FInputManager(const FInputManager&) = delete;
+    FInputManager& operator=(const FInputManager&) = delete;
 
-    void Init(Window* window);
+    void Init(IWindow* window);
     void Shutdown();
 
     void Tick();
@@ -47,7 +47,7 @@ private:
     [[nodiscard]] static bool GetState(const std::unordered_map<int, bool>& states, int code);
 
 private:
-    Window* m_Window = nullptr;
+    IWindow* m_Window = nullptr;
     bool m_Initialized = false;
 
     std::unordered_map<int, bool> m_KeyStates;

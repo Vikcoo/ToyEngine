@@ -9,7 +9,7 @@
 
 namespace TE {
 
-TActor* TWorld::AddActor(std::unique_ptr<TActor> actor)
+Actor* World::AddActor(std::unique_ptr<Actor> actor)
 {
     if (!actor)
     {
@@ -19,11 +19,11 @@ TActor* TWorld::AddActor(std::unique_ptr<TActor> actor)
 
 
     m_Actors.push_back(std::move(actor));
-    TActor* ptr = m_Actors.back().get();
+    Actor* ptr = m_Actors.back().get();
     // 遍历 Actor 的所有组件，注册 PrimitiveComponent 到渲染场景接口
     for (const auto& comp : ptr->GetComponents())
     {
-        if (auto* primComp = dynamic_cast<TPrimitiveComponent*>(comp.get()))
+        if (auto* primComp = dynamic_cast<PrimitiveComponent*>(comp.get()))
         {
             RegisterPrimitiveComponent(primComp);
 
@@ -40,7 +40,7 @@ TActor* TWorld::AddActor(std::unique_ptr<TActor> actor)
     return ptr;
 }
 
-void TWorld::Tick(float deltaTime)
+void World::Tick(float deltaTime)
 {
     // 遍历所有 Actor 更新逻辑
     for (auto& actor : m_Actors)
@@ -49,7 +49,7 @@ void TWorld::Tick(float deltaTime)
     }
 }
 
-void TWorld::SyncToScene()
+void World::SyncToScene()
 {
     if (!m_RenderScene)
         return;
@@ -68,7 +68,7 @@ void TWorld::SyncToScene()
     }
 }
 
-void TWorld::RegisterPrimitiveComponent(TPrimitiveComponent* comp)
+void World::RegisterPrimitiveComponent(PrimitiveComponent* comp)
 {
     if (!comp) return;
 
@@ -79,7 +79,7 @@ void TWorld::RegisterPrimitiveComponent(TPrimitiveComponent* comp)
     }
 }
 
-void TWorld::UnregisterPrimitiveComponent(TPrimitiveComponent* comp)
+void World::UnregisterPrimitiveComponent(PrimitiveComponent* comp)
 {
     auto it = std::find(m_PrimitiveComponents.begin(), m_PrimitiveComponents.end(), comp);
     if (it != m_PrimitiveComponents.end())
