@@ -47,15 +47,15 @@
   - `Source/Runtime/World/Private/World.cpp`
   - `Source/Runtime/World/CMakeLists.txt`
 - `Renderer` 侧重构：
-  - `Source/Runtime/Renderer/Public/FScene.h`
-  - `Source/Runtime/Renderer/Private/FScene.cpp`
+  - `Source/Runtime/Renderer/Public/RendererScene.h`
+  - `Source/Runtime/Renderer/Private/RendererScene.cpp`
   - `Source/Runtime/Renderer/Public/RenderSceneBridgeFactory.h`
   - `Source/Runtime/Renderer/Private/RenderSceneBridge.cpp`
   - `Source/Runtime/Renderer/CMakeLists.txt`
 - 视图信息归位：
   - 新增 `Source/Runtime/World/Public/SceneViewInfo.h`
   - `CameraComponent` 改为依赖 `SceneViewInfo.h`
-  - `Renderer/Public/FViewInfo.h` 改为兼容转发头
+  - `Renderer/Public/ViewInfo.h` 改为兼容转发头
 - `Engine` 装配更新：
   - `Source/Runtime/Engine/Public/Engine.h`
   - `Source/Runtime/Engine/Private/Engine.cpp`

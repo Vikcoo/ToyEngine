@@ -2,8 +2,8 @@
 # 渲染侧共享数据结构：SceneProxy、MeshDrawCommand、资产级 RenderData
 
 add_library(RenderCore STATIC
-    Private/FStaticMeshRenderData.cpp
-    Private/FStaticMeshSceneProxy.cpp
+    Private/StaticMeshRenderData.cpp
+    Private/StaticMeshSceneProxy.cpp
 )
 
 target_include_directories(RenderCore

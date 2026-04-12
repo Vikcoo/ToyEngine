@@ -5,14 +5,32 @@
 #include "PrimitiveComponent.h"
 #include "Log/Log.h"
 
+#include <atomic>
+
 namespace TE {
+
+namespace {
+FPrimitiveComponentId AllocatePrimitiveComponentId()
+{
+    static std::atomic<uint32_t> nextId{1};
+
+    FPrimitiveComponentId primitiveComponentId;
+    primitiveComponentId.Value = nextId.fetch_add(1, std::memory_order_relaxed);
+    return primitiveComponentId;
+}
+} // namespace
+
+TPrimitiveComponent::TPrimitiveComponent()
+    : m_PrimitiveComponentId(AllocatePrimitiveComponentId())
+{
+}
 
 TPrimitiveComponent::~TPrimitiveComponent()
 {
     // 如果组件析构时仍处于注册状态，主动反注册，避免渲染侧残留对象
     if (m_BoundRenderScene && m_IsRegisteredToRenderScene)
     {
-        m_BoundRenderScene->RemovePrimitive(this);
+        m_BoundRenderScene->RemovePrimitive(m_PrimitiveComponentId);
     }
     m_BoundRenderScene = nullptr;
     m_IsRegisteredToRenderScene = false;
@@ -40,7 +58,7 @@ void TPrimitiveComponent::RegisterToRenderScene(IRenderScene* renderScene)
     }
 
     proxy->SetWorldMatrix(GetWorldMatrix());
-    if (!renderScene->AddPrimitive(this, std::move(proxy)))
+    if (!renderScene->AddPrimitive(this, m_PrimitiveComponentId, std::move(proxy)))
     {
         TE_LOG_WARN("[Scene] Render scene failed to add primitive");
         return;
@@ -60,7 +78,7 @@ void TPrimitiveComponent::UnregisterFromRenderScene(IRenderScene* renderScene)
     }
     if (m_IsRegisteredToRenderScene)
     {
-        renderScene->RemovePrimitive(this);
+        renderScene->RemovePrimitive(m_PrimitiveComponentId);
         m_IsRegisteredToRenderScene = false;
         m_BoundRenderScene = nullptr;
         TE_LOG_INFO("[Scene] TPrimitiveComponent unregistered from render scene");

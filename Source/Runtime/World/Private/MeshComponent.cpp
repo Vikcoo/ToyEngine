@@ -2,7 +2,7 @@
 // TMeshComponent 实现
 
 #include "MeshComponent.h"
-#include "FStaticMeshSceneProxy.h"
+#include "StaticMeshSceneProxy.h"
 #include "Log/Log.h"
 #include "RHIPipeline.h"
 #include "TStaticMesh.h"

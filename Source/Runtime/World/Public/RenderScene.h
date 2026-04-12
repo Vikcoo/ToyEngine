@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Math/MathTypes.h"
+#include "PrimitiveComponentId.h"
 
 #include <memory>
 
@@ -23,9 +24,10 @@ public:
     virtual ~IRenderScene() = default;
 
     [[nodiscard]] virtual bool AddPrimitive(const TPrimitiveComponent* primitiveComponent,
+                                            FPrimitiveComponentId primitiveComponentId,
                                             std::unique_ptr<FPrimitiveSceneProxy> proxy) = 0;
-    virtual void UpdatePrimitiveTransform(const TPrimitiveComponent* primitiveComponent, const Matrix4& worldMatrix) = 0;
-    virtual void RemovePrimitive(const TPrimitiveComponent* primitiveComponent) = 0;
+    virtual void UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId, const Matrix4& worldMatrix) = 0;
+    virtual void RemovePrimitive(FPrimitiveComponentId primitiveComponentId) = 0;
 
     [[nodiscard]] virtual std::shared_ptr<const FStaticMeshRenderData> GetStaticMeshRenderData(
         const std::shared_ptr<TStaticMesh>& staticMesh) = 0;

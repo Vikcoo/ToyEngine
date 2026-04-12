@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "FPrimitiveSceneProxy.h"
-#include "FStaticMeshRenderData.h"
+#include "PrimitiveSceneProxy.h"
+#include "StaticMeshRenderData.h"
 
 #include <memory>
 

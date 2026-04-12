@@ -4,7 +4,7 @@
 // Assimp 头文件仅在此处引用，不泄漏到 Public 接口
 // 这是 UE5 中 "模块内部实现细节不暴露" 原则的体现
 
-#include "FAssetImporter.h"
+#include "AssetImporter.h"
 #include "TStaticMesh.h"
 #include "Log/Log.h"
 

@@ -5,7 +5,7 @@
 
 #include "Actor.h"
 #include "CameraComponent.h"
-#include "FAssetImporter.h"
+#include "AssetImporter.h"
 #include "FlyCameraController.h"
 #include "Log/Log.h"
 #include "Math/MathTypes.h"

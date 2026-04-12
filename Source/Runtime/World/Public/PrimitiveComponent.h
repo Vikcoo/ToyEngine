@@ -9,7 +9,8 @@
 
 #pragma once
 
-#include "FPrimitiveSceneProxy.h"
+#include "PrimitiveSceneProxy.h"
+#include "PrimitiveComponentId.h"
 #include "RenderScene.h"
 #include "SceneComponent.h"
 
@@ -29,7 +30,7 @@ namespace TE {
 class TPrimitiveComponent : public TSceneComponent
 {
 public:
-    TPrimitiveComponent() = default;
+    TPrimitiveComponent();
     ~TPrimitiveComponent() override;
 
     /// CreateSceneProxy 语义：子类直接创建具体渲染代理
@@ -48,6 +49,7 @@ public:
 
     /// 是否已注册到渲染场景
     [[nodiscard]] bool IsRegisteredToRenderScene() const { return m_IsRegisteredToRenderScene; }
+    [[nodiscard]] FPrimitiveComponentId GetPrimitiveComponentId() const { return m_PrimitiveComponentId; }
 
     /// 脏标记查询/清除
     [[nodiscard]] bool IsRenderStateDirty() const { return m_RenderStateDirty; }
@@ -55,6 +57,7 @@ public:
 
 protected:
     IRenderScene* m_BoundRenderScene = nullptr;
+    FPrimitiveComponentId m_PrimitiveComponentId;
     bool m_IsRegisteredToRenderScene = false;
     bool m_RenderStateDirty = true;  // 初始化时默认脏
 };

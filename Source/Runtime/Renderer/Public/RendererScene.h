@@ -8,9 +8,10 @@
 
 #pragma once
 
-#include "FPrimitiveSceneProxy.h"
-#include "FStaticMeshRenderData.h"
-#include "FViewInfo.h"
+#include "PrimitiveSceneInfo.h"
+#include "PrimitiveSceneProxy.h"
+#include "StaticMeshRenderData.h"
+#include "ViewInfo.h"
 #include "RenderScene.h"
 
 #include <memory>
@@ -38,13 +39,14 @@ public:
 
     /// 注册由游戏侧组件创建好的 Primitive Proxy
     [[nodiscard]] bool AddPrimitive(const TPrimitiveComponent* primitiveComponent,
+                                    FPrimitiveComponentId primitiveComponentId,
                                     std::unique_ptr<FPrimitiveSceneProxy> proxy) override;
 
     /// 通过组件指针移除 Primitive Proxy
-    void RemovePrimitive(const TPrimitiveComponent* primitiveComponent) override;
+    void RemovePrimitive(FPrimitiveComponentId primitiveComponentId) override;
 
     /// 通过组件指针更新 Primitive 世界矩阵
-    void UpdatePrimitiveTransform(const TPrimitiveComponent* primitiveComponent, const Matrix4& worldMatrix) override;
+    void UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId, const Matrix4& worldMatrix) override;
 
     [[nodiscard]] std::shared_ptr<const FStaticMeshRenderData> GetStaticMeshRenderData(
         const std::shared_ptr<TStaticMesh>& staticMesh) override;
@@ -59,11 +61,13 @@ public:
 
 private:
     [[nodiscard]] bool EnsureStaticMeshPipeline();
-    [[nodiscard]] bool InsertPrimitive(const TPrimitiveComponent* primitiveComponent, std::unique_ptr<FPrimitiveSceneProxy> proxy);
+    [[nodiscard]] bool InsertPrimitive(FPrimitiveComponentId primitiveComponentId,
+                                       const TPrimitiveComponent* primitiveComponent,
+                                       std::unique_ptr<FPrimitiveSceneProxy> proxy);
     void RebuildPrimitiveView();
 
     RHIDevice* m_Device = nullptr;
-    std::unordered_map<const TPrimitiveComponent*, std::unique_ptr<FPrimitiveSceneProxy>> m_PrimitiveStorage;
+    std::unordered_map<FPrimitiveComponentId, std::unique_ptr<FPrimitiveSceneInfo>, FPrimitiveComponentIdHash> m_PrimitiveStorage;
     std::vector<FPrimitiveSceneProxy*> m_Primitives; // SceneRenderer 遍历视图
     std::unordered_map<const TStaticMesh*, std::weak_ptr<const FStaticMeshRenderData>> m_StaticMeshRenderDataCache;
     std::unique_ptr<RHIShader> m_StaticMeshVertexShader;

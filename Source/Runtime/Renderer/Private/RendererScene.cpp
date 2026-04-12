@@ -1,9 +1,9 @@
 // ToyEngine Renderer Module
 // FScene 实现 - 渲染场景与资产级渲染资源管理
 
-#include "FScene.h"
+#include "RendererScene.h"
 
-#include "FStaticMeshSceneProxy.h"
+#include "StaticMeshSceneProxy.h"
 #include "Log/Log.h"
 #include "RHIDevice.h"
 #include "RHIPipeline.h"
@@ -28,26 +28,28 @@ FScene::FScene(RHIDevice* device)
 
 FScene::~FScene() = default;
 
-bool FScene::AddPrimitive(const TPrimitiveComponent* primitiveComponent, std::unique_ptr<FPrimitiveSceneProxy> proxy)
+bool FScene::AddPrimitive(const TPrimitiveComponent* primitiveComponent,
+                          FPrimitiveComponentId primitiveComponentId,
+                          std::unique_ptr<FPrimitiveSceneProxy> proxy)
 {
-    if (!primitiveComponent || !proxy)
+    if (!primitiveComponent || !proxy || !primitiveComponentId.IsValid())
     {
-        TE_LOG_WARN("[Renderer] FScene::AddPrimitive called with null primitive/proxy");
+        TE_LOG_WARN("[Renderer] FScene::AddPrimitive called with invalid primitive/proxy/id");
         return false;
     }
 
-    RemovePrimitive(primitiveComponent);
-    return InsertPrimitive(primitiveComponent, std::move(proxy));
+    RemovePrimitive(primitiveComponentId);
+    return InsertPrimitive(primitiveComponentId, primitiveComponent, std::move(proxy));
 }
 
-void FScene::RemovePrimitive(const TPrimitiveComponent* primitiveComponent)
+void FScene::RemovePrimitive(FPrimitiveComponentId primitiveComponentId)
 {
-    if (!primitiveComponent)
+    if (!primitiveComponentId.IsValid())
     {
         return;
     }
 
-    const auto it = m_PrimitiveStorage.find(primitiveComponent);
+    const auto it = m_PrimitiveStorage.find(primitiveComponentId);
     if (it == m_PrimitiveStorage.end())
     {
         return;
@@ -55,24 +57,29 @@ void FScene::RemovePrimitive(const TPrimitiveComponent* primitiveComponent)
 
     m_PrimitiveStorage.erase(it);
     RebuildPrimitiveView();
-    TE_LOG_INFO("[Renderer] FScene::RemovePrimitive component={}, total primitives: {}",
-                static_cast<const void*>(primitiveComponent), m_PrimitiveStorage.size());
+    TE_LOG_INFO("[Renderer] FScene::RemovePrimitive id={}, total primitives: {}",
+                primitiveComponentId.Value, m_PrimitiveStorage.size());
 }
 
-void FScene::UpdatePrimitiveTransform(const TPrimitiveComponent* primitiveComponent, const Matrix4& worldMatrix)
+void FScene::UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId, const Matrix4& worldMatrix)
 {
-    if (!primitiveComponent)
+    if (!primitiveComponentId.IsValid())
     {
         return;
     }
 
-    const auto it = m_PrimitiveStorage.find(primitiveComponent);
+    const auto it = m_PrimitiveStorage.find(primitiveComponentId);
     if (it == m_PrimitiveStorage.end())
     {
         return;
     }
 
-    it->second->SetWorldMatrix(worldMatrix);
+    auto* proxy = it->second->GetProxy();
+    if (!proxy)
+    {
+        return;
+    }
+    proxy->SetWorldMatrix(worldMatrix);
 }
 
 std::shared_ptr<const FStaticMeshRenderData> FScene::GetStaticMeshRenderData(const std::shared_ptr<TStaticMesh>& staticMesh)
@@ -170,18 +177,21 @@ bool FScene::EnsureStaticMeshPipeline()
     return m_StaticMeshPipeline && m_StaticMeshPipeline->IsValid();
 }
 
-bool FScene::InsertPrimitive(const TPrimitiveComponent* primitiveComponent, std::unique_ptr<FPrimitiveSceneProxy> proxy)
+bool FScene::InsertPrimitive(FPrimitiveComponentId primitiveComponentId,
+                             const TPrimitiveComponent* primitiveComponent,
+                             std::unique_ptr<FPrimitiveSceneProxy> proxy)
 {
-    if (!primitiveComponent || !proxy)
+    if (!primitiveComponent || !proxy || !primitiveComponentId.IsValid())
     {
-        TE_LOG_WARN("[Renderer] FScene::InsertPrimitive called with null primitive/proxy");
+        TE_LOG_WARN("[Renderer] FScene::InsertPrimitive called with invalid primitive/proxy/id");
         return false;
     }
 
-    m_PrimitiveStorage[primitiveComponent] = std::move(proxy);
+    auto sceneInfo = std::make_unique<FPrimitiveSceneInfo>(primitiveComponentId, primitiveComponent, std::move(proxy));
+    m_PrimitiveStorage[primitiveComponentId] = std::move(sceneInfo);
     RebuildPrimitiveView();
-    TE_LOG_INFO("[Renderer] FScene::InsertPrimitive component={}, total primitives: {}",
-                static_cast<const void*>(primitiveComponent), m_PrimitiveStorage.size());
+    TE_LOG_INFO("[Renderer] FScene::InsertPrimitive id={}, component={}, total primitives: {}",
+                primitiveComponentId.Value, static_cast<const void*>(primitiveComponent), m_PrimitiveStorage.size());
     return true;
 }
 
@@ -189,10 +199,14 @@ void FScene::RebuildPrimitiveView()
 {
     m_Primitives.clear();
     m_Primitives.reserve(m_PrimitiveStorage.size());
-    for (auto& [primitiveComponent, proxy] : m_PrimitiveStorage)
+    for (auto& [primitiveComponentId, sceneInfo] : m_PrimitiveStorage)
     {
-        (void)primitiveComponent;
-        m_Primitives.push_back(proxy.get());
+        (void)primitiveComponentId;
+        auto* proxy = sceneInfo ? sceneInfo->GetProxy() : nullptr;
+        if (proxy)
+        {
+            m_Primitives.push_back(proxy);
+        }
     }
 }
 

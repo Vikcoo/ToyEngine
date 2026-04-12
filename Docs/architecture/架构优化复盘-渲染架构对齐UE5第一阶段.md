@@ -40,13 +40,13 @@
   - `Source/Runtime/World/Public/World.h`
   - `Source/Runtime/World/Private/World.cpp`
 - Renderer 实现层：
-  - `Source/Runtime/Renderer/Public/FScene.h`
-  - `Source/Runtime/Renderer/Private/FScene.cpp`
-  - `Source/Runtime/Renderer/Public/FStaticMeshRenderData.h`
-  - `Source/Runtime/Renderer/Private/FStaticMeshRenderData.cpp`
-  - `Source/Runtime/Renderer/Public/FStaticMeshSceneProxy.h`
-  - `Source/Runtime/Renderer/Private/FStaticMeshSceneProxy.cpp`
-  - `Source/Runtime/Renderer/Public/FMeshDrawCommand.h`
+  - `Source/Runtime/Renderer/Public/RendererScene.h`
+  - `Source/Runtime/Renderer/Private/RendererScene.cpp`
+  - `Source/Runtime/RenderCore/Public/StaticMeshRenderData.h`
+  - `Source/Runtime/RenderCore/Private/StaticMeshRenderData.cpp`
+  - `Source/Runtime/RenderCore/Public/StaticMeshSceneProxy.h`
+  - `Source/Runtime/RenderCore/Private/StaticMeshSceneProxy.cpp`
+  - `Source/Runtime/RenderCore/Public/MeshDrawCommand.h`
   - `Source/Runtime/Renderer/Private/SceneRenderer.cpp`
   - `Source/Runtime/Renderer/CMakeLists.txt`
 - Engine 装配层：
@@ -126,3 +126,36 @@
 
 - `IRenderScene` 现在同时承担“场景注册接口”和“共享渲染资源查询接口”，未来仍可继续拆出更细的资源服务边界。
 - 当前 `TMeshComponent` 仍直接请求静态网格通道的共享 Pipeline，这在材质系统落地前是合理的简化，但还不是 UE5 那种由材质/顶点工厂共同决定绘制状态的完整模型。
+
+## 增量记录：第四阶段（2026-04-12）
+
+### 为什么继续改
+
+第三阶段虽然把 `CreateSceneProxy()` 语义对齐到了组件侧，但 `FScene` 仍直接以“组件指针 -> Proxy”作为主存储。  
+这与 UE5 中 `FScene` 通过 `FPrimitiveSceneInfo` 管理 Primitive 的结构仍有差距。
+
+### 第四阶段核心改动
+
+- 新增 `FPrimitiveComponentId`，在 `TPrimitiveComponent` 构造时分配稳定 ID。
+- 新增精简版 `FPrimitiveSceneInfo`，持有：
+  - `FPrimitiveComponentId`
+  - `const TPrimitiveComponent*`
+  - `std::unique_ptr<FPrimitiveSceneProxy>`
+- `IRenderScene` 接口调整为基于 ID 的同步语义：
+  - `AddPrimitive(const TPrimitiveComponent*, FPrimitiveComponentId, std::unique_ptr<FPrimitiveSceneProxy>)`
+  - `UpdatePrimitiveTransform(FPrimitiveComponentId, const Matrix4&)`
+  - `RemovePrimitive(FPrimitiveComponentId)`
+- `FScene` 内部存储改为：
+  - `unordered_map<FPrimitiveComponentId, std::unique_ptr<FPrimitiveSceneInfo>>`
+- `TWorld::SyncToScene` 改为按 `FPrimitiveComponentId` 更新变换。
+
+### 收益
+
+- `FScene` 的存储模型从“直接持有 Proxy”升级为“持有 SceneInfo 节点”，更贴近 UE5 的层次结构。
+- 场景主键从裸组件指针切到稳定 ID，为后续 GT/RT 命令队列化准备了更稳的同步键。
+- `Proxy` 与“场景注册节点”的职责分离更清晰，后续可在 `SceneInfo` 上承载 bounds/可见性等场景级数据。
+
+### 仍然存在的限制
+
+- 当前仍是单线程立即执行，尚未引入真正的渲染命令队列。
+- `FPrimitiveComponentId` 目前是进程内递增 ID，尚未引入序列化/持久化语义。

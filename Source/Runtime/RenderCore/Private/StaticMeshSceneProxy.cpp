@@ -1,7 +1,7 @@
 // ToyEngine RenderCore Module
 // FStaticMeshSceneProxy 实现
 
-#include "FStaticMeshSceneProxy.h"
+#include "StaticMeshSceneProxy.h"
 
 #include "RHIPipeline.h"
 

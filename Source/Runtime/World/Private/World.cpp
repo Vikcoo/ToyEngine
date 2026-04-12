@@ -62,7 +62,7 @@ void TWorld::SyncToScene()
         {
             // 单线程版本：直接更新（安全）
             // 将来双线程：改为 Enqueue 命令
-            m_RenderScene->UpdatePrimitiveTransform(comp, comp->GetWorldMatrix());
+            m_RenderScene->UpdatePrimitiveTransform(comp->GetPrimitiveComponentId(), comp->GetWorldMatrix());
             comp->ClearRenderStateDirty();
         }
     }

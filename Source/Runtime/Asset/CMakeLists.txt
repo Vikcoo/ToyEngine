@@ -7,7 +7,7 @@
 
 add_library(Asset STATIC
     Private/TStaticMesh.cpp
-    Private/FAssetImporter.cpp
+    Private/AssetImporter.cpp
 )
 
 target_include_directories(Asset
