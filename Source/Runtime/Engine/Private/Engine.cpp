@@ -63,7 +63,7 @@ void Engine::Init()
     TE_LOG_INFO("Window created: {}x{}", config.width, config.height);
 
     // 关闭 VSync，观察真实渲染性能（发布时建议开启）
-    m_Window->SetVSync(false);
+    m_Window->SetVSync(true);
 
     // 4. 初始化 RHI
     if (!InitRHI())

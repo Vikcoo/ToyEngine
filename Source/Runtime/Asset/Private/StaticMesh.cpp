@@ -43,4 +43,13 @@ void StaticMesh::AddSection(FMeshSection section)
     m_Sections.push_back(std::move(section));
 }
 
+const FStaticMeshMaterial* StaticMesh::GetMaterial(uint32_t materialIndex) const
+{
+    if (materialIndex >= m_Materials.size())
+    {
+        return nullptr;
+    }
+    return &m_Materials[materialIndex];
+}
+
 } // namespace TE

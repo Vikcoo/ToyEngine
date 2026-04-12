@@ -181,6 +181,15 @@ void FSceneRenderer::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& com
             ++iboBinds;
         }
 
+        // --- 材质纹理绑定（按材质槽解析 BaseColor 纹理） ---
+        auto* baseColorTexture = scene->ResolvePreparedBaseColorTexture(cmd.StaticMeshAsset, cmd.MaterialIndex);
+        auto* defaultSampler = scene->ResolveDefaultSampler();
+        if (baseColorTexture)
+        {
+            cmdBuf->BindTexture2D(0, baseColorTexture, defaultSampler);
+            cmdBuf->SetUniformInt("u_BaseColorTex", 0);
+        }
+
         // --- Uniform 设置（每个物体不同，不能跳过） ---
         // 计算 MVP = Projection * View * Model
         Matrix4 mvp = viewInfo.ViewProjectionMatrix * cmd.WorldMatrix;

@@ -23,6 +23,8 @@ public:
     [[nodiscard]] std::unique_ptr<RHIShader> CreateShader(const RHIShaderDesc& desc) override;
     [[nodiscard]] std::unique_ptr<RHIPipeline> CreatePipeline(const RHIPipelineDesc& desc) override;
     [[nodiscard]] std::unique_ptr<RHICommandBuffer> CreateCommandBuffer() override;
+    [[nodiscard]] std::unique_ptr<RHITexture> CreateTexture(const RHITextureDesc& desc) override;
+    [[nodiscard]] std::unique_ptr<RHISampler> CreateSampler(const RHISamplerDesc& desc) override;
 };
 
 } // namespace TE

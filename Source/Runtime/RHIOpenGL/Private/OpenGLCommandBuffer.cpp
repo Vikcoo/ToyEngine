@@ -4,6 +4,8 @@
 #include "OpenGLCommandBuffer.h"
 #include "OpenGLPipeline.h"
 #include "OpenGLBuffer.h"
+#include "OpenGLTexture.h"
+#include "OpenGLSampler.h"
 #include "Log/Log.h"
 
 namespace TE {
@@ -266,6 +268,52 @@ void OpenGLCommandBuffer::SetUniformVec3(const char* name, const float* data)
         return;
     }
     glUniform3fv(location, 1, data);
+}
+
+void OpenGLCommandBuffer::SetUniformInt(const char* name, int32_t value)
+{
+    if (!m_BoundPipeline)
+    {
+        TE_LOG_WARN("[RHIOpenGL] SetUniformInt called without bound pipeline");
+        return;
+    }
+
+    GLint location = glGetUniformLocation(m_BoundPipeline->GetGLProgram(), name);
+    if (location == -1)
+    {
+        TE_LOG_WARN("[RHIOpenGL] Uniform '{}' not found in shader program", name);
+        return;
+    }
+    glUniform1i(location, value);
+}
+
+void OpenGLCommandBuffer::BindTexture2D(uint32_t slot, RHITexture* texture, RHISampler* sampler)
+{
+    if (!texture)
+    {
+        TE_LOG_WARN("[RHIOpenGL] BindTexture2D called with null texture");
+        return;
+    }
+
+    auto* glTexture = static_cast<OpenGLTexture*>(texture);
+    if (!glTexture->IsValid())
+    {
+        TE_LOG_WARN("[RHIOpenGL] BindTexture2D called with invalid texture");
+        return;
+    }
+
+    glActiveTexture(GL_TEXTURE0 + slot);
+    glBindTexture(GL_TEXTURE_2D, glTexture->GetGLTextureID());
+
+    if (sampler)
+    {
+        auto* glSampler = static_cast<OpenGLSampler*>(sampler);
+        glBindSampler(slot, glSampler->GetGLSamplerID());
+    }
+    else
+    {
+        glBindSampler(slot, 0);
+    }
 }
 
 void OpenGLCommandBuffer::End()

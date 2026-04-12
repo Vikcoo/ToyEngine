@@ -6,6 +6,8 @@
 #include "OpenGLShader.h"
 #include "OpenGLPipeline.h"
 #include "OpenGLCommandBuffer.h"
+#include "OpenGLTexture.h"
+#include "OpenGLSampler.h"
 #include "Log/Log.h"
 #include <glad/glad.h>
 
@@ -54,6 +56,28 @@ std::unique_ptr<RHIPipeline> OpenGLDevice::CreatePipeline(const RHIPipelineDesc&
 std::unique_ptr<RHICommandBuffer> OpenGLDevice::CreateCommandBuffer()
 {
     return std::make_unique<OpenGLCommandBuffer>();
+}
+
+std::unique_ptr<RHITexture> OpenGLDevice::CreateTexture(const RHITextureDesc& desc)
+{
+    auto texture = std::make_unique<OpenGLTexture>(desc);
+    if (!texture->IsValid())
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Failed to create texture '{}'", desc.debugName);
+        return nullptr;
+    }
+    return texture;
+}
+
+std::unique_ptr<RHISampler> OpenGLDevice::CreateSampler(const RHISamplerDesc& desc)
+{
+    auto sampler = std::make_unique<OpenGLSampler>(desc);
+    if (!sampler->IsValid())
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Failed to create sampler '{}'", desc.debugName);
+        return nullptr;
+    }
+    return sampler;
 }
 
 } // namespace TE

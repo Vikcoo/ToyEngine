@@ -12,6 +12,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/material.h>
 
 #include <filesystem>
 
@@ -118,6 +119,48 @@ static void ProcessAiNode(const aiNode* node, const aiScene* scene,
     }
 }
 
+/// 构建静态网格材质槽（当前仅导入 BaseColor / Diffuse 贴图路径）
+static std::vector<FStaticMeshMaterial> BuildMaterials(const aiScene* scene, const std::filesystem::path& baseDir)
+{
+    std::vector<FStaticMeshMaterial> materials;
+    if (!scene || scene->mNumMaterials == 0)
+    {
+        return materials;
+    }
+
+    materials.resize(scene->mNumMaterials);
+    for (unsigned int materialIndex = 0; materialIndex < scene->mNumMaterials; ++materialIndex)
+    {
+        const aiMaterial* aiMat = scene->mMaterials[materialIndex];
+        if (!aiMat)
+        {
+            continue;
+        }
+
+        aiString texPath;
+        aiReturn result = aiMat->GetTexture(aiTextureType_BASE_COLOR, 0, &texPath);
+        if (result != aiReturn_SUCCESS)
+        {
+            result = aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &texPath);
+        }
+
+        if (result != aiReturn_SUCCESS || texPath.length == 0)
+        {
+            continue;
+        }
+
+        std::filesystem::path texturePath = std::filesystem::path(texPath.C_Str());
+        if (texturePath.is_relative())
+        {
+            texturePath = baseDir / texturePath;
+        }
+        texturePath = texturePath.lexically_normal();
+        materials[materialIndex].BaseColorTexturePath = texturePath.string();
+    }
+
+    return materials;
+}
+
 std::shared_ptr<StaticMesh> FAssetImporter::ImportStaticMesh(const std::string& filePath)
 {
     TE_LOG_INFO("[Asset] Importing static mesh: {}", filePath);
@@ -153,6 +196,7 @@ std::shared_ptr<StaticMesh> FAssetImporter::ImportStaticMesh(const std::string& 
     // 从文件路径提取名称
     std::filesystem::path path(filePath);
     staticMesh->SetName(path.stem().string());
+    staticMesh->SetMaterials(BuildMaterials(scene, path.parent_path()));
 
     // 递归遍历场景树，收集所有网格
     ProcessAiNode(scene->mRootNode, scene, staticMesh);

@@ -89,6 +89,24 @@ RHIPipeline* FScene::ResolvePreparedPipeline(EMeshPipelineKey pipelineKey) const
     return m_RenderResourceManager->GetPreparedPipeline(pipelineKey);
 }
 
+RHITexture* FScene::ResolvePreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const
+{
+    if (!m_RenderResourceManager)
+    {
+        return nullptr;
+    }
+    return m_RenderResourceManager->GetPreparedBaseColorTexture(staticMesh, materialIndex);
+}
+
+RHISampler* FScene::ResolveDefaultSampler() const
+{
+    if (!m_RenderResourceManager)
+    {
+        return nullptr;
+    }
+    return m_RenderResourceManager->GetDefaultSampler();
+}
+
 bool FScene::PrepareProxyResources(FPrimitiveSceneProxy& proxy)
 {
     auto* staticMeshProxy = dynamic_cast<FStaticMeshSceneProxy*>(&proxy);

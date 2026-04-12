@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 namespace {
 
@@ -100,6 +101,26 @@ std::shared_ptr<TE::StaticMesh> LoadOrCreateDemoMesh()
     return mesh;
 }
 
+void OverrideMeshBaseColorTexture(const std::shared_ptr<TE::StaticMesh>& mesh, const std::string& texturePath)
+{
+    if (!mesh)
+    {
+        return;
+    }
+
+    auto materials = mesh->GetMaterials();
+    if (materials.empty())
+    {
+        materials.resize(1);
+    }
+
+    for (auto& material : materials)
+    {
+        material.BaseColorTexturePath = texturePath;
+    }
+    mesh->SetMaterials(std::move(materials));
+}
+
 void SetupSandboxScene(TE::Engine& engine)
 {
     auto* world = engine.GetWorld();
@@ -110,6 +131,31 @@ void SetupSandboxScene(TE::Engine& engine)
     }
 
     auto loadedMesh = LoadOrCreateDemoMesh();
+    auto loadedMeshTop = std::make_shared<TE::StaticMesh>(*loadedMesh);
+
+    const std::string textureDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Textures/";
+    const std::string textureA = textureDir + "rust_cpp.png";
+    const std::string textureB = textureDir + "viking_room.png";
+
+    if (std::filesystem::exists(textureA))
+    {
+        OverrideMeshBaseColorTexture(loadedMesh, textureA);
+        TE_LOG_INFO("[Sandbox] MeshActor texture: {}", textureA);
+    }
+    else
+    {
+        TE_LOG_WARN("[Sandbox] Texture file not found: {}", textureA);
+    }
+
+    if (std::filesystem::exists(textureB))
+    {
+        OverrideMeshBaseColorTexture(loadedMeshTop, textureB);
+        TE_LOG_INFO("[Sandbox] MeshActorTop texture: {}", textureB);
+    }
+    else
+    {
+        TE_LOG_WARN("[Sandbox] Texture file not found: {}", textureB);
+    }
 
     auto meshActor = std::make_unique<TE::Actor>();
     meshActor->SetName("MeshActor");
@@ -121,7 +167,7 @@ void SetupSandboxScene(TE::Engine& engine)
     meshActorTop->SetName("MeshActorTop");
     auto* meshCompTop = meshActorTop->AddComponent<TE::MeshComponent>();
     meshCompTop->SetName("ModelMeshTop");
-    meshCompTop->SetStaticMesh(loadedMesh);
+    meshCompTop->SetStaticMesh(loadedMeshTop);
     meshCompTop->SetScale(TE::Vector3(0.5f, 0.5f, 0.5f));
     meshCompTop->SetPosition(TE::Vector3(0.0f, 1.5f, 0.0f));
 

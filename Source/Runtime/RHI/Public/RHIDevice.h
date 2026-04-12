@@ -38,6 +38,12 @@ public:
     /// 创建命令缓冲区
     [[nodiscard]] virtual std::unique_ptr<RHICommandBuffer> CreateCommandBuffer() = 0;
 
+    /// 创建 2D 纹理
+    [[nodiscard]] virtual std::unique_ptr<RHITexture> CreateTexture(const RHITextureDesc& desc) = 0;
+
+    /// 创建纹理采样器
+    [[nodiscard]] virtual std::unique_ptr<RHISampler> CreateSampler(const RHISamplerDesc& desc) = 0;
+
     /// 工厂方法：根据编译选项（TE_RHI_OPENGL / TE_RHI_VULKAN 等）创建对应后端的 Device
     [[nodiscard]] static std::unique_ptr<RHIDevice> Create();
 

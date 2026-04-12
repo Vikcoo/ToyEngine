@@ -39,8 +39,9 @@ public:
     /// 1. Assimp::Importer.ReadFile(filePath, postProcessFlags)
     /// 2. 递归遍历 aiNode，收集所有 aiMesh
     /// 3. 每个 aiMesh → FMeshSection（提取 Position/Normal/UV/Color/Indices）
-    /// 4. 对缺失属性做 fallback（无 Normal → (0,0,1)，无 UV → (0,0)，无 Color → 白色）
-    /// 5. 组装 TStaticMesh 返回
+    /// 4. 提取 aiMaterial 的 BaseColor/Diffuse 贴图路径到材质槽
+    /// 5. 对缺失属性做 fallback（无 Normal → (0,0,1)，无 UV → (0,0)，无 Color → 白色）
+    /// 6. 组装 TStaticMesh 返回
     [[nodiscard]] static std::shared_ptr<StaticMesh> ImportStaticMesh(const std::string& filePath);
 };
 

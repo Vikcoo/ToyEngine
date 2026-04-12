@@ -11,6 +11,8 @@
 namespace TE {
 
 class OpenGLPipeline;
+class OpenGLTexture;
+class OpenGLSampler;
 
 class OpenGLCommandBuffer final : public RHICommandBuffer
 {
@@ -38,6 +40,8 @@ public:
     void SetUniformMatrix4(const char* name, const float* data) override;
     void SetUniformFloat(const char* name, float value) override;
     void SetUniformVec3(const char* name, const float* data) override;
+    void SetUniformInt(const char* name, int32_t value) override;
+    void BindTexture2D(uint32_t slot, RHITexture* texture, RHISampler* sampler = nullptr) override;
     void End() override;
 
 private:

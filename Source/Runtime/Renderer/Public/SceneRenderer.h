@@ -46,7 +46,7 @@ struct RHIRenderPassBeginInfo;
 ///   → 每个 Proxy::GetMeshDrawCommand()
 ///   → SortDrawCommands() ← 按 PipelineKey/VBO/IBO 排序
 ///   → Scene 解析 PipelineKey -> Pipeline
-///   → CmdBuf::BindPipeline/BindVBO/BindIBO/SetUniform(MVP)/DrawIndexed
+///   → CmdBuf::BindPipeline/BindVBO/BindIBO/BindTexture/SetUniform(MVP)/DrawIndexed
 ///     （跳过与上一条相同的 Pipeline/VBO/IBO 绑定）
 class FSceneRenderer
 {

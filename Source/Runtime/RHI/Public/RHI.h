@@ -5,6 +5,8 @@
 
 #include "RHITypes.h"
 #include "RHIBuffer.h"
+#include "RHITexture.h"
+#include "RHISampler.h"
 #include "RHIShader.h"
 #include "RHIPipeline.h"
 #include "RHICommandBuffer.h"

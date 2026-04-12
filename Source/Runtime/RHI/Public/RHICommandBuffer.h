@@ -97,6 +97,17 @@ public:
     /// @param data vec3 数据指针（3 个 float）
     virtual void SetUniformVec3(const char* name, const float* data) = 0;
 
+    /// 设置 int Uniform
+    /// @param name Uniform 变量名
+    /// @param value 整数值
+    virtual void SetUniformInt(const char* name, int32_t value) = 0;
+
+    /// 绑定 2D 纹理与采样器到指定槽位
+    /// @param slot 纹理槽位（对应 Shader 中的 sampler2D 绑定点）
+    /// @param texture 纹理对象
+    /// @param sampler 采样器对象（可为空，表示使用后端默认采样状态）
+    virtual void BindTexture2D(uint32_t slot, RHITexture* texture, RHISampler* sampler = nullptr) = 0;
+
     /// 结束录制命令
     virtual void End() = 0;
 

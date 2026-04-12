@@ -6,13 +6,17 @@
 #include "MeshDrawCommand.h"
 
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace TE {
 
 class RHIDevice;
 class RHIPipeline;
 class RHIShader;
+class RHITexture;
+class RHISampler;
 class StaticMesh;
 class FStaticMeshRenderData;
 class FStaticMeshSceneProxy;
@@ -27,18 +31,26 @@ public:
 
     [[nodiscard]] bool PrepareStaticMeshProxy(FStaticMeshSceneProxy& proxy);
     [[nodiscard]] RHIPipeline* GetPreparedPipeline(EMeshPipelineKey pipelineKey) const;
+    [[nodiscard]] RHITexture* GetPreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const;
+    [[nodiscard]] RHISampler* GetDefaultSampler() const;
     void PurgeExpiredStaticMeshRenderData();
 
 private:
     [[nodiscard]] std::shared_ptr<const FStaticMeshRenderData> GetOrCreateStaticMeshRenderData(
         const std::shared_ptr<StaticMesh>& staticMesh);
+    [[nodiscard]] bool EnsureStaticMeshMaterialTextures(const StaticMesh& staticMesh);
+    [[nodiscard]] bool EnsureDefaultTextureResources();
+    [[nodiscard]] std::shared_ptr<RHITexture> CreateTextureFromFile(const std::string& filePath, const std::string& debugName) const;
     [[nodiscard]] bool EnsureStaticMeshPipeline();
 
     RHIDevice* m_Device = nullptr;
     std::unordered_map<const StaticMesh*, std::weak_ptr<const FStaticMeshRenderData>> m_StaticMeshRenderDataCache;
+    std::unordered_map<const StaticMesh*, std::vector<std::shared_ptr<RHITexture>>> m_StaticMeshBaseColorTextureCache;
     std::unique_ptr<RHIShader> m_StaticMeshVertexShader;
     std::unique_ptr<RHIShader> m_StaticMeshFragmentShader;
     std::unique_ptr<RHIPipeline> m_StaticMeshPipeline;
+    std::shared_ptr<RHITexture> m_DefaultWhiteTexture;
+    std::shared_ptr<RHISampler> m_DefaultSampler;
 };
 
 } // namespace TE

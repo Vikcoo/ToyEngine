@@ -16,6 +16,8 @@ class RHIBuffer;
 class RHIPipeline;
 class RHICommandBuffer;
 class RHIDevice;
+class RHITexture;
+class RHISampler;
 
 // ============================================================
 // 枚举类型
@@ -66,8 +68,10 @@ enum class RHIFormat : uint8_t
     UInt4,          // 4x uint32
 
     // 归一化格式（预留，用于纹理）
-    // R8G8B8A8_UNORM,
-    // B8G8R8A8_UNORM,
+    R8_UNorm,
+    RG8_UNorm,
+    RGB8_UNorm,
+    RGBA8_UNorm,
 };
 
 /// 图元拓扑类型
@@ -145,6 +149,10 @@ inline uint32_t GetFormatSize(RHIFormat format)
         case RHIFormat::UInt2:  return 8;
         case RHIFormat::UInt3:  return 12;
         case RHIFormat::UInt4:  return 16;
+        case RHIFormat::R8_UNorm:    return 1;
+        case RHIFormat::RG8_UNorm:   return 2;
+        case RHIFormat::RGB8_UNorm:  return 3;
+        case RHIFormat::RGBA8_UNorm: return 4;
         default: return 0;
     }
 }
@@ -253,6 +261,42 @@ struct RHIRenderPassBeginInfo
     float       clearDepth = 1.0f;
     uint32_t    clearStencil = 0;
     RHIViewport viewport;
+};
+
+/// 纹理过滤模式
+enum class RHITextureFilter : uint8_t
+{
+    Nearest,
+    Linear,
+};
+
+/// 纹理寻址模式
+enum class RHITextureAddressMode : uint8_t
+{
+    Repeat,
+    ClampToEdge,
+};
+
+/// 2D 纹理创建描述符
+struct RHITextureDesc
+{
+    uint32_t    width = 0;
+    uint32_t    height = 0;
+    RHIFormat   format = RHIFormat::RGBA8_UNorm;
+    const void* initialData = nullptr;
+    bool        generateMips = true;
+    bool        srgb = true;
+    std::string debugName;
+};
+
+/// 采样器创建描述符
+struct RHISamplerDesc
+{
+    RHITextureFilter     minFilter = RHITextureFilter::Linear;
+    RHITextureFilter     magFilter = RHITextureFilter::Linear;
+    RHITextureAddressMode addressU = RHITextureAddressMode::Repeat;
+    RHITextureAddressMode addressV = RHITextureAddressMode::Repeat;
+    std::string           debugName;
 };
 
 } // namespace TE
