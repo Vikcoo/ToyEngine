@@ -6,7 +6,7 @@
 # - Public 接口只暴露引擎自有类型（TStaticMesh、FAssetImporter）
 
 add_library(Asset STATIC
-    Private/TStaticMesh.cpp
+        Private/StaticMesh.cpp
     Private/AssetImporter.cpp
 )
 

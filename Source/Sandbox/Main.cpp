@@ -12,7 +12,7 @@
 #include "Math/ScalarMath.h"
 #include "MeshComponent.h"
 #include "PrimitiveComponent.h"
-#include "TStaticMesh.h"
+#include "StaticMesh.h"
 #include "Window.h"
 #include "World.h"
 

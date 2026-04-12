@@ -6,7 +6,7 @@
 #include "RHIBuffer.h"
 #include "RHIDevice.h"
 #include "RHITypes.h"
-#include "TStaticMesh.h"
+#include "StaticMesh.h"
 
 namespace TE {
 

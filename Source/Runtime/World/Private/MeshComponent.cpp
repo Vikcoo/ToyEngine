@@ -4,7 +4,7 @@
 #include "MeshComponent.h"
 #include "StaticMeshSceneProxy.h"
 #include "Log/Log.h"
-#include "TStaticMesh.h"
+#include "StaticMesh.h"
 
 namespace TE {
 

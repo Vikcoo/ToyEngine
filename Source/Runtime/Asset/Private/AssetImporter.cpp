@@ -5,7 +5,7 @@
 // 这是 UE5 中 "模块内部实现细节不暴露" 原则的体现
 
 #include "AssetImporter.h"
-#include "TStaticMesh.h"
+#include "StaticMesh.h"
 #include "Log/Log.h"
 
 // Assimp 头文件（仅在 Private 中引用）

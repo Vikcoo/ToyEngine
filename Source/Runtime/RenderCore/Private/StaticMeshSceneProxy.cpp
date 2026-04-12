@@ -3,7 +3,7 @@
 
 #include "StaticMeshSceneProxy.h"
 
-#include "TStaticMesh.h"
+#include "StaticMesh.h"
 
 namespace TE {
 

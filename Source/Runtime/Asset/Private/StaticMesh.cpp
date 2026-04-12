@@ -1,7 +1,7 @@
 // ToyEngine Asset Module
 // TStaticMesh 实现
 
-#include "TStaticMesh.h"
+#include "StaticMesh.h"
 
 namespace TE {
 
