@@ -37,6 +37,7 @@ public:
     void DrawIndexed(uint32_t indexCount, uint32_t firstIndex = 0,
                      int32_t vertexOffset = 0,
                      uint32_t instanceCount = 1, uint32_t firstInstance = 0) override;
+    void SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGroup) override;
     void SetUniformMatrix4(const char* name, const float* data) override;
     void SetUniformFloat(const char* name, float value) override;
     void SetUniformVec3(const char* name, const float* data) override;

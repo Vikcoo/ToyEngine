@@ -33,6 +33,7 @@ public:
     void SwapBuffers() override;
     void SetVSync(bool enabled) override;
     [[nodiscard]] bool IsVSyncEnabled() const override;
+    [[nodiscard]] EWindowGraphicsAPI GetGraphicsAPI() const override { return m_graphicsAPI; }
 
 private:
     GLFWwindow* m_window = nullptr;
@@ -41,8 +42,9 @@ private:
     uint32_t m_height;
     uint32_t m_fbWidth = 0;   // 帧缓冲区物理像素宽度
     uint32_t m_fbHeight = 0;  // 帧缓冲区物理像素高度
-    bool m_vsyncEnabled = true;  // macOS OpenGL 默认开启 VSync
+    bool m_vsyncEnabled = true;
     CursorMode m_cursorMode = CursorMode::Normal;
+    EWindowGraphicsAPI m_graphicsAPI = EWindowGraphicsAPI::OpenGL;
 
     WindowResizeCallback m_resizeCallback;
     KeyCallback m_keyCallback;

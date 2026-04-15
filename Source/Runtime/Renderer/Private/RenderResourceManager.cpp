@@ -268,7 +268,16 @@ bool FRenderResourceManager::EnsureStaticMeshPipeline()
         return false;
     }
 
-    const std::string shaderDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Shaders/OpenGL/";
+    // 根据后端类型选择对应的着色器子目录
+    const auto& traits = m_Device->GetBackendTraits();
+    std::string shaderSubDir;
+    switch (traits.backendType)
+    {
+    case ERHIBackendType::OpenGL:  shaderSubDir = "OpenGL/"; break;
+    case ERHIBackendType::Vulkan:  shaderSubDir = "Vulkan/"; break;
+    case ERHIBackendType::D3D12:   shaderSubDir = "D3D12/"; break;
+    }
+    const std::string shaderDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Shaders/" + shaderSubDir;
 
     RHIShaderDesc vsDesc;
     vsDesc.stage = RHIShaderStage::Vertex;

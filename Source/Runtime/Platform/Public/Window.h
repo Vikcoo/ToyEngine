@@ -9,12 +9,21 @@
 
 namespace TE {
 
+/// 窗口创建时使用的图形 API 类型
+/// 决定窗口是否创建 OpenGL Context 还是以 No-API 模式运行（供 Vulkan/D3D12 使用）
+enum class EWindowGraphicsAPI : uint8_t
+{
+    OpenGL,     // 创建 OpenGL Context + 加载 glad
+    None,       // 不创建任何图形上下文（Vulkan/D3D12 后端使用 GetNativeHandle 自行创建 Surface/SwapChain）
+};
+
 // 窗口配置
 struct FWindowConfig {
     std::string title = "ToyEngine";
     uint32_t width = 1280;
     uint32_t height = 720;
     bool resizable = true;
+    EWindowGraphicsAPI graphicsAPI = EWindowGraphicsAPI::OpenGL;
 };
 
 // 窗口事件回调类型定义
@@ -61,15 +70,17 @@ public:
     virtual void SetCursorMode(CursorMode mode) = 0;
     [[nodiscard]] virtual CursorMode GetCursorMode() const = 0;
 
-    // OpenGL 双缓冲交换
-    virtual void SwapBuffers() = 0;
+    /// 交换前后缓冲区。仅 OpenGL 后端有效，Vulkan/D3D12 后端通过各自的 SwapChain 机制提交。
+    virtual void SwapBuffers() {}
 
-    /// 设置垂直同步
-    /// @param enabled true=锁定到显示器刷新率, false=不限帧
-    virtual void SetVSync(bool enabled) = 0;
+    /// 设置垂直同步。仅 OpenGL 后端有效。
+    virtual void SetVSync(bool enabled) { (void)enabled; }
 
     /// 查询当前 VSync 状态
-    [[nodiscard]] virtual bool IsVSyncEnabled() const = 0;
+    [[nodiscard]] virtual bool IsVSyncEnabled() const { return false; }
+
+    /// 查询窗口创建时使用的图形 API 类型
+    [[nodiscard]] virtual EWindowGraphicsAPI GetGraphicsAPI() const = 0;
 
     // 工厂方法 - 根据平台自动创建合适的窗口实现
     [[nodiscard]] static std::unique_ptr<IWindow> Create(const FWindowConfig& config = FWindowConfig());

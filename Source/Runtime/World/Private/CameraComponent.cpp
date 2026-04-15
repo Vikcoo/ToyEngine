@@ -36,9 +36,9 @@ FViewInfo CameraComponent::BuildViewInfo() const
     viewInfo.ViewMatrix = Matrix4::LookAt(eye, target, up);
 
     // 2. 构建 Projection 矩阵
-    // 使用 PerspectiveGL：OpenGL [-1, 1] 深度范围
+    // 统一使用 [0, 1] 深度范围（引擎规范约定），后端在 RHI 层适配各自的原生深度范围。
     const float fovRadians = Math::DegToRad(m_FOVDegrees);
-    viewInfo.ProjectionMatrix = Matrix4::PerspectiveGL(fovRadians, m_AspectRatio, m_NearPlane, m_FarPlane);
+    viewInfo.ProjectionMatrix = Matrix4::Perspective(fovRadians, m_AspectRatio, m_NearPlane, m_FarPlane);
 
     // 3. 预计算 ViewProjection
     viewInfo.UpdateViewProjectionMatrix();

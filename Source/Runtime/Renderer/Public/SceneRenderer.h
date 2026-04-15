@@ -77,6 +77,7 @@ private:
     /// 提交绘制命令到 RHI（带冗余状态跳过优化）
     void SubmitDrawCommands(const std::vector<FMeshDrawCommand>& commands,
                             const FScene* scene,
+                            RHIDevice* device,
                             RHICommandBuffer* cmdBuf);
 
     // ==================== 帧统计 ====================

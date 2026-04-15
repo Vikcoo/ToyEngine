@@ -6,6 +6,7 @@
 #include "OpenGLBuffer.h"
 #include "OpenGLTexture.h"
 #include "OpenGLSampler.h"
+#include "OpenGLBindGroup.h"
 #include "Log/Log.h"
 
 namespace TE {
@@ -285,6 +286,61 @@ void OpenGLCommandBuffer::SetUniformInt(const char* name, int32_t value)
         return;
     }
     glUniform1i(location, value);
+}
+
+void OpenGLCommandBuffer::SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGroup)
+{
+    if (!bindGroup)
+    {
+        TE_LOG_WARN("[RHIOpenGL] SetBindGroup called with null bindGroup");
+        return;
+    }
+
+    auto* glGroup = static_cast<OpenGLBindGroup*>(bindGroup);
+    for (const auto& entry : glGroup->GetEntries())
+    {
+        switch (entry.type)
+        {
+        case RHIBindingType::UniformBuffer:
+        {
+            GLsizeiptr size = entry.bufferSize > 0
+                ? static_cast<GLsizeiptr>(entry.bufferSize)
+                : static_cast<GLsizeiptr>(0);
+
+            if (size > 0)
+            {
+                glBindBufferRange(GL_UNIFORM_BUFFER, entry.binding,
+                                  entry.glBuffer,
+                                  static_cast<GLintptr>(entry.bufferOffset),
+                                  size);
+            }
+            else
+            {
+                glBindBufferBase(GL_UNIFORM_BUFFER, entry.binding, entry.glBuffer);
+            }
+            break;
+        }
+        case RHIBindingType::Texture2D:
+        {
+            glActiveTexture(GL_TEXTURE0 + entry.binding);
+            glBindTexture(GL_TEXTURE_2D, entry.glTexture);
+            if (entry.glSampler != 0)
+            {
+                glBindSampler(entry.binding, entry.glSampler);
+            }
+            else
+            {
+                glBindSampler(entry.binding, 0);
+            }
+            break;
+        }
+        case RHIBindingType::Sampler:
+        {
+            glBindSampler(entry.binding, entry.glSampler);
+            break;
+        }
+        }
+    }
 }
 
 void OpenGLCommandBuffer::BindTexture2D(uint32_t slot, RHITexture* texture, RHISampler* sampler)

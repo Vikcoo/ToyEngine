@@ -5,6 +5,8 @@
 #pragma once
 
 #include "RHITypes.h"
+#include "RHIRenderTarget.h"
+#include "Math/MathTypes.h"
 #include <memory>
 
 namespace TE {
@@ -43,6 +45,22 @@ public:
 
     /// 创建纹理采样器
     [[nodiscard]] virtual std::unique_ptr<RHISampler> CreateSampler(const RHISamplerDesc& desc) = 0;
+
+    /// 创建资源绑定组（Vulkan: DescriptorSet, D3D12: Descriptor Table, OpenGL: UBO+Texture 绑定集）
+    [[nodiscard]] virtual std::unique_ptr<RHIBindGroup> CreateBindGroup(const RHIBindGroupDesc& desc) = 0;
+
+    /// 创建渲染目标（离屏 FBO / MRT）
+    [[nodiscard]] virtual std::unique_ptr<RHIRenderTarget> CreateRenderTarget(const RHIRenderTargetDesc& desc) = 0;
+
+    /// 查询当前后端的特征描述（NDC 深度范围、纹理原点、Y 轴方向等）
+    [[nodiscard]] virtual const RHIBackendTraits& GetBackendTraits() const = 0;
+
+    /// 对引擎约定的 [0,1] 深度、Y-up 投影矩阵做后端适配。
+    /// 引擎上层生成的投影矩阵统一为 [0,1] 深度 + Y-up，此方法在提交渲染前由后端修正：
+    ///   - OpenGL 无 glClipControl 时：将 [0,1] 重映射为 [-1,1]
+    ///   - Vulkan：翻转 Y 轴（NDC Y 向下）
+    ///   - D3D12 / OpenGL 有 glClipControl：原样返回
+    [[nodiscard]] virtual Matrix4 AdjustProjectionMatrix(const Matrix4& projection) const;
 
     /// 工厂方法：根据编译选项（TE_RHI_OPENGL / TE_RHI_VULKAN 等）创建对应后端的 Device
     [[nodiscard]] static std::unique_ptr<RHIDevice> Create();

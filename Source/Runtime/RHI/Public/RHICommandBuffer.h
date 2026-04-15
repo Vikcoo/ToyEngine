@@ -77,35 +77,24 @@ public:
                              int32_t vertexOffset = 0,
                              uint32_t instanceCount = 1, uint32_t firstInstance = 0) = 0;
 
-    // ==================== Uniform 设置 ====================
-    // 设计说明：Uniform 接口目前暴露 name-based 设置，匹配 OpenGL uniform 模型。
-    // Vulkan/D3D12 后端将来改为 descriptor set / root signature 方式，
-    // 届时这些接口的实现会变为查表写入 UBO。
+    // ==================== 资源绑定 ====================
 
-    /// 设置 4x4 矩阵 Uniform
-    /// @param name Uniform 变量名（OpenGL 用 glGetUniformLocation 查找）
-    /// @param data 4x4 矩阵数据指针（列主序，16 个 float）
+    /// 绑定资源组到指定槽位
+    /// @param groupIndex 绑定组索引（对应 Vulkan descriptor set index / D3D12 root parameter index）
+    /// @param bindGroup  资源绑定组
+    virtual void SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGroup) = 0;
+
+    // ==================== 旧版 Uniform 接口（兼容过渡期） ====================
+    // 这些 name-based 接口仅供 OpenGL 后端在过渡期使用。
+    // Vulkan/D3D12 后端应通过 BindGroup 内的 UBO 设置 Uniform 数据。
+    // 后续将逐步移除这些接口，全部迁移到 BindGroup 模型。
+
     virtual void SetUniformMatrix4(const char* name, const float* data) = 0;
-
-    /// 设置 float Uniform
-    /// @param name Uniform 变量名
-    /// @param value 浮点值
     virtual void SetUniformFloat(const char* name, float value) = 0;
-
-    /// 设置 vec3 Uniform
-    /// @param name Uniform 变量名
-    /// @param data vec3 数据指针（3 个 float）
     virtual void SetUniformVec3(const char* name, const float* data) = 0;
-
-    /// 设置 int Uniform
-    /// @param name Uniform 变量名
-    /// @param value 整数值
     virtual void SetUniformInt(const char* name, int32_t value) = 0;
 
-    /// 绑定 2D 纹理与采样器到指定槽位
-    /// @param slot 纹理槽位（对应 Shader 中的 sampler2D 绑定点）
-    /// @param texture 纹理对象
-    /// @param sampler 采样器对象（可为空，表示使用后端默认采样状态）
+    /// 绑定 2D 纹理与采样器到指定槽位（旧版接口，建议使用 BindGroup）
     virtual void BindTexture2D(uint32_t slot, RHITexture* texture, RHISampler* sampler = nullptr) = 0;
 
     /// 结束录制命令

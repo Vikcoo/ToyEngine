@@ -171,13 +171,14 @@ std::shared_ptr<StaticMesh> FAssetImporter::ImportStaticMesh(const std::string& 
     // 后处理标志：
     // - Triangulate:           将所有面转为三角形（必须）
     // - GenSmoothNormals:      对缺失法线的网格生成平滑法线
-    // - FlipUVs:               翻转 UV 的 Y 轴（OpenGL 纹理坐标 Y 轴向上）
     // - JoinIdenticalVertices: 合并相同顶点，减少顶点数量
     // - CalcTangentSpace:      计算切线空间（为将来法线贴图预留）
+    //
+    // 注意：不使用 aiProcess_FlipUVs。引擎统一约定纹理原点为左上角（与图片文件存储顺序一致），
+    // 和 Vulkan/D3D12 原生行为对齐。OpenGL 后端在纹理上传时自行翻转像素行序来适配。
     const unsigned int postProcessFlags =
         aiProcess_Triangulate |
         aiProcess_GenSmoothNormals |
-        aiProcess_FlipUVs |
         aiProcess_JoinIdenticalVertices |
         aiProcess_CalcTangentSpace;
 

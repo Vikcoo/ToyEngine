@@ -1,5 +1,5 @@
 // ToyEngine Platform Module
-// GLFW窗口实现 - OpenGL Context + glad
+// GLFW 窗口实现 - 支持 OpenGL Context 和 No-API 模式（供 Vulkan/D3D12 使用）
 
 #include "GLFWWindow.h"
 #include "Log/Log.h"
@@ -13,8 +13,8 @@ static bool s_glfwInitialized = false;
 
 GLFWWindow::GLFWWindow(const FWindowConfig& config)
     : m_title(config.title), m_width(config.width), m_height(config.height)
+    , m_graphicsAPI(config.graphicsAPI)
 {
-    // 初始化 GLFW（只做一次）
     if (!s_glfwInitialized)
     {
         glfwSetErrorCallback([](int error, const char* desc) {
@@ -30,18 +30,24 @@ GLFWWindow::GLFWWindow(const FWindowConfig& config)
         TE_LOG_INFO("[Platform] GLFW initialized");
     }
 
-    // OpenGL Context 配置
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
+    // 根据图形 API 类型设置不同的窗口 hint
+    if (config.graphicsAPI == EWindowGraphicsAPI::OpenGL)
+    {
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef TE_PLATFORM_MACOS
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
+    }
+    else
+    {
+        // Vulkan/D3D12：不创建图形上下文，后端通过 GetNativeHandle() 自行初始化
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    }
 
     glfwWindowHint(GLFW_RESIZABLE, config.resizable ? GLFW_TRUE : GLFW_FALSE);
 
-    // 创建窗口
     m_window = glfwCreateWindow(
         static_cast<int>(m_width),
         static_cast<int>(m_height),
@@ -55,30 +61,34 @@ GLFWWindow::GLFWWindow(const FWindowConfig& config)
         throw std::runtime_error("Failed to create GLFW window!");
     }
 
-    // 激活 OpenGL Context
-    glfwMakeContextCurrent(m_window);
-
-    // 加载 OpenGL 函数
-    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+    // OpenGL 模式下初始化上下文和 glad
+    if (config.graphicsAPI == EWindowGraphicsAPI::OpenGL)
     {
-        glfwDestroyWindow(m_window);
-        throw std::runtime_error("Failed to initialize glad!");
+        glfwMakeContextCurrent(m_window);
+
+        if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+        {
+            glfwDestroyWindow(m_window);
+            throw std::runtime_error("Failed to initialize glad!");
+        }
+
+        TE_LOG_INFO("[Platform] OpenGL {}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+        TE_LOG_INFO("[Platform] Renderer: {}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
+
+        glfwSwapInterval(1);
+        m_vsyncEnabled = true;
+    }
+    else
+    {
+        m_vsyncEnabled = false;
+        TE_LOG_INFO("[Platform] Window created in No-API mode (Vulkan/D3D12)");
     }
 
-    TE_LOG_INFO("[Platform] OpenGL {}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
-    TE_LOG_INFO("[Platform] Renderer: {}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
-
-    // VSync：默认开启（1 = 锁定刷新率，0 = 不限帧）
-    glfwSwapInterval(1);
-    m_vsyncEnabled = true;
-
-    // 获取实际帧缓冲区尺寸（Retina 屏上可能是逻辑尺寸的 2 倍）
     int fbW = 0, fbH = 0;
     glfwGetFramebufferSize(m_window, &fbW, &fbH);
     m_fbWidth = static_cast<uint32_t>(fbW);
     m_fbHeight = static_cast<uint32_t>(fbH);
 
-    // 显示窗口并设置回调
     glfwShowWindow(m_window);
     glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, GLFWFramebufferSizeCallback);
@@ -210,8 +220,11 @@ void GLFWWindow::GLFWFramebufferSizeCallback(GLFWwindow* window, int width, int 
     self->m_width = static_cast<uint32_t>(winW);
     self->m_height = static_cast<uint32_t>(winH);
 
-    // 同步 OpenGL Viewport（使用帧缓冲区像素尺寸）
-    glViewport(0, 0, width, height);
+    // 仅 OpenGL 模式下同步 Viewport
+    if (self->m_graphicsAPI == EWindowGraphicsAPI::OpenGL)
+    {
+        glViewport(0, 0, width, height);
+    }
 
     if (self->m_resizeCallback)
     {

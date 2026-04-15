@@ -84,7 +84,7 @@ void FSceneRenderer::Render(const FScene* scene, RHIDevice* device, RHICommandBu
     cmdBuf->BeginRenderPass(passInfo);
 
     // === Step 4: 提交绘制命令（UE5: RenderBasePass，带冗余状态跳过） ===
-    SubmitDrawCommands(drawCommands, scene, cmdBuf);
+    SubmitDrawCommands(drawCommands, scene, device, cmdBuf);
 
     cmdBuf->EndRenderPass();
     cmdBuf->End();
@@ -125,18 +125,19 @@ void FSceneRenderer::SortDrawCommands(std::vector<FMeshDrawCommand>& commands)
 
 void FSceneRenderer::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& commands,
                                         const FScene* scene,
+                                        RHIDevice* device,
                                         RHICommandBuffer* cmdBuf)
 {
     const auto& viewInfo = scene->GetViewInfo();
 
-    // ==================== Draw Call Batching 状态跟踪 ====================
-    // 跟踪上一次绑定的资源，跳过冗余绑定
-    // 对应 UE5 中 FMeshDrawCommand::SubmitDraw() 的状态过滤逻辑
+    // 对投影矩阵做后端适配（NDC 深度范围重映射、Vulkan Y 轴翻转等），每帧只做一次
+    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(viewInfo.ProjectionMatrix);
+    const Matrix4 adjustedVP = adjustedProjection * viewInfo.ViewMatrix;
+
     RHIPipeline* lastPipeline = nullptr;
     RHIBuffer*   lastVBO      = nullptr;
     RHIBuffer*   lastIBO      = nullptr;
 
-    // 帧统计计数器
     uint32_t drawCallCount    = 0;
     uint32_t pipelineBinds    = 0;
     uint32_t vboBinds         = 0;
@@ -150,22 +151,16 @@ void FSceneRenderer::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& com
             continue;
         }
 
-        // --- Pipeline 绑定（仅在 Pipeline 变化时执行） ---
-        // BindPipeline 包含 glUseProgram + glBindVAO + 光栅化/深度状态设置
-        // 这是最昂贵的操作，排序后同 Pipeline 的命令连续，只需绑定一次
         if (pipeline != lastPipeline)
         {
             cmdBuf->BindPipeline(pipeline);
             lastPipeline = pipeline;
             ++pipelineBinds;
 
-            // Pipeline 变更后，VBO/IBO 绑定需要重新执行
-            // 因为 VAO 切换后，之前的 VBO/IBO 关联失效
             lastVBO = nullptr;
             lastIBO = nullptr;
         }
 
-        // --- VBO 绑定（仅在 VBO 变化时执行） ---
         if (cmd.VertexBuffer != lastVBO)
         {
             cmdBuf->BindVertexBuffer(cmd.VertexBuffer);
@@ -173,7 +168,6 @@ void FSceneRenderer::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& com
             ++vboBinds;
         }
 
-        // --- IBO 绑定（仅在 IBO 变化时执行） ---
         if (cmd.IndexBuffer != lastIBO)
         {
             cmdBuf->BindIndexBuffer(cmd.IndexBuffer);
@@ -181,7 +175,6 @@ void FSceneRenderer::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& com
             ++iboBinds;
         }
 
-        // --- 材质纹理绑定（按材质槽解析 BaseColor 纹理） ---
         auto* baseColorTexture = scene->ResolvePreparedBaseColorTexture(cmd.StaticMeshAsset, cmd.MaterialIndex);
         auto* defaultSampler = scene->ResolveDefaultSampler();
         if (baseColorTexture)
@@ -190,29 +183,21 @@ void FSceneRenderer::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& com
             cmdBuf->SetUniformInt("u_BaseColorTex", 0);
         }
 
-        // --- Uniform 设置（每个物体不同，不能跳过） ---
-        // 计算 MVP = Projection * View * Model
-        Matrix4 mvp = viewInfo.ViewProjectionMatrix * cmd.WorldMatrix;
+        Matrix4 mvp = adjustedVP * cmd.WorldMatrix;
 
-        // 设置变换矩阵 Uniform
         cmdBuf->SetUniformMatrix4("u_MVP", mvp.Data());
         cmdBuf->SetUniformMatrix4("u_Model", cmd.WorldMatrix.Data());
 
-        // 设置光照 Uniform（方向光）
-        // 光照方向：从右上方照射（归一化）
         Vector3 lightDir = Vector3(0.5f, 1.0f, 0.8f).Normalize();
         cmdBuf->SetUniformVec3("u_LightDir", &lightDir.X);
 
-        // 光源颜色：温暖的白色
         Vector3 lightColor(1.0f, 0.95f, 0.9f);
         cmdBuf->SetUniformVec3("u_LightColor", &lightColor.X);
 
-        // --- 提交绘制 ---
         cmdBuf->DrawIndexed(cmd.IndexCount, cmd.FirstIndex);
         ++drawCallCount;
     }
 
-    // 更新帧统计
     m_LastDrawCallCount = drawCallCount;
     m_LastPipelineBindCount = pipelineBinds;
     m_LastVBOBindCount = vboBinds;

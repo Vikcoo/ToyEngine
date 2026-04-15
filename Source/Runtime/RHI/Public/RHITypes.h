@@ -18,6 +18,7 @@ class RHICommandBuffer;
 class RHIDevice;
 class RHITexture;
 class RHISampler;
+class RHIBindGroup;
 
 // ============================================================
 // 枚举类型
@@ -67,11 +68,20 @@ enum class RHIFormat : uint8_t
     UInt3,          // 3x uint32
     UInt4,          // 4x uint32
 
-    // 归一化格式（预留，用于纹理）
+    // 归一化格式
     R8_UNorm,
     RG8_UNorm,
     RGB8_UNorm,
     RGBA8_UNorm,
+
+    // sRGB 格式（纹理采样时自动做 sRGB -> Linear 转换）
+    RGB8_sRGB,
+    RGBA8_sRGB,
+
+    // 深度/模板格式
+    D16_UNorm,
+    D24_UNorm_S8_UInt,
+    D32_Float,
 };
 
 /// 图元拓扑类型
@@ -153,6 +163,11 @@ inline uint32_t GetFormatSize(RHIFormat format)
         case RHIFormat::RG8_UNorm:   return 2;
         case RHIFormat::RGB8_UNorm:  return 3;
         case RHIFormat::RGBA8_UNorm: return 4;
+        case RHIFormat::RGB8_sRGB:   return 3;
+        case RHIFormat::RGBA8_sRGB:  return 4;
+        case RHIFormat::D16_UNorm:   return 2;
+        case RHIFormat::D24_UNorm_S8_UInt: return 4;
+        case RHIFormat::D32_Float:   return 4;
         default: return 0;
     }
 }
@@ -211,13 +226,18 @@ struct RHIBufferDesc
 };
 
 /// 着色器创建描述符
+/// 支持多种着色器输入方式：
+///   - filePath:  后端原生着色器源文件路径（OpenGL: GLSL, D3D12: HLSL）
+///   - spirvPath: SPIR-V 字节码文件路径（Vulkan 后端优先使用）
+///   - spirvData: 内存中的 SPIR-V 字节码（优先级高于 spirvPath）
 struct RHIShaderDesc
 {
     RHIShaderStage          stage = RHIShaderStage::Vertex;
-    std::string             filePath;       // 着色器源文件路径（OpenGL: GLSL）
-    std::vector<uint8_t>    spirvData;      // SPIR-V 字节码（Vulkan）
-    std::string             entryPoint = "main";  // 入口函数名
-    std::string             debugName;      // 调试名称（可选）
+    std::string             filePath;       // 后端原生着色器文件路径（OpenGL: GLSL, D3D12: HLSL）
+    std::string             spirvPath;      // SPIR-V 字节码文件路径（Vulkan 后端使用）
+    std::vector<uint8_t>    spirvData;      // 内存中的 SPIR-V 字节码（优先级高于 spirvPath）
+    std::string             entryPoint = "main";
+    std::string             debugName;
 };
 
 /// 图形管线创建描述符
@@ -253,6 +273,8 @@ struct RHIScissorRect
     uint32_t    height = 0;
 };
 
+class RHIRenderTarget;
+
 /// 渲染通道开始信息
 /// 对应 Vulkan 的 VkRenderPassBeginInfo（简化版）
 struct RHIRenderPassBeginInfo
@@ -261,6 +283,9 @@ struct RHIRenderPassBeginInfo
     float       clearDepth = 1.0f;
     uint32_t    clearStencil = 0;
     RHIViewport viewport;
+
+    /// 渲染目标（nullptr 表示渲染到默认帧缓冲/交换链）
+    RHIRenderTarget* renderTarget = nullptr;
 };
 
 /// 纹理过滤模式
@@ -297,6 +322,90 @@ struct RHISamplerDesc
     RHITextureAddressMode addressU = RHITextureAddressMode::Repeat;
     RHITextureAddressMode addressV = RHITextureAddressMode::Repeat;
     std::string           debugName;
+};
+
+// ============================================================
+// 资源绑定描述（BindGroup 模型）
+// ============================================================
+
+/// BindGroup 中单个绑定的类型
+enum class RHIBindingType : uint8_t
+{
+    UniformBuffer,  // Vulkan UBO / D3D12 CBV / OpenGL UBO
+    Texture2D,      // Vulkan Combined Image Sampler / D3D12 SRV / OpenGL texture unit
+    Sampler,        // 独立采样器（当前简化为与 Texture2D 配对）
+};
+
+/// 描述 BindGroup 中单条绑定槽的布局
+struct RHIBindGroupLayoutEntry
+{
+    uint32_t        binding = 0;       // 绑定点索引（对应 Shader 中的 binding）
+    RHIBindingType  type = RHIBindingType::UniformBuffer;
+    RHIShaderStage  visibility = RHIShaderStage::Vertex; // 对哪些着色器阶段可见（简化版，单阶段）
+};
+
+/// BindGroup 布局描述
+struct RHIBindGroupLayoutDesc
+{
+    std::vector<RHIBindGroupLayoutEntry> entries;
+    std::string debugName;
+};
+
+/// BindGroup 中单条绑定的资源引用
+struct RHIBindGroupEntry
+{
+    uint32_t        binding = 0;
+    RHIBindingType  type = RHIBindingType::UniformBuffer;
+    RHIBuffer*      buffer = nullptr;        // UniformBuffer 类型时使用
+    uint64_t        bufferOffset = 0;
+    uint64_t        bufferSize = 0;          // 0 表示整个 buffer
+    RHITexture*     texture = nullptr;       // Texture2D 类型时使用
+    RHISampler*     sampler = nullptr;       // Sampler 或 Texture2D 配对采样器
+};
+
+/// BindGroup 创建描述
+struct RHIBindGroupDesc
+{
+    std::vector<RHIBindGroupEntry> entries;
+    std::string debugName;
+};
+
+// ============================================================
+// 后端特征描述
+// ============================================================
+
+/// 图形 API 后端枚举
+enum class ERHIBackendType : uint8_t
+{
+    OpenGL,
+    Vulkan,
+    D3D12,
+};
+
+/// 后端特征描述，用于上层在需要差异适配时查询后端能力，而非使用 #ifdef。
+///
+/// 引擎规范约定（所有后端必须在 RHI 层适配到此约定）：
+///   - 坐标系：右手 Y-up
+///   - NDC 深度：[0, 1]
+///   - NDC Y 轴：向上
+///   - 纹理原点：左上角（与图片文件存储顺序一致）
+///   - 矩阵主序：列主序
+///   - 正面缠绕：逆时针
+struct RHIBackendTraits
+{
+    ERHIBackendType backendType = ERHIBackendType::OpenGL;
+
+    // 原生 NDC 深度范围是否为 [0,1]（Vulkan/D3D12 为 true，OpenGL 默认 false）
+    bool bNativeNDCDepthZeroToOne = false;
+
+    // 原生 NDC Y 轴是否向上（OpenGL/D3D12 为 true，Vulkan 为 false）
+    bool bNativeNDCYAxisUp = true;
+
+    // 原生纹理原点是否在左上角（Vulkan/D3D12 为 true，OpenGL 为 false）
+    bool bNativeTextureOriginTopLeft = false;
+
+    // 是否支持 glClipControl（仅 OpenGL 4.5+ 或 GL_ARB_clip_control）
+    bool bSupportsClipControl = false;
 };
 
 } // namespace TE

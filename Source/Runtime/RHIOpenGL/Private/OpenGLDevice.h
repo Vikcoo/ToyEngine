@@ -25,6 +25,13 @@ public:
     [[nodiscard]] std::unique_ptr<RHICommandBuffer> CreateCommandBuffer() override;
     [[nodiscard]] std::unique_ptr<RHITexture> CreateTexture(const RHITextureDesc& desc) override;
     [[nodiscard]] std::unique_ptr<RHISampler> CreateSampler(const RHISamplerDesc& desc) override;
+    [[nodiscard]] std::unique_ptr<RHIBindGroup> CreateBindGroup(const RHIBindGroupDesc& desc) override;
+    [[nodiscard]] std::unique_ptr<RHIRenderTarget> CreateRenderTarget(const RHIRenderTargetDesc& desc) override;
+    [[nodiscard]] const RHIBackendTraits& GetBackendTraits() const override;
+    [[nodiscard]] Matrix4 AdjustProjectionMatrix(const Matrix4& projection) const override;
+
+private:
+    RHIBackendTraits m_Traits;
 };
 
 } // namespace TE

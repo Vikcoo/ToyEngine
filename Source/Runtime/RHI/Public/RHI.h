@@ -9,5 +9,7 @@
 #include "RHISampler.h"
 #include "RHIShader.h"
 #include "RHIPipeline.h"
+#include "RHIBindGroup.h"
+#include "RHIRenderTarget.h"
 #include "RHICommandBuffer.h"
 #include "RHIDevice.h"
