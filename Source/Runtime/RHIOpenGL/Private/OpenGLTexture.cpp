@@ -41,6 +41,37 @@ bool ConvertFormat(RHIFormat format, bool srgb, GLint& outInternalFormat, GLenum
         outInternalFormat = GL_SRGB8_ALPHA8;
         outFormat = GL_RGBA;
         return true;
+    // 深度 / 深度模板格式：用于 FBO 深度附件
+    // OpenGLTexture 作为深度纹理时，不做 sRGB 转换，不参与像素行序翻转
+    case RHIFormat::D16_UNorm:
+        outInternalFormat = GL_DEPTH_COMPONENT16;
+        outFormat = GL_DEPTH_COMPONENT;
+        outType = GL_UNSIGNED_SHORT;
+        return true;
+    case RHIFormat::D24_UNorm_S8_UInt:
+        outInternalFormat = GL_DEPTH24_STENCIL8;
+        outFormat = GL_DEPTH_STENCIL;
+        outType = GL_UNSIGNED_INT_24_8;
+        return true;
+    case RHIFormat::D32_Float:
+        outInternalFormat = GL_DEPTH_COMPONENT32F;
+        outFormat = GL_DEPTH_COMPONENT;
+        outType = GL_FLOAT;
+        return true;
+    default:
+        return false;
+    }
+}
+
+/// 判断 RHIFormat 是否为深度 / 深度模板格式
+bool IsDepthFormat(RHIFormat format)
+{
+    switch (format)
+    {
+    case RHIFormat::D16_UNorm:
+    case RHIFormat::D24_UNorm_S8_UInt:
+    case RHIFormat::D32_Float:
+        return true;
     default:
         return false;
     }
@@ -103,12 +134,14 @@ OpenGLTexture::OpenGLTexture(const RHITextureDesc& desc)
         return;
     }
 
+    const bool isDepth = IsDepthFormat(desc.format);
+
     // 引擎约定纹理原点为左上角，OpenGL 原点在左下角，需要翻转像素行序。
-    // 对于 1x1 或无初始数据的纹理跳过翻转。
+    // 对于 1x1、无初始数据、深度纹理（通常是 RT 附件而非 CPU 图像）跳过翻转。
     const void* uploadData = desc.initialData;
     std::vector<uint8_t> flippedBuffer;
 
-    if (desc.initialData && desc.height > 1)
+    if (desc.initialData && desc.height > 1 && !isDepth)
     {
         uint32_t bpp = GetPixelByteSize(desc.format);
         if (bpp > 0)
@@ -130,14 +163,28 @@ OpenGLTexture::OpenGLTexture(const RHITextureDesc& desc)
                  type,
                  uploadData);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, desc.generateMips ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    if (desc.generateMips)
+    // 深度纹理作为 RT 附件时使用 CLAMP_TO_EDGE + NEAREST，且不生成 mipmap（FBO 渲染到 mip0）。
+    // 彩色纹理沿用原有 REPEAT + LINEAR 行为，便于材质贴图采样。
+    if (isDepth)
     {
-        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+    else
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        // 作为 RT 附件（无初始数据 + 不生成 mipmap）时用 LINEAR 基层采样，避免 MIP 过滤器要求完整 mip 链。
+        const bool useMipFilter = desc.generateMips && desc.initialData != nullptr;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, useMipFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        if (useMipFilter)
+        {
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);

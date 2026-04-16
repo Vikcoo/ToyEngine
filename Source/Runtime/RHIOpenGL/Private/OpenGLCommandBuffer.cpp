@@ -7,7 +7,10 @@
 #include "OpenGLTexture.h"
 #include "OpenGLSampler.h"
 #include "OpenGLBindGroup.h"
+#include "OpenGLRenderTarget.h"
 #include "Log/Log.h"
+
+#include <array>
 
 namespace TE {
 
@@ -19,6 +22,40 @@ void OpenGLCommandBuffer::Begin()
 
 void OpenGLCommandBuffer::BeginRenderPass(const RHIRenderPassBeginInfo& info)
 {
+    // 绑定渲染目标：自定义 FBO 或默认帧缓冲（0）
+    uint32_t colorAttachmentCount = 0;
+    if (info.renderTarget != nullptr)
+    {
+        auto* glRT = static_cast<OpenGLRenderTarget*>(info.renderTarget);
+        m_CurrentFBO = glRT->GetGLFramebufferID();
+        colorAttachmentCount = glRT->GetColorAttachmentCount();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, m_CurrentFBO);
+
+        // 为 MRT 启用所有 color attachment 的绘制槽位
+        if (colorAttachmentCount > 0)
+        {
+            // 最大同时支持 8 个 color attachment，和 OpenGL 最小实现保证一致
+            std::array<GLenum, 8> drawBuffers{};
+            const uint32_t n = std::min<uint32_t>(colorAttachmentCount, static_cast<uint32_t>(drawBuffers.size()));
+            for (uint32_t i = 0; i < n; ++i)
+            {
+                drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
+            }
+            glDrawBuffers(static_cast<GLsizei>(n), drawBuffers.data());
+        }
+        else
+        {
+            // 仅深度目标（如 ShadowMap），显式禁用颜色写入
+            glDrawBuffer(GL_NONE);
+        }
+    }
+    else
+    {
+        m_CurrentFBO = 0;
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
     // 设置视口
     if (info.viewport.width > 0 && info.viewport.height > 0)
     {
@@ -30,16 +67,30 @@ void OpenGLCommandBuffer::BeginRenderPass(const RHIRenderPassBeginInfo& info)
         );
     }
 
-    // 清屏
+    // 清屏：必须在深度写入启用的状态下才会清深度，这里先开启以保证 glClear 有效
+    glDepthMask(GL_TRUE);
+
     glClearColor(info.clearColor[0], info.clearColor[1], info.clearColor[2], info.clearColor[3]);
     glClearDepth(info.clearDepth);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    GLbitfield clearMask = GL_DEPTH_BUFFER_BIT;
+    // 默认帧缓冲或任何彩色附件存在时才清颜色，纯深度 RT 无颜色附件
+    if (info.renderTarget == nullptr || colorAttachmentCount > 0)
+    {
+        clearMask |= GL_COLOR_BUFFER_BIT;
+    }
+    glClear(clearMask);
 }
 
 void OpenGLCommandBuffer::EndRenderPass()
 {
-    // OpenGL 中 RenderPass 不需要显式结束操作
-    // Vulkan/D3D12 后端在此处执行 vkCmdEndRenderPass / OMSetRenderTargets(null)
+    // 解绑自定义 FBO，回到默认帧缓冲，避免状态泄漏到下一个 Pass 或 SwapBuffers。
+    // Vulkan/D3D12 后端在此处执行 vkCmdEndRenderPass / OMSetRenderTargets(null)。
+    if (m_CurrentFBO != 0)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        m_CurrentFBO = 0;
+    }
 }
 
 void OpenGLCommandBuffer::BindPipeline(RHIPipeline* pipeline)

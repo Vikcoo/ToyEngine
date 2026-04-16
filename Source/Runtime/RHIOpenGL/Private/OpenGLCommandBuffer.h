@@ -51,6 +51,10 @@ private:
 
     OpenGLPipeline* m_BoundPipeline = nullptr;
     bool            m_IsRecording = false;
+
+    /// 当前 RenderPass 绑定的 FBO（非 0 表示离屏 RT，0 表示默认帧缓冲）。
+    /// 记录供 EndRenderPass 解绑回默认帧缓冲时使用。
+    GLuint          m_CurrentFBO = 0;
 };
 
 } // namespace TE

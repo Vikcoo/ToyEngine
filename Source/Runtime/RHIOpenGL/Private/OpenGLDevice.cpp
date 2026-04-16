@@ -9,6 +9,7 @@
 #include "OpenGLTexture.h"
 #include "OpenGLSampler.h"
 #include "OpenGLBindGroup.h"
+#include "OpenGLRenderTarget.h"
 #include "Log/Log.h"
 #include <glad/glad.h>
 #include <string>
@@ -141,9 +142,13 @@ std::unique_ptr<RHISampler> OpenGLDevice::CreateSampler(const RHISamplerDesc& de
 
 std::unique_ptr<RHIRenderTarget> OpenGLDevice::CreateRenderTarget(const RHIRenderTargetDesc& desc)
 {
-    // 计划中：OpenGL FBO 实现。当前渲染直接使用默认帧缓冲区。
-    TE_LOG_WARN("[RHIOpenGL] CreateRenderTarget not yet implemented, returning nullptr");
-    return nullptr;
+    auto renderTarget = std::make_unique<OpenGLRenderTarget>(desc);
+    if (!renderTarget->IsValid())
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Failed to create RenderTarget '{}'", desc.debugName);
+        return nullptr;
+    }
+    return renderTarget;
 }
 
 std::unique_ptr<RHIBindGroup> OpenGLDevice::CreateBindGroup(const RHIBindGroupDesc& desc)
