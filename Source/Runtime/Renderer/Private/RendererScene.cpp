@@ -80,6 +80,60 @@ void FScene::UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId
     proxy->SetWorldMatrix(worldMatrix);
 }
 
+bool FScene::AddLight(const LightComponent* lightComponent,
+                      FLightComponentId lightComponentId,
+                      std::unique_ptr<FLightSceneProxy> proxy)
+{
+    if (!lightComponent || !proxy || !lightComponentId.IsValid())
+    {
+        TE_LOG_WARN("[Renderer] FScene::AddLight called with invalid light/proxy/id");
+        return false;
+    }
+
+    RemoveLight(lightComponentId);
+    m_LightStorage[lightComponentId] = std::move(proxy);
+    RebuildLightView();
+    TE_LOG_INFO("[Renderer] FScene::AddLight id={}, component={}, total lights: {}",
+                lightComponentId.Value, static_cast<const void*>(lightComponent), m_LightStorage.size());
+    return true;
+}
+
+void FScene::UpdateLight(FLightComponentId lightComponentId, std::unique_ptr<FLightSceneProxy> proxy)
+{
+    if (!lightComponentId.IsValid() || !proxy)
+    {
+        return;
+    }
+
+    const auto it = m_LightStorage.find(lightComponentId);
+    if (it == m_LightStorage.end())
+    {
+        return;
+    }
+
+    it->second = std::move(proxy);
+    RebuildLightView();
+}
+
+void FScene::RemoveLight(FLightComponentId lightComponentId)
+{
+    if (!lightComponentId.IsValid())
+    {
+        return;
+    }
+
+    const auto it = m_LightStorage.find(lightComponentId);
+    if (it == m_LightStorage.end())
+    {
+        return;
+    }
+
+    m_LightStorage.erase(it);
+    RebuildLightView();
+    TE_LOG_INFO("[Renderer] FScene::RemoveLight id={}, total lights: {}",
+                lightComponentId.Value, m_LightStorage.size());
+}
+
 RHIPipeline* FScene::ResolvePreparedPipeline(const FPipelineKey& pipelineKey) const
 {
     if (!m_RenderResourceManager)
@@ -158,6 +212,20 @@ void FScene::RebuildPrimitiveView()
         if (proxy)
         {
             m_Primitives.push_back(proxy);
+        }
+    }
+}
+
+void FScene::RebuildLightView()
+{
+    m_Lights.clear();
+    m_Lights.reserve(m_LightStorage.size());
+    for (auto& [lightComponentId, lightProxy] : m_LightStorage)
+    {
+        (void)lightComponentId;
+        if (lightProxy)
+        {
+            m_Lights.push_back(lightProxy.get());
         }
     }
 }

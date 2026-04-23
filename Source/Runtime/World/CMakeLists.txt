@@ -8,6 +8,7 @@ add_library(World STATIC
     Private/SceneComponent.cpp
     Private/PrimitiveComponent.cpp
     Private/MeshComponent.cpp
+    Private/LightComponent.cpp
     Private/CameraComponent.cpp
     Private/FlyCameraController.cpp
     Private/Actor.cpp

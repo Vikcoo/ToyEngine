@@ -3,6 +3,7 @@
 // 核心：Tick() 更新逻辑 + SyncToScene() 同步到渲染侧
 
 #include "World.h"
+#include "LightComponent.h"
 #include "PrimitiveComponent.h"
 #include "Log/Log.h"
 #include <algorithm>
@@ -31,6 +32,15 @@ Actor* World::AddActor(std::unique_ptr<Actor> actor)
             if (m_RenderScene)
             {
                 primComp->RegisterToRenderScene(m_RenderScene);
+            }
+        }
+
+        if (auto* lightComp = dynamic_cast<LightComponent*>(comp.get()))
+        {
+            RegisterLightComponent(lightComp);
+            if (m_RenderScene)
+            {
+                lightComp->RegisterToRenderScene(m_RenderScene);
             }
         }
     }
@@ -66,6 +76,15 @@ void World::SyncToScene()
             comp->ClearRenderStateDirty();
         }
     }
+
+    for (auto* comp : m_LightComponents)
+    {
+        if (comp->IsLightStateDirty() && comp->IsRegisteredToRenderScene())
+        {
+            m_RenderScene->UpdateLight(comp->GetLightComponentId(), comp->CreateLightSceneProxy());
+            comp->ClearLightStateDirty();
+        }
+    }
 }
 
 void World::RegisterPrimitiveComponent(PrimitiveComponent* comp)
@@ -85,6 +104,26 @@ void World::UnregisterPrimitiveComponent(PrimitiveComponent* comp)
     if (it != m_PrimitiveComponents.end())
     {
         m_PrimitiveComponents.erase(it);
+    }
+}
+
+void World::RegisterLightComponent(LightComponent* comp)
+{
+    if (!comp) return;
+
+    auto it = std::find(m_LightComponents.begin(), m_LightComponents.end(), comp);
+    if (it == m_LightComponents.end())
+    {
+        m_LightComponents.push_back(comp);
+    }
+}
+
+void World::UnregisterLightComponent(LightComponent* comp)
+{
+    auto it = std::find(m_LightComponents.begin(), m_LightComponents.end(), comp);
+    if (it != m_LightComponents.end())
+    {
+        m_LightComponents.erase(it);
     }
 }
 

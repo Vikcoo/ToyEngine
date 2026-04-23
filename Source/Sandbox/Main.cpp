@@ -7,6 +7,7 @@
 #include "CameraComponent.h"
 #include "AssetImporter.h"
 #include "FlyCameraController.h"
+#include "LightComponent.h"
 #include "Log/Log.h"
 #include "Math/MathTypes.h"
 #include "Math/ScalarMath.h"
@@ -123,6 +124,7 @@ void SetupSandboxScene(TE::Engine& engine)
 
     auto loadedMesh = LoadOrCreateDemoMesh("orientation_cube.obj");
     auto loadedMeshTop = std::make_shared<TE::StaticMesh>(*loadedMesh);
+    auto loadedMeshPointLight = std::make_shared<TE::StaticMesh>(*loadedMesh);
 
     const std::string textureDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Textures/";
     const std::string textureA = textureDir + "orientation_cube_atlas.png";
@@ -141,6 +143,7 @@ void SetupSandboxScene(TE::Engine& engine)
     if (std::filesystem::exists(textureB))
     {
         OverrideMeshBaseColorTexture(loadedMeshTop, textureB);
+        OverrideMeshBaseColorTexture(loadedMeshPointLight, textureB);
         TE_LOG_INFO("[Sandbox] MeshActorTop texture: {}", textureB);
     }
     else
@@ -161,6 +164,16 @@ void SetupSandboxScene(TE::Engine& engine)
     meshCompTop->SetStaticMesh(loadedMeshTop);
     meshCompTop->SetScale(TE::Vector3(0.5f, 0.5f, 0.5f));
     meshCompTop->SetPosition(TE::Vector3(0.0f, 1.5f, 0.0f));
+
+    const TE::Vector3 pointLightPosition(2.0f, 1.4f, 2.5f);
+
+    auto pointLightMarkerActor = std::make_unique<TE::Actor>();
+    pointLightMarkerActor->SetName("PointLightMarkerActor");
+    auto* pointLightMarkerComp = pointLightMarkerActor->AddComponent<TE::MeshComponent>();
+    pointLightMarkerComp->SetName("PointLightMarkerMesh");
+    pointLightMarkerComp->SetStaticMesh(loadedMeshPointLight);
+    pointLightMarkerComp->SetScale(TE::Vector3(1.0f / 3.0f, 1.0f / 3.0f, 1.0f / 3.0f));
+    pointLightMarkerComp->SetPosition(pointLightPosition);
 
     auto cameraActor = std::make_unique<TE::Actor>();
     cameraActor->SetName("CameraActor");
@@ -186,12 +199,32 @@ void SetupSandboxScene(TE::Engine& engine)
     flyCamCtrl->SetInputManager(engine.GetInputManager());
     flyCamCtrl->SetWindow(engine.GetWindow());
 
+    auto directionalLightActor = std::make_unique<TE::Actor>();
+    directionalLightActor->SetName("DirectionalLightActor");
+    auto* directionalLight = directionalLightActor->AddComponent<TE::DirectionalLightComponent>();
+    directionalLight->SetName("MainDirectionalLight");
+    directionalLight->SetColor(TE::Vector3(1.0f, 0.96f, 0.9f));
+    directionalLight->SetIntensity(1.0f);
+    directionalLight->GetTransform().SetForward(TE::Vector3(0.5f, 1.0f, 0.8f).Normalize());
+
+    auto pointLightActor = std::make_unique<TE::Actor>();
+    pointLightActor->SetName("PointLightActor");
+    auto* pointLight = pointLightActor->AddComponent<TE::PointLightComponent>();
+    pointLight->SetName("WarmPointLight");
+    pointLight->SetPosition(pointLightPosition);
+    pointLight->SetColor(TE::Vector3(1.0f, 0.55f, 0.25f));
+    pointLight->SetIntensity(2.0f);
+    pointLight->SetAttenuationRadius(5.0f);
+
     world->AddActor(std::move(meshActor));
     world->AddActor(std::move(meshActorTop));
+    world->AddActor(std::move(pointLightMarkerActor));
     world->AddActor(std::move(cameraActor));
+    world->AddActor(std::move(directionalLightActor));
+    world->AddActor(std::move(pointLightActor));
 
     engine.SetActiveCameraComponent(cameraComp);
-    TE_LOG_INFO("[Sandbox] Scene built: MeshActor + MeshActorTop + CameraActor");
+    TE_LOG_INFO("[Sandbox] Scene built: MeshActor + MeshActorTop + PointLightMarkerActor + CameraActor + DirectionalLightActor + PointLightActor");
 }
 
 void TickSandboxScene(TE::Engine& engine, float deltaTime)
