@@ -156,7 +156,7 @@ bool FRenderResourceManager::EnsureStaticMeshMaterialTextures(const StaticMesh& 
 
 bool FRenderResourceManager::EnsureDefaultTextureResources()
 {
-    if (m_DefaultWhiteTexture && m_DefaultSampler)
+    if (m_DefaultWhiteTexture && m_DefaultSampler && m_GBufferSampler)
     {
         return true;
     }
@@ -203,6 +203,24 @@ bool FRenderResourceManager::EnsureDefaultTextureResources()
             return false;
         }
         m_DefaultSampler = std::shared_ptr<RHISampler>(sampler.release());
+    }
+
+    if (!m_GBufferSampler)
+    {
+        RHISamplerDesc desc;
+        desc.minFilter = RHITextureFilter::Nearest;
+        desc.magFilter = RHITextureFilter::Nearest;
+        desc.addressU = RHITextureAddressMode::ClampToEdge;
+        desc.addressV = RHITextureAddressMode::ClampToEdge;
+        desc.debugName = "GBuffer_Nearest_Sampler";
+
+        auto sampler = m_Device->CreateSampler(desc);
+        if (!sampler || !sampler->IsValid())
+        {
+            TE_LOG_ERROR("[Renderer] Failed to create gbuffer sampler");
+            return false;
+        }
+        m_GBufferSampler = std::shared_ptr<RHISampler>(sampler.release());
     }
 
     return true;
@@ -389,6 +407,11 @@ RHITexture* FRenderResourceManager::GetPreparedBaseColorTexture(const StaticMesh
 RHISampler* FRenderResourceManager::GetDefaultSampler() const
 {
     return m_DefaultSampler.get();
+}
+
+RHISampler* FRenderResourceManager::GetGBufferSampler() const
+{
+    return m_GBufferSampler.get();
 }
 
 } // namespace TE

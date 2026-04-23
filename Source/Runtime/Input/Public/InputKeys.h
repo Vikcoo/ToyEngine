@@ -11,6 +11,8 @@ constexpr int E = 69;
 constexpr int LeftShift = 340;
 constexpr int LeftControl = 341;
 constexpr int Escape = 256;
+constexpr int F1 = 290;
+constexpr int F2 = 291;
 } // namespace TE::Keys
 
 namespace TE::MouseButton

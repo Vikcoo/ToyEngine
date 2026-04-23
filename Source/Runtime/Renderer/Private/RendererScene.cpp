@@ -161,6 +161,15 @@ RHISampler* FScene::ResolveDefaultSampler() const
     return m_RenderResourceManager->GetDefaultSampler();
 }
 
+RHISampler* FScene::ResolveGBufferSampler() const
+{
+    if (!m_RenderResourceManager)
+    {
+        return nullptr;
+    }
+    return m_RenderResourceManager->GetGBufferSampler();
+}
+
 bool FScene::PrepareProxyResources(FPrimitiveSceneProxy& proxy)
 {
     auto* staticMeshProxy = dynamic_cast<FStaticMeshSceneProxy*>(&proxy);

@@ -12,11 +12,37 @@
 namespace TE {
 
 FSceneRenderer::FSceneRenderer()
-    : m_RenderPath(std::make_unique<FDeferredRenderPath>())
+    : m_RenderPath(CreateRenderPath(ERenderPathType::Forward))
 {
 }
 
 FSceneRenderer::~FSceneRenderer() = default;
+
+std::unique_ptr<IRenderPath> FSceneRenderer::CreateRenderPath(ERenderPathType type)
+{
+    switch (type)
+    {
+    case ERenderPathType::Forward:
+        return std::make_unique<FForwardRenderPath>();
+    case ERenderPathType::Deferred:
+        return std::make_unique<FDeferredRenderPath>();
+    default:
+        return std::make_unique<FForwardRenderPath>();
+    }
+}
+
+void FSceneRenderer::SetRenderPath(ERenderPathType type)
+{
+    if (m_RenderPath && m_RenderPathType == type)
+    {
+        return;
+    }
+
+    m_RenderPath = CreateRenderPath(type);
+    m_RenderPathType = type;
+    TE_LOG_INFO("[Renderer] Render path switched to {}",
+                type == ERenderPathType::Forward ? "Forward" : "Deferred");
+}
 
 void FSceneRenderer::Render(const FScene* scene, RHIDevice* device, RHICommandBuffer* cmdBuf)
 {

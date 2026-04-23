@@ -166,6 +166,7 @@ bool FDeferredRenderPath::EnsureGBuffer(RHIDevice* device, uint32_t width, uint3
     desc.height = height;
     desc.colorAttachments.push_back({RHIFormat::RGBA8_UNorm, false});
     desc.colorAttachments.push_back({RHIFormat::RGBA8_UNorm, false});
+    desc.colorAttachments.push_back({RHIFormat::RGBA32_Float, false});
     desc.hasDepthStencil = true;
     desc.depthStencilAttachment.format = RHIFormat::D32_Float;
     desc.depthStencilAttachment.isDepthStencil = true;
@@ -353,20 +354,16 @@ void FDeferredRenderPath::SubmitLightingPass(const FScene* scene,
     cmdBuf->BindPipeline(m_LightingPipeline.Pipeline.get());
     ++outStats.PipelineBindCount;
 
-    auto* defaultSampler = scene->ResolveDefaultSampler();
-    cmdBuf->BindTexture2D(0, m_GBuffer->GetColorAttachment(0), defaultSampler);
+    auto* gbufferSampler = scene->ResolveGBufferSampler();
+    cmdBuf->BindTexture2D(0, m_GBuffer->GetColorAttachment(0), gbufferSampler);
     cmdBuf->SetUniformInt("u_GBufferAlbedo", 0);
-    cmdBuf->BindTexture2D(1, m_GBuffer->GetColorAttachment(1), defaultSampler);
+    cmdBuf->BindTexture2D(1, m_GBuffer->GetColorAttachment(1), gbufferSampler);
     cmdBuf->SetUniformInt("u_GBufferNormal", 1);
-    cmdBuf->BindTexture2D(2, m_GBuffer->GetDepthStencilAttachment(), defaultSampler);
-    cmdBuf->SetUniformInt("u_GBufferDepth", 2);
+    cmdBuf->BindTexture2D(2, m_GBuffer->GetColorAttachment(2), gbufferSampler);
+    cmdBuf->SetUniformInt("u_GBufferWorldPosition", 2);
+    cmdBuf->BindTexture2D(3, m_GBuffer->GetDepthStencilAttachment(), gbufferSampler);
+    cmdBuf->SetUniformInt("u_GBufferDepth", 3);
 
-    const auto& viewInfo = scene->GetViewInfo();
-    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(viewInfo.ProjectionMatrix);
-    const Matrix4 adjustedVP = adjustedProjection * viewInfo.ViewMatrix;
-    const Matrix4 invViewProjection = adjustedVP.Inverse();
-
-    cmdBuf->SetUniformMatrix4("u_InvViewProjection", invViewProjection.Data());
     cmdBuf->SetUniformInt("u_RTSampleFlipY", device->GetBackendTraits().bRTSampleRequiresFlipY ? 1 : 0);
     BindSceneLightUniforms(scene, cmdBuf);
 

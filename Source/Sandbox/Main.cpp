@@ -7,12 +7,15 @@
 #include "CameraComponent.h"
 #include "AssetImporter.h"
 #include "FlyCameraController.h"
+#include "InputManager.h"
+#include "InputKeys.h"
 #include "LightComponent.h"
 #include "Log/Log.h"
 #include "Math/MathTypes.h"
 #include "Math/ScalarMath.h"
 #include "MeshComponent.h"
 #include "PrimitiveComponent.h"
+#include "SceneRenderer.h"
 #include "StaticMesh.h"
 #include "Window.h"
 #include "World.h"
@@ -235,6 +238,20 @@ void TickSandboxScene(TE::Engine& engine, float deltaTime)
         return;
     }
 
+    if (auto* input = engine.GetInputManager())
+    {
+        if (input->IsKeyJustPressed(TE::Keys::F1))
+        {
+            engine.SetRenderPath(TE::ERenderPathType::Forward);
+            TE_LOG_INFO("[Sandbox] Switched render path: Forward");
+        }
+        else if (input->IsKeyJustPressed(TE::Keys::F2))
+        {
+            engine.SetRenderPath(TE::ERenderPathType::Deferred);
+            TE_LOG_INFO("[Sandbox] Switched render path: Deferred");
+        }
+    }
+
     const auto& actors = world->GetActors();
     for (const auto& actor : actors)
     {
@@ -262,7 +279,7 @@ int main()
 {
     TE::Engine& engine = TE::Engine::Get();
     engine.SetSceneSetupCallback(SetupSandboxScene);
-    //engine.SetFrameUpdateCallback(TickSandboxScene);
+    engine.SetFrameUpdateCallback(TickSandboxScene);
 
     engine.Init();
     engine.Run();

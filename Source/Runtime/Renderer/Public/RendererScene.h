@@ -51,6 +51,7 @@ public:
     [[nodiscard]] RHIPipeline* ResolvePreparedPipeline(const FPipelineKey& pipelineKey) const;
     [[nodiscard]] RHITexture* ResolvePreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const;
     [[nodiscard]] RHISampler* ResolveDefaultSampler() const;
+    [[nodiscard]] RHISampler* ResolveGBufferSampler() const;
 
     void SetViewInfo(const FViewInfo& viewInfo) { m_ViewInfo = viewInfo; }
     [[nodiscard]] const FViewInfo& GetViewInfo() const { return m_ViewInfo; }

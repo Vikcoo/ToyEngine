@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <chrono>
+#include <cstdint>
 #include <functional>
 
 // 前向声明
@@ -18,6 +19,7 @@ namespace TE {
     class FScene;
     class FSceneRenderer;
     class CameraComponent;
+    enum class ERenderPathType : uint8_t;
 }
 
 namespace TE {
@@ -84,6 +86,8 @@ public:
     void SetFrameUpdateCallback(std::function<void(Engine&, float)> callback);
     /// 设置当前主相机组件（用于构建 ViewInfo）
     void SetActiveCameraComponent(CameraComponent* camera) { m_CameraComponent = camera; }
+    void SetRenderPath(ERenderPathType type);
+    [[nodiscard]] ERenderPathType GetRenderPath() const { return m_RenderPathType; }
 
 private:
     Engine() = default;
@@ -117,6 +121,7 @@ private:
     CameraComponent* m_CameraComponent = nullptr;
     std::function<void(Engine&)> m_SceneSetupCallback;
     std::function<void(Engine&, float)> m_FrameUpdateCallback;
+    ERenderPathType m_RenderPathType = static_cast<ERenderPathType>(0);
 
     // 运行状态
     bool m_Running = false;

@@ -40,6 +40,7 @@ public:
     [[nodiscard]] RHIPipeline* GetPreparedPipeline(const FPipelineKey& pipelineKey) const;
     [[nodiscard]] RHITexture* GetPreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const;
     [[nodiscard]] RHISampler* GetDefaultSampler() const;
+    [[nodiscard]] RHISampler* GetGBufferSampler() const;
     void PurgeExpiredStaticMeshRenderData();
 
 private:
@@ -57,6 +58,7 @@ private:
     std::unordered_map<FPipelineKey, FPreparedPipeline, FPipelineKeyHash> m_PipelineCache;
     std::shared_ptr<RHITexture> m_DefaultWhiteTexture;
     std::shared_ptr<RHISampler> m_DefaultSampler;
+    std::shared_ptr<RHISampler> m_GBufferSampler;
 };
 
 } // namespace TE

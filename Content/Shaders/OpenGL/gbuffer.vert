@@ -9,12 +9,15 @@ uniform mat4 u_MVP;
 uniform mat4 u_Model;
 
 out vec3 vWorldNormal;
+out vec3 vWorldPosition;
 out vec2 vTexCoord;
 out vec3 vColor;
 
 void main()
 {
+    vec4 worldPosition = u_Model * vec4(aPosition, 1.0);
     gl_Position = u_MVP * vec4(aPosition, 1.0);
+    vWorldPosition = worldPosition.xyz;
     vWorldNormal = normalize(mat3(u_Model) * aNormal);
     vTexCoord = aTexCoord;
     vColor = aColor;

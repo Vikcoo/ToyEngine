@@ -76,6 +76,7 @@ void Engine::Init()
     // 5. 创建 UE5 架构核心模块
     m_Scene = std::make_unique<FScene>(m_RHIDevice.get());
     m_SceneRenderer = std::make_unique<FSceneRenderer>();
+    m_SceneRenderer->SetRenderPath(m_RenderPathType);
     m_World = std::make_unique<World>();
 
     // 设置 World 的渲染场景接口
@@ -324,6 +325,15 @@ void Engine::SetSceneSetupCallback(std::function<void(Engine&)> callback)
 void Engine::SetFrameUpdateCallback(std::function<void(Engine&, float)> callback)
 {
     m_FrameUpdateCallback = std::move(callback);
+}
+
+void Engine::SetRenderPath(ERenderPathType type)
+{
+    m_RenderPathType = type;
+    if (m_SceneRenderer)
+    {
+        m_SceneRenderer->SetRenderPath(type);
+    }
 }
 
 } // namespace TE

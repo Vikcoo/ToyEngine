@@ -73,6 +73,7 @@ enum class RHIFormat : uint8_t
     RG8_UNorm,
     RGB8_UNorm,
     RGBA8_UNorm,
+    RGBA32_Float,
 
     // sRGB 格式（纹理采样时自动做 sRGB -> Linear 转换）
     RGB8_sRGB,
@@ -165,6 +166,7 @@ inline uint32_t GetFormatSize(RHIFormat format)
         case RHIFormat::RGBA8_UNorm: return 4;
         case RHIFormat::RGB8_sRGB:   return 3;
         case RHIFormat::RGBA8_sRGB:  return 4;
+        case RHIFormat::RGBA32_Float: return 16;
         case RHIFormat::D16_UNorm:   return 2;
         case RHIFormat::D24_UNorm_S8_UInt: return 4;
         case RHIFormat::D32_Float:   return 4;

@@ -7,8 +7,8 @@ in vec2 vScreenUV;
 
 uniform sampler2D u_GBufferAlbedo;
 uniform sampler2D u_GBufferNormal;
+uniform sampler2D u_GBufferWorldPosition;
 uniform sampler2D u_GBufferDepth;
-uniform mat4 u_InvViewProjection;
 uniform int u_RTSampleFlipY;
 
 uniform int u_DirectionalLightCount;
@@ -21,13 +21,6 @@ uniform vec3 u_PointLightColors[MaxPointLights];
 uniform float u_PointLightRadii[MaxPointLights];
 
 out vec4 fragColor;
-
-vec3 ReconstructWorldPosition(vec2 uv, float depth)
-{
-    vec4 clipPosition = vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-    vec4 worldPosition = u_InvViewProjection * clipPosition;
-    return worldPosition.xyz / max(worldPosition.w, 0.0001);
-}
 
 void main()
 {
@@ -46,7 +39,7 @@ void main()
 
     vec3 baseColor = texture(u_GBufferAlbedo, uv).rgb;
     vec3 normal = normalize(texture(u_GBufferNormal, uv).rgb * 2.0 - 1.0);
-    vec3 worldPosition = ReconstructWorldPosition(uv, depth);
+    vec3 worldPosition = texture(u_GBufferWorldPosition, uv).rgb;
 
     vec3 lighting = vec3(0.08);
 

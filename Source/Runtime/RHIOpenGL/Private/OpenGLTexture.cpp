@@ -33,6 +33,11 @@ bool ConvertFormat(RHIFormat format, bool srgb, GLint& outInternalFormat, GLenum
         outInternalFormat = srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         outFormat = GL_RGBA;
         return true;
+    case RHIFormat::RGBA32_Float:
+        outInternalFormat = GL_RGBA32F;
+        outFormat = GL_RGBA;
+        outType = GL_FLOAT;
+        return true;
     case RHIFormat::RGB8_sRGB:
         outInternalFormat = GL_SRGB8;
         outFormat = GL_RGB;
@@ -101,6 +106,7 @@ uint32_t GetPixelByteSize(RHIFormat format)
     case RHIFormat::RGB8_sRGB:   return 3;
     case RHIFormat::RGBA8_UNorm: return 4;
     case RHIFormat::RGBA8_sRGB:  return 4;
+    case RHIFormat::RGBA32_Float: return 16;
     default: return 0;
     }
 }
@@ -200,4 +206,3 @@ OpenGLTexture::~OpenGLTexture()
 }
 
 } // namespace TE
-
