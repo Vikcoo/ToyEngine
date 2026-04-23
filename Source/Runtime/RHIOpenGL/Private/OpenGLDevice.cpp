@@ -30,6 +30,7 @@ OpenGLDevice::OpenGLDevice()
     m_Traits.backendType = ERHIBackendType::OpenGL;
     m_Traits.bNativeNDCYAxisUp = true;
     m_Traits.bNativeTextureOriginTopLeft = false;
+    m_Traits.bRTSampleRequiresFlipY = false;
 
     // 检测 GL_ARB_clip_control（OpenGL 4.5+ 核心功能，或作为扩展出现）。
     // 当前项目目标为 OpenGL 4.1 Core（macOS 兼容），glad 配置中不包含此扩展。

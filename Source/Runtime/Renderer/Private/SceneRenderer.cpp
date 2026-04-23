@@ -3,6 +3,7 @@
 
 #include "SceneRenderer.h"
 
+#include "DeferredRenderPath.h"
 #include "ForwardRenderPath.h"
 #include "IRenderPath.h"
 #include "RenderStats.h"
@@ -11,7 +12,7 @@
 namespace TE {
 
 FSceneRenderer::FSceneRenderer()
-    : m_RenderPath(std::make_unique<FForwardRenderPath>())
+    : m_RenderPath(std::make_unique<FDeferredRenderPath>())
 {
 }
 

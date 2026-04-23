@@ -54,6 +54,7 @@ void OpenGLCommandBuffer::BeginRenderPass(const RHIRenderPassBeginInfo& info)
     {
         m_CurrentFBO = 0;
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDrawBuffer(GL_BACK);
     }
 
     // 设置视口

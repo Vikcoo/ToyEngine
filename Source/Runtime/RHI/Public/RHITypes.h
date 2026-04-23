@@ -406,6 +406,9 @@ struct RHIBackendTraits
 
     // 是否支持 glClipControl（仅 OpenGL 4.5+ 或 GL_ARB_clip_control）
     bool bSupportsClipControl = false;
+
+    // GPU 渲染到 RT 后再作为纹理采样时，是否需要在 shader 中翻转 V。
+    bool bRTSampleRequiresFlipY = false;
 };
 
 } // namespace TE

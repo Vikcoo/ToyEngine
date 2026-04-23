@@ -142,6 +142,19 @@ void OpenGLPipeline::SetupVertexAttributes(const RHIVertexInputDesc& vertexInput
 {
     glBindVertexArray(m_VAO);
 
+    if (vertexInput.attributes.empty())
+    {
+        glBindVertexArray(0);
+        return;
+    }
+
+    if (vertexInput.bindings.empty())
+    {
+        TE_LOG_WARN("[RHIOpenGL] Pipeline has vertex attributes but no vertex bindings");
+        glBindVertexArray(0);
+        return;
+    }
+
     // 配置每个顶点属性
     for (const auto& attr : vertexInput.attributes)
     {

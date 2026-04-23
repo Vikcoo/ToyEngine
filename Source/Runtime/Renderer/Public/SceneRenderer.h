@@ -18,8 +18,8 @@ class RHIDevice;
 /// 场景渲染调度器。
 ///
 /// Stage 2 后，FSceneRenderer 不再直接持有具体 Pass 顺序，只负责调用当前
-/// IRenderPath。当前默认路径是 FForwardRenderPath，后续 Deferred 路径会作为
-/// 另一个 IRenderPath 实现接入。
+/// IRenderPath。Stage 4 当前默认路径是 FDeferredRenderPath；运行时 Forward /
+/// Deferred 切换入口留到 Stage 5。
 class FSceneRenderer
 {
 public:
