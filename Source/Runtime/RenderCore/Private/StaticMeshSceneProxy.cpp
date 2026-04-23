@@ -42,7 +42,7 @@ void FStaticMeshSceneProxy::GetMeshDrawCommands(std::vector<FMeshDrawCommand>& o
     for (const auto& section : m_RenderData->GetSections())
     {
         FMeshDrawCommand cmd;
-        cmd.PipelineKey = EMeshPipelineKey::StaticMeshLit;
+        cmd.PipelineKey = FPipelineKey::StaticMeshBasePass();
         cmd.VertexBuffer = vertexBuffer;
         cmd.IndexBuffer = indexBuffer;
         cmd.StaticMeshAsset = m_StaticMesh.get();

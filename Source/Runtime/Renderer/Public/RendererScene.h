@@ -52,7 +52,7 @@ public:
 
     /// 获取所有 Primitive Proxy（SceneRenderer 遍历用）
     [[nodiscard]] const std::vector<FPrimitiveSceneProxy*>& GetPrimitives() const { return m_Primitives; }
-    [[nodiscard]] RHIPipeline* ResolvePreparedPipeline(EMeshPipelineKey pipelineKey) const;
+    [[nodiscard]] RHIPipeline* ResolvePreparedPipeline(const FPipelineKey& pipelineKey) const;
     [[nodiscard]] RHITexture* ResolvePreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const;
     [[nodiscard]] RHISampler* ResolveDefaultSampler() const;
 

@@ -50,7 +50,7 @@ bool FRenderResourceManager::PrepareStaticMeshProxy(FStaticMeshSceneProxy& proxy
     }
 
     // 在 Primitive 注册阶段预热 pipeline，保证后续渲染阶段可直接解析。
-    if (!EnsureStaticMeshPipeline())
+    if (!EnsurePipeline(FPipelineKey::StaticMeshBasePass()))
     {
         return false;
     }
@@ -256,13 +256,38 @@ std::shared_ptr<RHITexture> FRenderResourceManager::CreateTextureFromFile(const 
     return std::shared_ptr<RHITexture>(texture.release());
 }
 
-bool FRenderResourceManager::EnsureStaticMeshPipeline()
+bool FRenderResourceManager::EnsurePipeline(const FPipelineKey& pipelineKey)
 {
-    if (m_StaticMeshPipeline && m_StaticMeshPipeline->IsValid())
+    const auto found = m_PipelineCache.find(pipelineKey);
+    if (found != m_PipelineCache.end())
     {
-        return true;
+        const auto* pipeline = found->second.Pipeline.get();
+        return pipeline && pipeline->IsValid();
     }
 
+    FPreparedPipeline preparedPipeline;
+    if (pipelineKey == FPipelineKey::StaticMeshBasePass())
+    {
+        if (!BuildStaticMeshBasePassPipeline(preparedPipeline))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        TE_LOG_WARN("[Renderer] Unsupported pipeline key: pass={}, domain={}, vertexFactory={}",
+                    static_cast<uint32_t>(pipelineKey.Pass),
+                    static_cast<uint32_t>(pipelineKey.MaterialDomain),
+                    static_cast<uint32_t>(pipelineKey.VertexFactory));
+        return false;
+    }
+
+    m_PipelineCache.emplace(pipelineKey, std::move(preparedPipeline));
+    return true;
+}
+
+bool FRenderResourceManager::BuildStaticMeshBasePassPipeline(FPreparedPipeline& outPipeline)
+{
     if (!m_Device)
     {
         return false;
@@ -283,22 +308,22 @@ bool FRenderResourceManager::EnsureStaticMeshPipeline()
     vsDesc.stage = RHIShaderStage::Vertex;
     vsDesc.filePath = shaderDir + "model.vert";
     vsDesc.debugName = "Model_VS";
-    m_StaticMeshVertexShader = m_Device->CreateShader(vsDesc);
+    outPipeline.VertexShader = m_Device->CreateShader(vsDesc);
 
     RHIShaderDesc fsDesc;
     fsDesc.stage = RHIShaderStage::Fragment;
     fsDesc.filePath = shaderDir + "model.frag";
     fsDesc.debugName = "Model_FS";
-    m_StaticMeshFragmentShader = m_Device->CreateShader(fsDesc);
+    outPipeline.FragmentShader = m_Device->CreateShader(fsDesc);
 
-    if (!m_StaticMeshVertexShader || !m_StaticMeshFragmentShader)
+    if (!outPipeline.VertexShader || !outPipeline.FragmentShader)
     {
         return false;
     }
 
     RHIPipelineDesc pipelineDesc;
-    pipelineDesc.vertexShader = m_StaticMeshVertexShader.get();
-    pipelineDesc.fragmentShader = m_StaticMeshFragmentShader.get();
+    pipelineDesc.vertexShader = outPipeline.VertexShader.get();
+    pipelineDesc.fragmentShader = outPipeline.FragmentShader.get();
     pipelineDesc.topology = RHIPrimitiveTopology::TriangleList;
 
     RHIVertexBindingDesc binding;
@@ -318,19 +343,19 @@ bool FRenderResourceManager::EnsureStaticMeshPipeline()
     pipelineDesc.rasterization.frontFace = RHIFrontFace::CounterClockwise;
     pipelineDesc.debugName = "StaticMesh_Pipeline";
 
-    m_StaticMeshPipeline = m_Device->CreatePipeline(pipelineDesc);
-    return m_StaticMeshPipeline && m_StaticMeshPipeline->IsValid();
+    outPipeline.Pipeline = m_Device->CreatePipeline(pipelineDesc);
+    return outPipeline.Pipeline && outPipeline.Pipeline->IsValid();
 }
 
-RHIPipeline* FRenderResourceManager::GetPreparedPipeline(EMeshPipelineKey pipelineKey) const
+RHIPipeline* FRenderResourceManager::GetPreparedPipeline(const FPipelineKey& pipelineKey) const
 {
-    switch (pipelineKey)
+    const auto found = m_PipelineCache.find(pipelineKey);
+    if (found == m_PipelineCache.end())
     {
-    case EMeshPipelineKey::StaticMeshLit:
-        return m_StaticMeshPipeline.get();
-    default:
         return nullptr;
     }
+
+    return found->second.Pipeline.get();
 }
 
 RHITexture* FRenderResourceManager::GetPreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const

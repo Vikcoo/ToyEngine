@@ -80,7 +80,7 @@ void FScene::UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId
     proxy->SetWorldMatrix(worldMatrix);
 }
 
-RHIPipeline* FScene::ResolvePreparedPipeline(EMeshPipelineKey pipelineKey) const
+RHIPipeline* FScene::ResolvePreparedPipeline(const FPipelineKey& pipelineKey) const
 {
     if (!m_RenderResourceManager)
     {

@@ -5,6 +5,8 @@
 # Renderer 静态库
 add_library(Renderer STATIC
     # 实现文件
+    Private/ForwardRenderPath.cpp
+    Private/MeshPassProcessor.cpp
     Private/RenderResourceManager.cpp
     Private/RendererScene.cpp
     Private/SceneRenderer.cpp

@@ -23,6 +23,13 @@ class FStaticMeshSceneProxy;
 
 /// 管理渲染侧共享资源（静态网格 RenderData 与共享 Pipeline）。
 /// 该层负责把 SceneProxy 的资产描述解析为可用 GPU 资源。
+struct FPreparedPipeline
+{
+    std::unique_ptr<RHIShader> VertexShader;
+    std::unique_ptr<RHIShader> FragmentShader;
+    std::unique_ptr<RHIPipeline> Pipeline;
+};
+
 class FRenderResourceManager
 {
 public:
@@ -30,7 +37,7 @@ public:
     ~FRenderResourceManager();
 
     [[nodiscard]] bool PrepareStaticMeshProxy(FStaticMeshSceneProxy& proxy);
-    [[nodiscard]] RHIPipeline* GetPreparedPipeline(EMeshPipelineKey pipelineKey) const;
+    [[nodiscard]] RHIPipeline* GetPreparedPipeline(const FPipelineKey& pipelineKey) const;
     [[nodiscard]] RHITexture* GetPreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const;
     [[nodiscard]] RHISampler* GetDefaultSampler() const;
     void PurgeExpiredStaticMeshRenderData();
@@ -41,14 +48,13 @@ private:
     [[nodiscard]] bool EnsureStaticMeshMaterialTextures(const StaticMesh& staticMesh);
     [[nodiscard]] bool EnsureDefaultTextureResources();
     [[nodiscard]] std::shared_ptr<RHITexture> CreateTextureFromFile(const std::string& filePath, const std::string& debugName) const;
-    [[nodiscard]] bool EnsureStaticMeshPipeline();
+    [[nodiscard]] bool EnsurePipeline(const FPipelineKey& pipelineKey);
+    [[nodiscard]] bool BuildStaticMeshBasePassPipeline(FPreparedPipeline& outPipeline);
 
     RHIDevice* m_Device = nullptr;
     std::unordered_map<const StaticMesh*, std::weak_ptr<const FStaticMeshRenderData>> m_StaticMeshRenderDataCache;
     std::unordered_map<const StaticMesh*, std::vector<std::shared_ptr<RHITexture>>> m_StaticMeshBaseColorTextureCache;
-    std::unique_ptr<RHIShader> m_StaticMeshVertexShader;
-    std::unique_ptr<RHIShader> m_StaticMeshFragmentShader;
-    std::unique_ptr<RHIPipeline> m_StaticMeshPipeline;
+    std::unordered_map<FPipelineKey, FPreparedPipeline, FPipelineKeyHash> m_PipelineCache;
     std::shared_ptr<RHITexture> m_DefaultWhiteTexture;
     std::shared_ptr<RHISampler> m_DefaultSampler;
 };
