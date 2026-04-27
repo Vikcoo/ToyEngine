@@ -216,7 +216,7 @@ void SetupSandboxScene(TE::Engine& engine)
     pointLight->SetName("WarmPointLight");
     pointLight->SetPosition(pointLightPosition);
     pointLight->SetColor(TE::Vector3(1.0f, 0.55f, 0.25f));
-    pointLight->SetIntensity(2.0f);
+    pointLight->SetIntensity(4.0f);
     pointLight->SetAttenuationRadius(5.0f);
 
     world->AddActor(std::move(meshActor));
@@ -252,6 +252,18 @@ void TickSandboxScene(TE::Engine& engine, float deltaTime)
         }
     }
 
+    static float pointLightOrbitAngle = 0.0f;
+    constexpr float pointLightOrbitHeight = 1.4f;
+    constexpr float pointLightOrbitRadius = 3.2015622f; // sqrt(2.0^2 + 2.5^2)
+    constexpr float pointLightOrbitSpeedDeg = 35.0f;
+
+    pointLightOrbitAngle += TE::Math::DegToRad(pointLightOrbitSpeedDeg) * deltaTime;
+    const TE::Vector3 pointLightOrbitPosition(
+        TE::Math::Cos(pointLightOrbitAngle) * pointLightOrbitRadius,
+        pointLightOrbitHeight,
+        TE::Math::Sin(pointLightOrbitAngle) * pointLightOrbitRadius
+    );
+
     const auto& actors = world->GetActors();
     for (const auto& actor : actors)
     {
@@ -267,6 +279,28 @@ void TickSandboxScene(TE::Engine& engine, float deltaTime)
                 if (auto* primComp = dynamic_cast<TE::PrimitiveComponent*>(comp.get()))
                 {
                     primComp->MarkRenderStateDirty();
+                }
+            }
+        }
+        else if (actor->GetName() == "PointLightMarkerActor")
+        {
+            actor->SetPosition(pointLightOrbitPosition);
+            for (const auto& comp : actor->GetComponents())
+            {
+                if (auto* primComp = dynamic_cast<TE::PrimitiveComponent*>(comp.get()))
+                {
+                    primComp->MarkRenderStateDirty();
+                }
+            }
+        }
+        else if (actor->GetName() == "PointLightActor")
+        {
+            actor->SetPosition(pointLightOrbitPosition);
+            for (const auto& comp : actor->GetComponents())
+            {
+                if (auto* lightComp = dynamic_cast<TE::LightComponent*>(comp.get()))
+                {
+                    lightComp->MarkLightStateDirty();
                 }
             }
         }
