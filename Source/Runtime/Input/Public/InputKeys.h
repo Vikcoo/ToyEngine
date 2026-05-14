@@ -13,6 +13,11 @@ constexpr int LeftControl = 341;
 constexpr int Escape = 256;
 constexpr int F1 = 290;
 constexpr int F2 = 291;
+constexpr int F3 = 292;
+constexpr int F4 = 293;
+constexpr int F5 = 294;
+constexpr int F6 = 295;
+constexpr int F7 = 296;
 } // namespace TE::Keys
 
 namespace TE::MouseButton

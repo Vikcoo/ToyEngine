@@ -7,6 +7,7 @@ layout(location = 3) in vec3 aColor;
 
 uniform mat4 u_MVP;
 uniform mat4 u_Model;
+uniform mat3 u_NormalMatrix;
 
 out vec3 vWorldNormal;
 out vec3 vWorldPosition;
@@ -18,7 +19,7 @@ void main()
     vec4 worldPosition = u_Model * vec4(aPosition, 1.0);
     gl_Position = u_MVP * vec4(aPosition, 1.0);
     vWorldPosition = worldPosition.xyz;
-    vWorldNormal = normalize(mat3(u_Model) * aNormal);
+    vWorldNormal = normalize(u_NormalMatrix * aNormal);
     vTexCoord = aTexCoord;
     vColor = aColor;
 }

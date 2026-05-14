@@ -90,6 +90,7 @@ public:
     // 后续将逐步移除这些接口，全部迁移到 BindGroup 模型。
 
     virtual void SetUniformMatrix4(const char* name, const float* data) = 0;
+    virtual void SetUniformMatrix3(const char* name, const float* data) = 0;
     virtual void SetUniformFloat(const char* name, float value) = 0;
     virtual void SetUniformVec3(const char* name, const float* data) = 0;
     virtual void SetUniformInt(const char* name, int32_t value) = 0;

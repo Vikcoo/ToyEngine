@@ -27,6 +27,7 @@ public:
                 RHIDevice* device,
                 RHICommandBuffer* cmdBuf,
                 FRenderStats& outStats) override;
+    void SetDebugViewMode(ERenderDebugView mode) override { m_DebugViewMode = mode; }
 
 private:
     struct FPreparedStandalonePipeline
@@ -59,6 +60,7 @@ private:
     std::unique_ptr<RHIRenderTarget> m_GBuffer;
     uint32_t m_GBufferWidth = 0;
     uint32_t m_GBufferHeight = 0;
+    ERenderDebugView m_DebugViewMode = ERenderDebugView::Lit;
 };
 
 } // namespace TE

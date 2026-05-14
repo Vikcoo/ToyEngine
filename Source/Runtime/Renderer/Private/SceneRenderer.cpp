@@ -14,6 +14,10 @@ namespace TE {
 FSceneRenderer::FSceneRenderer()
     : m_RenderPath(CreateRenderPath(ERenderPathType::Forward))
 {
+    if (m_RenderPath)
+    {
+        m_RenderPath->SetDebugViewMode(m_DebugViewMode);
+    }
 }
 
 FSceneRenderer::~FSceneRenderer() = default;
@@ -40,8 +44,21 @@ void FSceneRenderer::SetRenderPath(ERenderPathType type)
 
     m_RenderPath = CreateRenderPath(type);
     m_RenderPathType = type;
+    if (m_RenderPath)
+    {
+        m_RenderPath->SetDebugViewMode(m_DebugViewMode);
+    }
     TE_LOG_INFO("[Renderer] Render path switched to {}",
                 type == ERenderPathType::Forward ? "Forward" : "Deferred");
+}
+
+void FSceneRenderer::SetDebugView(ERenderDebugView mode)
+{
+    m_DebugViewMode = mode;
+    if (m_RenderPath)
+    {
+        m_RenderPath->SetDebugViewMode(mode);
+    }
 }
 
 void FSceneRenderer::Render(const FScene* scene, RHIDevice* device, RHICommandBuffer* cmdBuf)

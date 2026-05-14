@@ -77,6 +77,7 @@ void Engine::Init()
     m_Scene = std::make_unique<FScene>(m_RHIDevice.get());
     m_SceneRenderer = std::make_unique<FSceneRenderer>();
     m_SceneRenderer->SetRenderPath(m_RenderPathType);
+    m_SceneRenderer->SetDebugView(m_RenderDebugViewMode);
     m_World = std::make_unique<World>();
 
     // 设置 World 的渲染场景接口
@@ -333,6 +334,15 @@ void Engine::SetRenderPath(ERenderPathType type)
     if (m_SceneRenderer)
     {
         m_SceneRenderer->SetRenderPath(type);
+    }
+}
+
+void Engine::SetRenderDebugView(ERenderDebugView mode)
+{
+    m_RenderDebugViewMode = mode;
+    if (m_SceneRenderer)
+    {
+        m_SceneRenderer->SetDebugView(mode);
     }
 }
 

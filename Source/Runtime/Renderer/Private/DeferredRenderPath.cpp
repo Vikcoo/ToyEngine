@@ -333,8 +333,10 @@ void FDeferredRenderPath::SubmitGBufferPass(const std::vector<FMeshDrawCommand>&
         }
 
         Matrix4 mvp = adjustedVP * cmd.WorldMatrix;
+        Matrix3 normalMatrix = cmd.WorldMatrix.GetNormalMatrix();
         cmdBuf->SetUniformMatrix4("u_MVP", mvp.Data());
         cmdBuf->SetUniformMatrix4("u_Model", cmd.WorldMatrix.Data());
+        cmdBuf->SetUniformMatrix3("u_NormalMatrix", normalMatrix.Data());
 
         cmdBuf->DrawIndexed(cmd.IndexCount, cmd.FirstIndex);
         ++outStats.DrawCallCount;
@@ -365,6 +367,7 @@ void FDeferredRenderPath::SubmitLightingPass(const FScene* scene,
     cmdBuf->SetUniformInt("u_GBufferDepth", 3);
 
     cmdBuf->SetUniformInt("u_RTSampleFlipY", device->GetBackendTraits().bRTSampleRequiresFlipY ? 1 : 0);
+    cmdBuf->SetUniformInt("u_DebugViewMode", static_cast<int32_t>(m_DebugViewMode));
     BindSceneLightUniforms(scene, cmdBuf);
 
     cmdBuf->Draw(3);

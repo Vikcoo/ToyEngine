@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "RenderPathTypes.h"
+
 namespace TE {
 
 class FScene;
@@ -19,6 +21,7 @@ public:
                         RHIDevice* device,
                         RHICommandBuffer* cmdBuf,
                         FRenderStats& outStats) = 0;
+    virtual void SetDebugViewMode(ERenderDebugView mode) { (void)mode; }
 };
 
 } // namespace TE

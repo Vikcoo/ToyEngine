@@ -33,6 +33,7 @@ public:
     void SwapBuffers() override;
     void SetVSync(bool enabled) override;
     [[nodiscard]] bool IsVSyncEnabled() const override;
+    void SetTitle(const std::string& title) override;
     [[nodiscard]] EWindowGraphicsAPI GetGraphicsAPI() const override { return m_graphicsAPI; }
 
 private:

@@ -140,9 +140,11 @@ void FForwardRenderPath::SubmitDrawCommands(const std::vector<FMeshDrawCommand>&
         }
 
         Matrix4 mvp = adjustedVP * cmd.WorldMatrix;
+        Matrix3 normalMatrix = cmd.WorldMatrix.GetNormalMatrix();
 
         cmdBuf->SetUniformMatrix4("u_MVP", mvp.Data());
         cmdBuf->SetUniformMatrix4("u_Model", cmd.WorldMatrix.Data());
+        cmdBuf->SetUniformMatrix3("u_NormalMatrix", normalMatrix.Data());
 
         BindSceneLightUniforms(scene, cmdBuf);
 

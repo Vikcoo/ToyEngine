@@ -79,6 +79,9 @@ public:
     /// 查询当前 VSync 状态
     [[nodiscard]] virtual bool IsVSyncEnabled() const { return false; }
 
+    /// 更新窗口标题
+    virtual void SetTitle(const std::string& title) { (void)title; }
+
     /// 查询窗口创建时使用的图形 API 类型
     [[nodiscard]] virtual EWindowGraphicsAPI GetGraphicsAPI() const = 0;
 

@@ -289,6 +289,23 @@ void OpenGLCommandBuffer::SetUniformMatrix4(const char* name, const float* data)
     glUniformMatrix4fv(location, 1, GL_FALSE, data);
 }
 
+void OpenGLCommandBuffer::SetUniformMatrix3(const char* name, const float* data)
+{
+    if (!m_BoundPipeline)
+    {
+        TE_LOG_WARN("[RHIOpenGL] SetUniformMatrix3 called without bound pipeline");
+        return;
+    }
+
+    GLint location = glGetUniformLocation(m_BoundPipeline->GetGLProgram(), name);
+    if (location == -1)
+    {
+        TE_LOG_WARN("[RHIOpenGL] Uniform '{}' not found in shader program", name);
+        return;
+    }
+    glUniformMatrix3fv(location, 1, GL_FALSE, data);
+}
+
 void OpenGLCommandBuffer::SetUniformFloat(const char* name, float value)
 {
     if (!m_BoundPipeline)

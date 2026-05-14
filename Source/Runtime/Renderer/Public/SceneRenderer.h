@@ -3,9 +3,9 @@
 
 #pragma once
 
+#include "RenderPathTypes.h"
 #include "RenderStats.h"
 
-#include <cstdint>
 #include <memory>
 
 namespace TE {
@@ -14,12 +14,6 @@ class FScene;
 class IRenderPath;
 class RHICommandBuffer;
 class RHIDevice;
-
-enum class ERenderPathType : uint8_t
-{
-    Forward = 0,
-    Deferred = 1,
-};
 
 /// 场景渲染调度器。
 ///
@@ -37,6 +31,8 @@ public:
     void Render(const FScene* scene, RHIDevice* device, RHICommandBuffer* cmdBuf);
     void SetRenderPath(ERenderPathType type);
     [[nodiscard]] ERenderPathType GetRenderPathType() const { return m_RenderPathType; }
+    void SetDebugView(ERenderDebugView mode);
+    [[nodiscard]] ERenderDebugView GetDebugView() const { return m_DebugViewMode; }
 
     [[nodiscard]] uint32_t GetLastDrawCallCount() const { return m_LastStats.DrawCallCount; }
     [[nodiscard]] uint32_t GetLastPipelineBindCount() const { return m_LastStats.PipelineBindCount; }
@@ -48,6 +44,7 @@ private:
 
     std::unique_ptr<IRenderPath> m_RenderPath;
     ERenderPathType m_RenderPathType = ERenderPathType::Forward;
+    ERenderDebugView m_DebugViewMode = ERenderDebugView::Lit;
     FRenderStats m_LastStats;
 };
 

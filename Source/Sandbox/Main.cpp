@@ -27,6 +27,44 @@
 
 namespace {
 
+const char* GetRenderPathLabel(TE::ERenderPathType type)
+{
+    switch (type)
+    {
+    case TE::ERenderPathType::Forward: return "Forward";
+    case TE::ERenderPathType::Deferred: return "Deferred";
+    default: return "Unknown";
+    }
+}
+
+const char* GetDebugViewLabel(TE::ERenderDebugView mode)
+{
+    switch (mode)
+    {
+    case TE::ERenderDebugView::Lit: return "Lit";
+    case TE::ERenderDebugView::Albedo: return "Albedo";
+    case TE::ERenderDebugView::Normal: return "Normal";
+    case TE::ERenderDebugView::WorldPosition: return "WorldPosition";
+    case TE::ERenderDebugView::Depth: return "Depth";
+    default: return "Unknown";
+    }
+}
+
+void UpdateSandboxWindowTitle(TE::Engine& engine)
+{
+    auto* window = engine.GetWindow();
+    if (!window)
+    {
+        return;
+    }
+
+    std::string title = "ToyEngine Sandbox | Path: ";
+    title += GetRenderPathLabel(engine.GetRenderPath());
+    title += " | Debug: ";
+    title += GetDebugViewLabel(engine.GetRenderDebugView());
+    window->SetTitle(title);
+}
+
 std::shared_ptr<TE::StaticMesh> LoadOrCreateDemoMesh(const std::string& modelName)
 {
     const std::string modelDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Models/";
@@ -227,6 +265,8 @@ void SetupSandboxScene(TE::Engine& engine)
     world->AddActor(std::move(pointLightActor));
 
     engine.SetActiveCameraComponent(cameraComp);
+    engine.SetRenderDebugView(TE::ERenderDebugView::Lit);
+    UpdateSandboxWindowTitle(engine);
     TE_LOG_INFO("[Sandbox] Scene built: MeshActor + MeshActorTop + PointLightMarkerActor + CameraActor + DirectionalLightActor + PointLightActor");
 }
 
@@ -243,12 +283,48 @@ void TickSandboxScene(TE::Engine& engine, float deltaTime)
         if (input->IsKeyJustPressed(TE::Keys::F1))
         {
             engine.SetRenderPath(TE::ERenderPathType::Forward);
+            UpdateSandboxWindowTitle(engine);
             TE_LOG_INFO("[Sandbox] Switched render path: Forward");
         }
         else if (input->IsKeyJustPressed(TE::Keys::F2))
         {
             engine.SetRenderPath(TE::ERenderPathType::Deferred);
+            UpdateSandboxWindowTitle(engine);
             TE_LOG_INFO("[Sandbox] Switched render path: Deferred");
+        }
+        else if (input->IsKeyJustPressed(TE::Keys::F3))
+        {
+            engine.SetRenderDebugView(TE::ERenderDebugView::Lit);
+            UpdateSandboxWindowTitle(engine);
+            TE_LOG_INFO("[Sandbox] Debug view: Lit");
+        }
+        else if (input->IsKeyJustPressed(TE::Keys::F4))
+        {
+            engine.SetRenderPath(TE::ERenderPathType::Deferred);
+            engine.SetRenderDebugView(TE::ERenderDebugView::Albedo);
+            UpdateSandboxWindowTitle(engine);
+            TE_LOG_INFO("[Sandbox] Render path: Deferred, debug view: Albedo");
+        }
+        else if (input->IsKeyJustPressed(TE::Keys::F5))
+        {
+            engine.SetRenderPath(TE::ERenderPathType::Deferred);
+            engine.SetRenderDebugView(TE::ERenderDebugView::Normal);
+            UpdateSandboxWindowTitle(engine);
+            TE_LOG_INFO("[Sandbox] Render path: Deferred, debug view: Normal");
+        }
+        else if (input->IsKeyJustPressed(TE::Keys::F6))
+        {
+            engine.SetRenderPath(TE::ERenderPathType::Deferred);
+            engine.SetRenderDebugView(TE::ERenderDebugView::WorldPosition);
+            UpdateSandboxWindowTitle(engine);
+            TE_LOG_INFO("[Sandbox] Render path: Deferred, debug view: WorldPosition");
+        }
+        else if (input->IsKeyJustPressed(TE::Keys::F7))
+        {
+            engine.SetRenderPath(TE::ERenderPathType::Deferred);
+            engine.SetRenderDebugView(TE::ERenderDebugView::Depth);
+            UpdateSandboxWindowTitle(engine);
+            TE_LOG_INFO("[Sandbox] Render path: Deferred, debug view: Depth");
         }
     }
 

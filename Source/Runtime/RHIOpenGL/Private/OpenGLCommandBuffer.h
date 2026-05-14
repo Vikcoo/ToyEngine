@@ -39,6 +39,7 @@ public:
                      uint32_t instanceCount = 1, uint32_t firstInstance = 0) override;
     void SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGroup) override;
     void SetUniformMatrix4(const char* name, const float* data) override;
+    void SetUniformMatrix3(const char* name, const float* data) override;
     void SetUniformFloat(const char* name, float value) override;
     void SetUniformVec3(const char* name, const float* data) override;
     void SetUniformInt(const char* name, int32_t value) override;

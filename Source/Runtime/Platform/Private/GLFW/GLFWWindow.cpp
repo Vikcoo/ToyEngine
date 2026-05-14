@@ -146,6 +146,15 @@ bool GLFWWindow::IsVSyncEnabled() const
     return m_vsyncEnabled;
 }
 
+void GLFWWindow::SetTitle(const std::string& title)
+{
+    m_title = title;
+    if (m_window)
+    {
+        glfwSetWindowTitle(m_window, m_title.c_str());
+    }
+}
+
 void GLFWWindow::SetResizeCallback(WindowResizeCallback callback)
 {
     m_resizeCallback = std::move(callback);
