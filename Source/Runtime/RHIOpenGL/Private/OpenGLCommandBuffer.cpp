@@ -26,7 +26,7 @@ void OpenGLCommandBuffer::BeginRenderPass(const RHIRenderPassBeginInfo& info)
     uint32_t colorAttachmentCount = 0;
     if (info.renderTarget != nullptr)
     {
-        auto* glRT = static_cast<OpenGLRenderTarget*>(info.renderTarget);
+        const auto* glRT = dynamic_cast<OpenGLRenderTarget*>(info.renderTarget);
         m_CurrentFBO = glRT->GetGLFramebufferID();
         colorAttachmentCount = glRT->GetColorAttachmentCount();
 

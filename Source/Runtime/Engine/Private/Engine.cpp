@@ -245,7 +245,7 @@ void Engine::Tick(float deltaTime)
             );
         }
 
-        FViewInfo viewInfo = m_CameraComponent->BuildViewInfo();
+        const FViewInfo viewInfo = m_CameraComponent->BuildViewInfo();
         m_Scene->SetViewInfo(viewInfo);
     }
 

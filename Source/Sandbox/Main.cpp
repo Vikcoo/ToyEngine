@@ -240,13 +240,13 @@ void SetupSandboxScene(TE::Engine& engine)
     flyCamCtrl->SetInputManager(engine.GetInputManager());
     flyCamCtrl->SetWindow(engine.GetWindow());
 
-    auto directionalLightActor = std::make_unique<TE::Actor>();
-    directionalLightActor->SetName("DirectionalLightActor");
-    auto* directionalLight = directionalLightActor->AddComponent<TE::DirectionalLightComponent>();
-    directionalLight->SetName("MainDirectionalLight");
-    directionalLight->SetColor(TE::Vector3(1.0f, 0.96f, 0.9f));
-    directionalLight->SetIntensity(1.0f);
-    directionalLight->GetTransform().SetForward(TE::Vector3(0.5f, 1.0f, 0.8f).Normalize());
+    // auto directionalLightActor = std::make_unique<TE::Actor>();
+    // directionalLightActor->SetName("DirectionalLightActor");
+    // auto* directionalLight = directionalLightActor->AddComponent<TE::DirectionalLightComponent>();
+    // directionalLight->SetName("MainDirectionalLight");
+    // directionalLight->SetColor(TE::Vector3(1.0f, 0.96f, 0.9f));
+    // directionalLight->SetIntensity(1.0f);
+    // directionalLight->GetTransform().SetForward(TE::Vector3(0.5f, 1.0f, 0.8f).Normalize());
 
     auto pointLightActor = std::make_unique<TE::Actor>();
     pointLightActor->SetName("PointLightActor");
@@ -261,7 +261,7 @@ void SetupSandboxScene(TE::Engine& engine)
     world->AddActor(std::move(meshActorTop));
     world->AddActor(std::move(pointLightMarkerActor));
     world->AddActor(std::move(cameraActor));
-    world->AddActor(std::move(directionalLightActor));
+    //world->AddActor(std::move(directionalLightActor));
     world->AddActor(std::move(pointLightActor));
 
     engine.SetActiveCameraComponent(cameraComp);
