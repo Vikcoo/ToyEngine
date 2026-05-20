@@ -27,12 +27,12 @@ public:
                 FRenderStats& outStats) override;
 
 private:
-    void SortDrawCommands(std::vector<FMeshDrawCommand>& commands) const;
-    void SubmitDrawCommands(const std::vector<FMeshDrawCommand>& commands,
+    static void SortDrawCommands(std::vector<FMeshDrawCommand>& commands) ;
+    static void SubmitDrawCommands(const std::vector<FMeshDrawCommand>& commands,
                             const FScene* scene,
-                            RHIDevice* device,
+                            const RHIDevice* device,
                             RHICommandBuffer* cmdBuf,
-                            FRenderStats& outStats) const;
+                            FRenderStats& outStats) ;
 
     FMeshPassProcessor m_BasePassProcessor;
 };

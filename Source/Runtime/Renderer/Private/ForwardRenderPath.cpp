@@ -63,32 +63,32 @@ void FForwardRenderPath::Render(const FScene* scene,
     cmdBuf->End();
 }
 
-void FForwardRenderPath::SortDrawCommands(std::vector<FMeshDrawCommand>& commands) const
+void FForwardRenderPath::SortDrawCommands(std::vector<FMeshDrawCommand>& commands)
 {
-    std::sort(commands.begin(), commands.end(),
-        [](const FMeshDrawCommand& a, const FMeshDrawCommand& b)
-        {
-            if (a.PipelineKey.Pass != b.PipelineKey.Pass)
-                return static_cast<uint8_t>(a.PipelineKey.Pass) < static_cast<uint8_t>(b.PipelineKey.Pass);
+    std::ranges::sort(commands,
+                      [](const FMeshDrawCommand& a, const FMeshDrawCommand& b)
+                      {
+                          if (a.PipelineKey.Pass != b.PipelineKey.Pass)
+                              return static_cast<uint8_t>(a.PipelineKey.Pass) < static_cast<uint8_t>(b.PipelineKey.Pass);
 
-            if (a.PipelineKey.MaterialDomain != b.PipelineKey.MaterialDomain)
-                return static_cast<uint8_t>(a.PipelineKey.MaterialDomain) < static_cast<uint8_t>(b.PipelineKey.MaterialDomain);
+                          if (a.PipelineKey.MaterialDomain != b.PipelineKey.MaterialDomain)
+                              return static_cast<uint8_t>(a.PipelineKey.MaterialDomain) < static_cast<uint8_t>(b.PipelineKey.MaterialDomain);
 
-            if (a.PipelineKey.VertexFactory != b.PipelineKey.VertexFactory)
-                return static_cast<uint8_t>(a.PipelineKey.VertexFactory) < static_cast<uint8_t>(b.PipelineKey.VertexFactory);
+                          if (a.PipelineKey.VertexFactory != b.PipelineKey.VertexFactory)
+                              return static_cast<uint8_t>(a.PipelineKey.VertexFactory) < static_cast<uint8_t>(b.PipelineKey.VertexFactory);
 
-            if (a.VertexBuffer != b.VertexBuffer)
-                return a.VertexBuffer < b.VertexBuffer;
+                          if (a.VertexBuffer != b.VertexBuffer)
+                              return a.VertexBuffer < b.VertexBuffer;
 
-            return a.IndexBuffer < b.IndexBuffer;
-        });
+                          return a.IndexBuffer < b.IndexBuffer;
+                      });
 }
 
 void FForwardRenderPath::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& commands,
                                             const FScene* scene,
-                                            RHIDevice* device,
+                                            const RHIDevice* device,
                                             RHICommandBuffer* cmdBuf,
-                                            FRenderStats& outStats) const
+                                            FRenderStats& outStats)
 {
     const auto& viewInfo = scene->GetViewInfo();
 
