@@ -5,12 +5,14 @@ const int MaxPointLights = 8;
 
 in vec2 vScreenUV;
 
-uniform sampler2D u_GBufferAlbedo;
-uniform sampler2D u_GBufferNormal;
-uniform sampler2D u_GBufferWorldPosition;
-uniform sampler2D u_GBufferDepth;
-uniform int u_RTSampleFlipY;
-uniform int u_DebugViewMode;
+layout(binding = 2) uniform sampler2D u_GBufferAlbedo;
+layout(binding = 3) uniform sampler2D u_GBufferNormal;
+layout(binding = 4) uniform sampler2D u_GBufferWorldPosition;
+layout(binding = 5) uniform sampler2D u_GBufferDepth;
+
+layout(std140, binding = 1) uniform DeferredPassBlock {
+    ivec4 u_DeferredParams;
+};
 
 layout(std140, binding = 0) uniform LightBlock {
     ivec4 u_LightCounts;
@@ -25,7 +27,7 @@ out vec4 fragColor;
 void main()
 {
     vec2 uv = vScreenUV;
-    if (u_RTSampleFlipY != 0)
+    if (u_DeferredParams.x != 0)
     {
         uv.y = 1.0 - uv.y;
     }
@@ -41,23 +43,23 @@ void main()
     vec3 normal = normalize(texture(u_GBufferNormal, uv).rgb * 2.0 - 1.0);
     vec3 worldPosition = texture(u_GBufferWorldPosition, uv).rgb;
 
-    if (u_DebugViewMode == 1)
+    if (u_DeferredParams.y == 1)
     {
         fragColor = vec4(baseColor, 1.0);
         return;
     }
-    if (u_DebugViewMode == 2)
+    if (u_DeferredParams.y == 2)
     {
         fragColor = vec4(normal * 0.5 + 0.5, 1.0);
         return;
     }
-    if (u_DebugViewMode == 3)
+    if (u_DeferredParams.y == 3)
     {
         vec3 worldPositionView = clamp(worldPosition * 0.1 + 0.5, 0.0, 1.0);
         fragColor = vec4(worldPositionView, 1.0);
         return;
     }
-    if (u_DebugViewMode == 4)
+    if (u_DeferredParams.y == 4)
     {
         fragColor = vec4(vec3(depth), 1.0);
         return;

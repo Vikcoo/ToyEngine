@@ -10,6 +10,8 @@ add_library(Renderer STATIC
     Private/MeshPassProcessor.cpp
     Private/RenderResourceManager.cpp
     Private/RendererLightUniforms.cpp
+    Private/RendererPassUniforms.cpp
+    Private/RendererTextureBindings.cpp
     Private/RendererScene.cpp
     Private/SceneRenderer.cpp
 )

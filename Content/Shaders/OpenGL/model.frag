@@ -16,7 +16,7 @@ layout(std140, binding = 0) uniform LightBlock {
     vec4 u_PointLightColorsAndRadii[MaxPointLights];
 };
 
-uniform sampler2D u_BaseColorTex;
+layout(binding = 2) uniform sampler2D u_BaseColorTex;
 
 out vec4 fragColor;
 

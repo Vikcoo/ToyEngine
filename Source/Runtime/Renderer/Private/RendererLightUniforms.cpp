@@ -3,6 +3,7 @@
 
 #include "RendererLightUniforms.h"
 
+#include "RendererBindingSlots.h"
 #include "LightSceneProxy.h"
 #include "RendererScene.h"
 #include "RHIBindGroup.h"
@@ -19,8 +20,6 @@ namespace {
 
 constexpr uint32_t MaxDirectionalLights = 4;
 constexpr uint32_t MaxPointLights = 8;
-constexpr uint32_t LightBlockBinding = 0;
-
 struct alignas(16) FLightBlockCPU
 {
     std::array<int32_t, 4> Counts = {0, 0, 0, 0};
@@ -109,7 +108,7 @@ bool EnsureLightUniformBindingState(RHIDevice* device, FLightUniformBindingState
     RHIBindGroupDesc bindGroupDesc;
     bindGroupDesc.debugName = "Renderer_LightBlock_BindGroup";
     bindGroupDesc.entries.push_back({
-        LightBlockBinding,
+        RendererBindingSlots::LightBlock,
         RHIBindingType::UniformBuffer,
         state.UniformBuffer.get(),
         0,
@@ -140,7 +139,7 @@ bool UpdateAndBindSceneLightUniforms(const FScene* scene,
         return false;
     }
 
-    cmdBuf->SetBindGroup(0, state.BindGroup.get());
+    cmdBuf->SetBindGroup(RendererBindingSlots::LightBlock, state.BindGroup.get());
     return true;
 }
 

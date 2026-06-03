@@ -4,6 +4,8 @@
 #include "DeferredRenderPath.h"
 
 #include "RendererLightUniforms.h"
+#include "RendererPassUniforms.h"
+#include "RendererTextureBindings.h"
 #include "RendererScene.h"
 #include "RenderStats.h"
 #include "StaticMesh.h"
@@ -65,6 +67,10 @@ void FillStaticMeshVertexInput(RHIVertexInputDesc& vertexInput)
 FDeferredRenderPath::FDeferredRenderPath()
     : m_GBufferPassProcessor(EMeshPassType::BasePass)
     , m_LightBindingState(std::make_unique<FLightUniformBindingState>())
+    , m_ObjectBindingState(std::make_unique<FObjectUniformBindingState>())
+    , m_DeferredPassBindingState(std::make_unique<FDeferredPassUniformBindingState>())
+    , m_BaseColorTextureBindingState(std::make_unique<FBaseColorTextureBindingState>())
+    , m_GBufferTextureBindingState(std::make_unique<FGBufferTextureBindingState>())
 {
 }
 
@@ -329,15 +335,16 @@ void FDeferredRenderPath::SubmitGBufferPass(const std::vector<FMeshDrawCommand>&
         auto* defaultSampler = scene->ResolveDefaultSampler();
         if (baseColorTexture)
         {
-            cmdBuf->BindTexture2D(0, baseColorTexture, defaultSampler);
-            cmdBuf->SetUniformInt("u_BaseColorTex", 0);
+            UpdateAndBindBaseColorTexture(device,
+                                          cmdBuf,
+                                          *m_BaseColorTextureBindingState,
+                                          baseColorTexture,
+                                          defaultSampler);
         }
 
         Matrix4 mvp = adjustedVP * cmd.WorldMatrix;
         Matrix3 normalMatrix = cmd.WorldMatrix.GetNormalMatrix();
-        cmdBuf->SetUniformMatrix4("u_MVP", mvp.Data());
-        cmdBuf->SetUniformMatrix4("u_Model", cmd.WorldMatrix.Data());
-        cmdBuf->SetUniformMatrix3("u_NormalMatrix", normalMatrix.Data());
+        UpdateAndBindObjectUniforms(device, cmdBuf, *m_ObjectBindingState, mvp, cmd.WorldMatrix, normalMatrix);
 
         cmdBuf->DrawIndexed(cmd.IndexCount, cmd.FirstIndex);
         ++outStats.DrawCallCount;
@@ -358,17 +365,17 @@ void FDeferredRenderPath::SubmitLightingPass(const FScene* scene,
     ++outStats.PipelineBindCount;
 
     auto* gbufferSampler = scene->ResolveGBufferSampler();
-    cmdBuf->BindTexture2D(0, m_GBuffer->GetColorAttachment(0), gbufferSampler);
-    cmdBuf->SetUniformInt("u_GBufferAlbedo", 0);
-    cmdBuf->BindTexture2D(1, m_GBuffer->GetColorAttachment(1), gbufferSampler);
-    cmdBuf->SetUniformInt("u_GBufferNormal", 1);
-    cmdBuf->BindTexture2D(2, m_GBuffer->GetColorAttachment(2), gbufferSampler);
-    cmdBuf->SetUniformInt("u_GBufferWorldPosition", 2);
-    cmdBuf->BindTexture2D(3, m_GBuffer->GetDepthStencilAttachment(), gbufferSampler);
-    cmdBuf->SetUniformInt("u_GBufferDepth", 3);
+    UpdateAndBindGBufferTextures(device,
+                                 cmdBuf,
+                                 *m_GBufferTextureBindingState,
+                                 m_GBuffer.get(),
+                                 gbufferSampler);
 
-    cmdBuf->SetUniformInt("u_RTSampleFlipY", device->GetBackendTraits().bRTSampleRequiresFlipY ? 1 : 0);
-    cmdBuf->SetUniformInt("u_DebugViewMode", static_cast<int32_t>(m_DebugViewMode));
+    UpdateAndBindDeferredPassUniforms(device,
+                                      cmdBuf,
+                                      *m_DeferredPassBindingState,
+                                      device->GetBackendTraits().bRTSampleRequiresFlipY,
+                                      m_DebugViewMode);
     UpdateAndBindSceneLightUniforms(scene, device, cmdBuf, *m_LightBindingState);
 
     cmdBuf->Draw(3);

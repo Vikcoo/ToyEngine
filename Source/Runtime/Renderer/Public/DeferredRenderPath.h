@@ -17,6 +17,10 @@ class RHIPipeline;
 class RHIRenderTarget;
 class RHIShader;
 struct FLightUniformBindingState;
+struct FObjectUniformBindingState;
+struct FDeferredPassUniformBindingState;
+struct FBaseColorTextureBindingState;
+struct FGBufferTextureBindingState;
 
 class FDeferredRenderPath final : public IRenderPath
 {
@@ -63,6 +67,10 @@ private:
     uint32_t m_GBufferHeight = 0;
     ERenderDebugView m_DebugViewMode = ERenderDebugView::Lit;
     std::unique_ptr<FLightUniformBindingState> m_LightBindingState;
+    std::unique_ptr<FObjectUniformBindingState> m_ObjectBindingState;
+    std::unique_ptr<FDeferredPassUniformBindingState> m_DeferredPassBindingState;
+    std::unique_ptr<FBaseColorTextureBindingState> m_BaseColorTextureBindingState;
+    std::unique_ptr<FGBufferTextureBindingState> m_GBufferTextureBindingState;
 };
 
 } // namespace TE

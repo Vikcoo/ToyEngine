@@ -135,23 +135,7 @@ bool OpenGLPipeline::LinkProgram(GLuint vertShader, GLuint fragShader)
         return false;
     }
 
-    ConfigureUniformBlocks();
     return true;
-}
-
-void OpenGLPipeline::ConfigureUniformBlocks()
-{
-    if (m_ProgramID == 0)
-    {
-        return;
-    }
-
-    constexpr GLuint LightBlockBinding = 0;
-    const GLuint lightBlockIndex = glGetUniformBlockIndex(m_ProgramID, "LightBlock");
-    if (lightBlockIndex != GL_INVALID_INDEX)
-    {
-        glUniformBlockBinding(m_ProgramID, lightBlockIndex, LightBlockBinding);
-    }
 }
 
 void OpenGLPipeline::SetupVertexAttributes(const RHIVertexInputDesc& vertexInput)

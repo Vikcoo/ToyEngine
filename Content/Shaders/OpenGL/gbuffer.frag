@@ -5,7 +5,7 @@ in vec3 vWorldPosition;
 in vec2 vTexCoord;
 in vec3 vColor;
 
-uniform sampler2D u_BaseColorTex;
+layout(binding = 2) uniform sampler2D u_BaseColorTex;
 
 layout(location = 0) out vec4 outAlbedo;
 layout(location = 1) out vec4 outNormal;

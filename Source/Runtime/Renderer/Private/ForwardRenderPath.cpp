@@ -4,6 +4,8 @@
 #include "ForwardRenderPath.h"
 
 #include "RendererLightUniforms.h"
+#include "RendererPassUniforms.h"
+#include "RendererTextureBindings.h"
 #include "RendererScene.h"
 #include "RenderStats.h"
 #include "ViewInfo.h"
@@ -19,6 +21,8 @@ namespace TE {
 FForwardRenderPath::FForwardRenderPath()
     : m_BasePassProcessor(EMeshPassType::BasePass)
     , m_LightBindingState(std::make_unique<FLightUniformBindingState>())
+    , m_ObjectBindingState(std::make_unique<FObjectUniformBindingState>())
+    , m_BaseColorTextureBindingState(std::make_unique<FBaseColorTextureBindingState>())
 {
 }
 
@@ -138,16 +142,17 @@ void FForwardRenderPath::SubmitDrawCommands(const std::vector<FMeshDrawCommand>&
         auto* defaultSampler = scene->ResolveDefaultSampler();
         if (baseColorTexture)
         {
-            cmdBuf->BindTexture2D(0, baseColorTexture, defaultSampler);
-            cmdBuf->SetUniformInt("u_BaseColorTex", 0);
+            UpdateAndBindBaseColorTexture(device,
+                                          cmdBuf,
+                                          *m_BaseColorTextureBindingState,
+                                          baseColorTexture,
+                                          defaultSampler);
         }
 
         Matrix4 mvp = adjustedVP * cmd.WorldMatrix;
         Matrix3 normalMatrix = cmd.WorldMatrix.GetNormalMatrix();
 
-        cmdBuf->SetUniformMatrix4("u_MVP", mvp.Data());
-        cmdBuf->SetUniformMatrix4("u_Model", cmd.WorldMatrix.Data());
-        cmdBuf->SetUniformMatrix3("u_NormalMatrix", normalMatrix.Data());
+        UpdateAndBindObjectUniforms(device, cmdBuf, *m_ObjectBindingState, mvp, cmd.WorldMatrix, normalMatrix);
 
         UpdateAndBindSceneLightUniforms(scene, device, cmdBuf, *m_LightBindingState);
 
