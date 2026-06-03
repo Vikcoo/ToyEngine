@@ -57,9 +57,9 @@ public:
 
     /// 对引擎约定的 [0,1] 深度、Y-up 投影矩阵做后端适配。
     /// 引擎上层生成的投影矩阵统一为 [0,1] 深度 + Y-up，此方法在提交渲染前由后端修正：
-    ///   - OpenGL 无 glClipControl 时：将 [0,1] 重映射为 [-1,1]
+    ///   - OpenGL 未启用 glClipControl 时：将 [0,1] 重映射为 [-1,1]
     ///   - Vulkan：翻转 Y 轴（NDC Y 向下）
-    ///   - D3D12 / OpenGL 有 glClipControl：原样返回
+    ///   - D3D12 / OpenGL 已启用 glClipControl：原样返回
     [[nodiscard]] virtual Matrix4 AdjustProjectionMatrix(const Matrix4& projection) const;
 
     /// 工厂方法：根据编译选项（TE_RHI_OPENGL / TE_RHI_VULKAN 等）创建对应后端的 Device

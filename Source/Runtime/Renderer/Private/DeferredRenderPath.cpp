@@ -64,6 +64,7 @@ void FillStaticMeshVertexInput(RHIVertexInputDesc& vertexInput)
 
 FDeferredRenderPath::FDeferredRenderPath()
     : m_GBufferPassProcessor(EMeshPassType::BasePass)
+    , m_LightBindingState(std::make_unique<FLightUniformBindingState>())
 {
 }
 
@@ -368,7 +369,7 @@ void FDeferredRenderPath::SubmitLightingPass(const FScene* scene,
 
     cmdBuf->SetUniformInt("u_RTSampleFlipY", device->GetBackendTraits().bRTSampleRequiresFlipY ? 1 : 0);
     cmdBuf->SetUniformInt("u_DebugViewMode", static_cast<int32_t>(m_DebugViewMode));
-    BindSceneLightUniforms(scene, cmdBuf);
+    UpdateAndBindSceneLightUniforms(scene, device, cmdBuf, *m_LightBindingState);
 
     cmdBuf->Draw(3);
     ++outStats.DrawCallCount;

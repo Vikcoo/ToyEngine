@@ -16,6 +16,7 @@ class RHIDevice;
 class RHIPipeline;
 class RHIRenderTarget;
 class RHIShader;
+struct FLightUniformBindingState;
 
 class FDeferredRenderPath final : public IRenderPath
 {
@@ -61,6 +62,7 @@ private:
     uint32_t m_GBufferWidth = 0;
     uint32_t m_GBufferHeight = 0;
     ERenderDebugView m_DebugViewMode = ERenderDebugView::Lit;
+    std::unique_ptr<FLightUniformBindingState> m_LightBindingState;
 };
 
 } // namespace TE

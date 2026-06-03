@@ -18,8 +18,11 @@ namespace TE {
 
 FForwardRenderPath::FForwardRenderPath()
     : m_BasePassProcessor(EMeshPassType::BasePass)
+    , m_LightBindingState(std::make_unique<FLightUniformBindingState>())
 {
 }
+
+FForwardRenderPath::~FForwardRenderPath() = default;
 
 void FForwardRenderPath::Render(const FScene* scene,
                                 RHIDevice* device,
@@ -86,7 +89,7 @@ void FForwardRenderPath::SortDrawCommands(std::vector<FMeshDrawCommand>& command
 
 void FForwardRenderPath::SubmitDrawCommands(const std::vector<FMeshDrawCommand>& commands,
                                             const FScene* scene,
-                                            const RHIDevice* device,
+                                            RHIDevice* device,
                                             RHICommandBuffer* cmdBuf,
                                             FRenderStats& outStats)
 {
@@ -146,7 +149,7 @@ void FForwardRenderPath::SubmitDrawCommands(const std::vector<FMeshDrawCommand>&
         cmdBuf->SetUniformMatrix4("u_Model", cmd.WorldMatrix.Data());
         cmdBuf->SetUniformMatrix3("u_NormalMatrix", normalMatrix.Data());
 
-        BindSceneLightUniforms(scene, cmdBuf);
+        UpdateAndBindSceneLightUniforms(scene, device, cmdBuf, *m_LightBindingState);
 
         cmdBuf->DrawIndexed(cmd.IndexCount, cmd.FirstIndex);
         ++outStats.DrawCallCount;

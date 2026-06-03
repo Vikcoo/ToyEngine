@@ -20,6 +20,9 @@ public:
     /// 获取缓冲区用途
     [[nodiscard]] virtual RHIBufferUsage GetUsage() const = 0;
 
+    /// 更新缓冲区数据
+    virtual bool UpdateData(const void* data, uint64_t size, uint64_t offset = 0) = 0;
+
 protected:
     RHIBuffer() = default;
 };

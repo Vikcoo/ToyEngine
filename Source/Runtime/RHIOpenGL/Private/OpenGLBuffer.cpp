@@ -17,6 +17,21 @@ static GLenum BufferUsageToGLTarget(RHIBufferUsage usage)
     }
 }
 
+static GLenum BufferUsageToGLHint(RHIBufferUsage usage)
+{
+    switch (usage)
+    {
+        case RHIBufferUsage::Uniform:
+        case RHIBufferUsage::Storage:
+        case RHIBufferUsage::Staging:
+            return GL_DYNAMIC_DRAW;
+        case RHIBufferUsage::Vertex:
+        case RHIBufferUsage::Index:
+        default:
+            return GL_STATIC_DRAW;
+    }
+}
+
 OpenGLBuffer::OpenGLBuffer(const RHIBufferDesc& desc)
     : m_Size(desc.size)
     , m_Usage(desc.usage)
@@ -24,7 +39,7 @@ OpenGLBuffer::OpenGLBuffer(const RHIBufferDesc& desc)
 {
     glGenBuffers(1, &m_BufferID);
     glBindBuffer(m_Target, m_BufferID);
-    glBufferData(m_Target, static_cast<GLsizeiptr>(desc.size), desc.initialData, GL_STATIC_DRAW);
+    glBufferData(m_Target, static_cast<GLsizeiptr>(desc.size), desc.initialData, BufferUsageToGLHint(desc.usage));
     glBindBuffer(m_Target, 0);
 
     if (!desc.debugName.empty())
@@ -40,6 +55,19 @@ OpenGLBuffer::~OpenGLBuffer()
         glDeleteBuffers(1, &m_BufferID);
         m_BufferID = 0;
     }
+}
+
+bool OpenGLBuffer::UpdateData(const void* data, uint64_t size, uint64_t offset)
+{
+    if (m_BufferID == 0 || !data || size == 0 || offset + size > m_Size)
+    {
+        return false;
+    }
+
+    glBindBuffer(m_Target, m_BufferID);
+    glBufferSubData(m_Target, static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(size), data);
+    glBindBuffer(m_Target, 0);
+    return true;
 }
 
 } // namespace TE

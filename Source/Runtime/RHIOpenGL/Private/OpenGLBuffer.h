@@ -20,6 +20,7 @@ public:
 
     [[nodiscard]] uint64_t GetSize() const override { return m_Size; }
     [[nodiscard]] RHIBufferUsage GetUsage() const override { return m_Usage; }
+    bool UpdateData(const void* data, uint64_t size, uint64_t offset = 0) override;
 
     /// 获取 OpenGL 缓冲区 ID
     [[nodiscard]] GLuint GetGLBufferID() const { return m_BufferID; }

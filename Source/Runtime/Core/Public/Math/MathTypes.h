@@ -581,7 +581,7 @@ struct [[nodiscard]] Matrix4
 
     /// OpenGL 专用透视投影（NDC 深度范围 [-1, 1]）
     /// 项目默认 GLM_FORCE_DEPTH_ZERO_TO_ONE 是 Vulkan 风格 [0,1]，
-    /// macOS OpenGL 4.1 不支持 glClipControl，需要使用 [-1,1] 范围
+    /// 当目标后端未启用 glClipControl 时，可退回到 OpenGL 原生的 [-1,1] 范围
     static Matrix4 PerspectiveGL(float fovRadians, float aspect, float nearPlane, float farPlane);
 
     static Matrix4 Orthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane);

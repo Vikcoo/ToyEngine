@@ -1,13 +1,29 @@
 // ToyEngine Renderer Module
-// RendererLightUniforms - Forward/Deferred 过渡期共用的光源 uniform 绑定
+// RendererLightUniforms - Forward/Deferred 共用的 LightBlock UBO 上传
 
 #pragma once
+
+#include "RHIBindGroup.h"
+#include "RHIBuffer.h"
+
+#include <memory>
 
 namespace TE {
 
 class FScene;
 class RHICommandBuffer;
+class RHIDevice;
 
-void BindSceneLightUniforms(const FScene* scene, RHICommandBuffer* cmdBuf);
+struct FLightUniformBindingState
+{
+    std::unique_ptr<RHIBuffer> UniformBuffer;
+    std::unique_ptr<RHIBindGroup> BindGroup;
+};
+
+bool EnsureLightUniformBindingState(RHIDevice* device, FLightUniformBindingState& state);
+bool UpdateAndBindSceneLightUniforms(const FScene* scene,
+                                     RHIDevice* device,
+                                     RHICommandBuffer* cmdBuf,
+                                     FLightUniformBindingState& state);
 
 } // namespace TE

@@ -7,6 +7,7 @@
 #include "MeshDrawCommand.h"
 #include "MeshPassProcessor.h"
 
+#include <memory>
 #include <vector>
 
 namespace TE {
@@ -14,12 +15,13 @@ namespace TE {
 class RHIBuffer;
 class RHIDevice;
 class RHIPipeline;
+struct FLightUniformBindingState;
 
 class FForwardRenderPath final : public IRenderPath
 {
 public:
     FForwardRenderPath();
-    ~FForwardRenderPath() override = default;
+    ~FForwardRenderPath() override;
 
     void Render(const FScene* scene,
                 RHIDevice* device,
@@ -28,13 +30,14 @@ public:
 
 private:
     static void SortDrawCommands(std::vector<FMeshDrawCommand>& commands) ;
-    static void SubmitDrawCommands(const std::vector<FMeshDrawCommand>& commands,
+    void SubmitDrawCommands(const std::vector<FMeshDrawCommand>& commands,
                             const FScene* scene,
-                            const RHIDevice* device,
+                            RHIDevice* device,
                             RHICommandBuffer* cmdBuf,
                             FRenderStats& outStats) ;
 
     FMeshPassProcessor m_BasePassProcessor;
+    std::unique_ptr<FLightUniformBindingState> m_LightBindingState;
 };
 
 } // namespace TE

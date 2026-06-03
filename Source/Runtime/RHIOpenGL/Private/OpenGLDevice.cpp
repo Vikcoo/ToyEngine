@@ -12,10 +12,6 @@
 #include "OpenGLRenderTarget.h"
 #include "Log/Log.h"
 #include <glad/glad.h>
-#include <string>
-#ifdef TE_PLATFORM_WINDOWS
-#include <Windows.h>
-#endif
 
 namespace TE {
 
@@ -32,48 +28,16 @@ OpenGLDevice::OpenGLDevice()
     m_Traits.bNativeTextureOriginTopLeft = false;
     m_Traits.bRTSampleRequiresFlipY = false;
 
-    // 检测 GL_ARB_clip_control（OpenGL 4.5+ 核心功能，或作为扩展出现）。
-    // 当前项目目标为 OpenGL 4.1 Core（macOS 兼容），glad 配置中不包含此扩展。
-    // 通过运行时枚举扩展检测是否可用。
-    m_Traits.bSupportsClipControl = false;
+    // 当前 OpenGL 路径以 4.5 Core 为目标，优先直接启用 glClipControl，
+    // 让引擎内部统一使用 [0,1] 深度约定。
+    m_Traits.bSupportsClipControl = GLAD_GL_VERSION_4_5 != 0;
     m_Traits.bNativeNDCDepthZeroToOne = false;
-
-    GLint numExtensions = 0;
-    glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
-    for (GLint i = 0; i < numExtensions; ++i)
-    {
-        const char* ext = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
-        if (ext && std::string(ext) == "GL_ARB_clip_control")
-        {
-            m_Traits.bSupportsClipControl = true;
-            break;
-        }
-    }
 
     if (m_Traits.bSupportsClipControl)
     {
-        // 动态加载 glClipControl（glad 4.1 配置中无此符号）
-        using PFN_glClipControl = void(APIENTRYP)(GLenum, GLenum);
-        auto pfn = reinterpret_cast<PFN_glClipControl>(gladLoadGL());
-        // gladLoadGL 不适用于单个函数，改为直接使用 glad 内部机制
-        // 这里用平台相关方式获取函数指针
-#ifdef TE_PLATFORM_WINDOWS
-        auto fnClipControl = reinterpret_cast<void(APIENTRYP)(GLenum, GLenum)>(
-            wglGetProcAddress("glClipControl"));
-#else
-        void(*fnClipControl)(GLenum, GLenum) = nullptr;
-#endif
-        if (fnClipControl)
-        {
-            constexpr GLenum GL_ZERO_TO_ONE_ARB = 0x935F;
-            fnClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE_ARB);
-            m_Traits.bNativeNDCDepthZeroToOne = true;
-            TE_LOG_INFO("[RHIOpenGL] glClipControl enabled: NDC depth [0, 1]");
-        }
-        else
-        {
-            m_Traits.bSupportsClipControl = false;
-        }
+        glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+        m_Traits.bNativeNDCDepthZeroToOne = true;
+        TE_LOG_INFO("[RHIOpenGL] glClipControl enabled: NDC depth [0, 1]");
     }
 
     if (!m_Traits.bNativeNDCDepthZeroToOne)

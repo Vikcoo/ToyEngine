@@ -1,4 +1,4 @@
-#version 410 core
+#version 450 core
 
 in vec3 vWorldNormal;
 in vec3 vWorldPosition;

@@ -1,4 +1,4 @@
-#version 410 core
+#version 450 core
 
 const int MaxDirectionalLights = 4;
 const int MaxPointLights = 8;
@@ -8,14 +8,13 @@ in vec3 vWorldNormal;
 in vec2 vTexCoord;
 in vec3 vColor;
 
-uniform int u_DirectionalLightCount;
-uniform vec3 u_DirectionalLightDirections[MaxDirectionalLights];
-uniform vec3 u_DirectionalLightColors[MaxDirectionalLights];
-
-uniform int u_PointLightCount;
-uniform vec3 u_PointLightPositions[MaxPointLights];
-uniform vec3 u_PointLightColors[MaxPointLights];
-uniform float u_PointLightRadii[MaxPointLights];
+layout(std140, binding = 0) uniform LightBlock {
+    ivec4 u_LightCounts;
+    vec4 u_DirectionalLightDirections[MaxDirectionalLights];
+    vec4 u_DirectionalLightColors[MaxDirectionalLights];
+    vec4 u_PointLightPositions[MaxPointLights];
+    vec4 u_PointLightColorsAndRadii[MaxPointLights];
+};
 
 uniform sampler2D u_BaseColorTex;
 
@@ -27,24 +26,24 @@ void main()
     vec3 baseColor = texture(u_BaseColorTex, vTexCoord).rgb * vColor;
     vec3 lighting = vec3(0.08);
 
-    for (int i = 0; i < u_DirectionalLightCount; ++i)
+    for (int i = 0; i < u_LightCounts.x; ++i)
     {
-        vec3 lightDir = normalize(u_DirectionalLightDirections[i]);
+        vec3 lightDir = normalize(u_DirectionalLightDirections[i].xyz);
         float nDotL = max(dot(normal, lightDir), 0.0);
-        lighting += nDotL * u_DirectionalLightColors[i];
+        lighting += nDotL * u_DirectionalLightColors[i].xyz;
     }
 
-    for (int i = 0; i < u_PointLightCount; ++i)
+    for (int i = 0; i < u_LightCounts.y; ++i)
     {
-        vec3 lightVector = u_PointLightPositions[i] - vWorldPosition;
+        vec3 lightVector = u_PointLightPositions[i].xyz - vWorldPosition;
         float distanceToLight = length(lightVector);
-        float radius = max(u_PointLightRadii[i], 0.001);
+        float radius = max(u_PointLightColorsAndRadii[i].w, 0.001);
         vec3 lightDir = lightVector / max(distanceToLight, 0.001);
         float attenuation = clamp(1.0 - distanceToLight / radius, 0.0, 1.0);
         attenuation *= attenuation;
 
         float nDotL = max(dot(normal, lightDir), 0.0);
-        lighting += nDotL * attenuation * u_PointLightColors[i];
+        lighting += nDotL * attenuation * u_PointLightColorsAndRadii[i].xyz;
     }
 
     fragColor = vec4(baseColor * lighting, 1.0);
