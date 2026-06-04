@@ -61,7 +61,7 @@ std::unique_ptr<RHIShader> OpenGLDevice::CreateShader(const RHIShaderDesc& desc)
     auto shader = std::make_unique<OpenGLShader>(desc);
     if (!shader->IsValid())
     {
-        TE_LOG_ERROR("[RHIOpenGL] Failed to create shader: {}", desc.filePath);
+        TE_LOG_ERROR("[RHIOpenGL] Failed to create shader: {}", desc.logicalName);
         return nullptr;
     }
     return shader;

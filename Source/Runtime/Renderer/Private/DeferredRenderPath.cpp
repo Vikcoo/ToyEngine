@@ -5,6 +5,7 @@
 
 #include "RendererLightUniforms.h"
 #include "RendererPassUniforms.h"
+#include "RendererShaderNames.h"
 #include "RendererTextureBindings.h"
 #include "RendererScene.h"
 #include "RenderStats.h"
@@ -21,33 +22,10 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <string>
-
-#ifndef TE_PROJECT_ROOT_DIR
-    #define TE_PROJECT_ROOT_DIR ""
-#endif
 
 namespace TE {
 
 namespace {
-
-std::string GetShaderDir(RHIDevice* device)
-{
-    if (!device)
-    {
-        return {};
-    }
-
-    std::string shaderSubDir;
-    switch (device->GetBackendTraits().backendType)
-    {
-    case ERHIBackendType::OpenGL:  shaderSubDir = "OpenGL/"; break;
-    case ERHIBackendType::Vulkan:  shaderSubDir = "Vulkan/"; break;
-    case ERHIBackendType::D3D12:   shaderSubDir = "D3D12/"; break;
-    }
-
-    return std::string(TE_PROJECT_ROOT_DIR) + "Content/Shaders/" + shaderSubDir;
-}
 
 void FillStaticMeshVertexInput(RHIVertexInputDesc& vertexInput)
 {
@@ -200,17 +178,15 @@ bool FDeferredRenderPath::BuildGBufferPipeline(RHIDevice* device)
         return false;
     }
 
-    const std::string shaderDir = GetShaderDir(device);
-
     RHIShaderDesc vsDesc;
     vsDesc.stage = RHIShaderStage::Vertex;
-    vsDesc.filePath = shaderDir + "gbuffer.vert";
+    vsDesc.logicalName = RendererShaderNames::StaticMeshGBufferVS;
     vsDesc.debugName = "GBuffer_VS";
     m_GBufferPipeline.VertexShader = device->CreateShader(vsDesc);
 
     RHIShaderDesc fsDesc;
     fsDesc.stage = RHIShaderStage::Fragment;
-    fsDesc.filePath = shaderDir + "gbuffer.frag";
+    fsDesc.logicalName = RendererShaderNames::StaticMeshGBufferPS;
     fsDesc.debugName = "GBuffer_FS";
     m_GBufferPipeline.FragmentShader = device->CreateShader(fsDesc);
 
@@ -242,17 +218,15 @@ bool FDeferredRenderPath::BuildLightingPipeline(RHIDevice* device)
         return false;
     }
 
-    const std::string shaderDir = GetShaderDir(device);
-
     RHIShaderDesc vsDesc;
     vsDesc.stage = RHIShaderStage::Vertex;
-    vsDesc.filePath = shaderDir + "deferred_lighting.vert";
+    vsDesc.logicalName = RendererShaderNames::DeferredLightingVS;
     vsDesc.debugName = "DeferredLighting_VS";
     m_LightingPipeline.VertexShader = device->CreateShader(vsDesc);
 
     RHIShaderDesc fsDesc;
     fsDesc.stage = RHIShaderStage::Fragment;
-    fsDesc.filePath = shaderDir + "deferred_lighting.frag";
+    fsDesc.logicalName = RendererShaderNames::DeferredLightingPS;
     fsDesc.debugName = "DeferredLighting_FS";
     m_LightingPipeline.FragmentShader = device->CreateShader(fsDesc);
 

@@ -2,6 +2,7 @@
 // OpenGL Shader 实现 - GLSL 编译
 
 #include "OpenGLShader.h"
+#include "OpenGLShaderLibrary.h"
 #include "Log/Log.h"
 #include <fstream>
 #include <sstream>
@@ -24,11 +25,17 @@ static GLenum ShaderStageToGL(RHIShaderStage stage)
 OpenGLShader::OpenGLShader(const RHIShaderDesc& desc)
     : m_Stage(desc.stage)
 {
+    const std::string filePath = ResolveOpenGLShaderPath(desc.logicalName);
+    if (filePath.empty())
+    {
+        return;
+    }
+
     // 读取着色器源码
     std::string source;
-    if (!ReadShaderFile(desc.filePath, source))
+    if (!ReadShaderFile(filePath, source))
     {
-        TE_LOG_ERROR("[RHIOpenGL] Failed to read shader file: {}", desc.filePath);
+        TE_LOG_ERROR("[RHIOpenGL] Failed to read shader '{}' from '{}'", desc.logicalName, filePath);
         return;
     }
 

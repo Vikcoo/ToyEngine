@@ -34,8 +34,3 @@ target_link_libraries(Renderer
         RenderCore
         Asset
 )
-
-# 提供项目根目录宏，用于定位 Shader 文件等资源
-target_compile_definitions(Renderer PRIVATE
-    TE_PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}/"
-)

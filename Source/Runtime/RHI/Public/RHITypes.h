@@ -228,18 +228,14 @@ struct RHIBufferDesc
 };
 
 /// 着色器创建描述符
-/// 支持多种着色器输入方式：
-///   - filePath:  后端原生着色器源文件路径（OpenGL: GLSL, D3D12: HLSL）
-///   - spirvPath: SPIR-V 字节码文件路径（Vulkan 后端优先使用）
-///   - spirvData: 内存中的 SPIR-V 字节码（优先级高于 spirvPath）
+/// Renderer 仅提交逻辑 Shader 名称，不感知具体后端资产路径或字节码格式。
+/// 各 RHI 后端负责将 logicalName 解析为 GLSL、SPIR-V、DXIL 等原生资产。
 struct RHIShaderDesc
 {
-    RHIShaderStage          stage = RHIShaderStage::Vertex;
-    std::string             filePath;       // 后端原生着色器文件路径（OpenGL: GLSL, D3D12: HLSL）
-    std::string             spirvPath;      // SPIR-V 字节码文件路径（Vulkan 后端使用）
-    std::vector<uint8_t>    spirvData;      // 内存中的 SPIR-V 字节码（优先级高于 spirvPath）
-    std::string             entryPoint = "main";
-    std::string             debugName;
+    RHIShaderStage stage = RHIShaderStage::Vertex;
+    std::string    logicalName;             // 例如 "StaticMesh/BasePassVS"
+    std::string    entryPoint = "main";
+    std::string    debugName;
 };
 
 /// 图形管线创建描述符

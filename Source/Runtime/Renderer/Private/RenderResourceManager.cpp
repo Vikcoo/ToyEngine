@@ -3,6 +3,7 @@
 
 #include "RenderResourceManager.h"
 
+#include "RendererShaderNames.h"
 #include "StaticMeshRenderData.h"
 #include "StaticMeshSceneProxy.h"
 #include "RHIDevice.h"
@@ -17,11 +18,6 @@
 #include <cstddef>
 #include <filesystem>
 #include <string>
-
-// 模型 Shader 路径前缀宏（由 CMake 传递）
-#ifndef TE_PROJECT_ROOT_DIR
-    #define TE_PROJECT_ROOT_DIR ""
-#endif
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -311,26 +307,15 @@ bool FRenderResourceManager::BuildStaticMeshBasePassPipeline(FPreparedPipeline& 
         return false;
     }
 
-    // 根据后端类型选择对应的着色器子目录
-    const auto& traits = m_Device->GetBackendTraits();
-    std::string shaderSubDir;
-    switch (traits.backendType)
-    {
-    case ERHIBackendType::OpenGL:  shaderSubDir = "OpenGL/"; break;
-    case ERHIBackendType::Vulkan:  shaderSubDir = "Vulkan/"; break;
-    case ERHIBackendType::D3D12:   shaderSubDir = "D3D12/"; break;
-    }
-    const std::string shaderDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Shaders/" + shaderSubDir;
-
     RHIShaderDesc vsDesc;
     vsDesc.stage = RHIShaderStage::Vertex;
-    vsDesc.filePath = shaderDir + "model.vert";
+    vsDesc.logicalName = RendererShaderNames::StaticMeshBasePassVS;
     vsDesc.debugName = "Model_VS";
     outPipeline.VertexShader = m_Device->CreateShader(vsDesc);
 
     RHIShaderDesc fsDesc;
     fsDesc.stage = RHIShaderStage::Fragment;
-    fsDesc.filePath = shaderDir + "model.frag";
+    fsDesc.logicalName = RendererShaderNames::StaticMeshBasePassPS;
     fsDesc.debugName = "Model_FS";
     outPipeline.FragmentShader = m_Device->CreateShader(fsDesc);
 

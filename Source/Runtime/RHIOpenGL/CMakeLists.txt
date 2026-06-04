@@ -22,3 +22,8 @@ target_include_directories(RHIOpenGL
 target_link_libraries(RHIOpenGL
     PRIVATE RHI glad OpenGL::GL
 )
+
+# OpenGL 后端独立解析逻辑 Shader 名称，Renderer 不感知后端资产目录。
+target_compile_definitions(RHIOpenGL PRIVATE
+    TE_SHADER_ROOT_DIR="${CMAKE_SOURCE_DIR}/Content/Shaders/"
+)
