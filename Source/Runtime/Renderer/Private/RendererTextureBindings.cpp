@@ -26,10 +26,27 @@ bool RebuildBaseColorBindGroup(RHIDevice* device,
         return false;
     }
 
+    if (!state.Layout)
+    {
+        RHIBindGroupLayoutDesc layoutDesc;
+        layoutDesc.debugName = "Renderer_BaseColorTexture_Layout";
+        layoutDesc.entries.push_back({
+            RendererBindings::BaseColorTexture,
+            RHIBindingType::Texture2D,
+            RHIShaderStage::Fragment
+        });
+        state.Layout = device->CreateBindGroupLayout(layoutDesc);
+        if (!state.Layout || !state.Layout->IsValid())
+        {
+            return false;
+        }
+    }
+
     RHIBindGroupDesc bindGroupDesc;
+    bindGroupDesc.layout = state.Layout.get();
     bindGroupDesc.debugName = "Renderer_BaseColorTexture_BindGroup";
     bindGroupDesc.entries.push_back({
-        RendererBindingSlots::BaseColorTexture,
+        RendererBindings::BaseColorTexture,
         RHIBindingType::Texture2D,
         nullptr,
         0,
@@ -69,10 +86,42 @@ bool RebuildGBufferBindGroup(RHIDevice* device,
         return false;
     }
 
+    if (!state.Layout)
+    {
+        RHIBindGroupLayoutDesc layoutDesc;
+        layoutDesc.debugName = "Renderer_GBufferTextures_Layout";
+        layoutDesc.entries.push_back({
+            RendererBindings::GBufferAlbedo,
+            RHIBindingType::Texture2D,
+            RHIShaderStage::Fragment
+        });
+        layoutDesc.entries.push_back({
+            RendererBindings::GBufferNormal,
+            RHIBindingType::Texture2D,
+            RHIShaderStage::Fragment
+        });
+        layoutDesc.entries.push_back({
+            RendererBindings::GBufferWorldPosition,
+            RHIBindingType::Texture2D,
+            RHIShaderStage::Fragment
+        });
+        layoutDesc.entries.push_back({
+            RendererBindings::GBufferDepth,
+            RHIBindingType::Texture2D,
+            RHIShaderStage::Fragment
+        });
+        state.Layout = device->CreateBindGroupLayout(layoutDesc);
+        if (!state.Layout || !state.Layout->IsValid())
+        {
+            return false;
+        }
+    }
+
     RHIBindGroupDesc bindGroupDesc;
+    bindGroupDesc.layout = state.Layout.get();
     bindGroupDesc.debugName = "Renderer_GBufferTextures_BindGroup";
     bindGroupDesc.entries.push_back({
-        RendererBindingSlots::GBufferAlbedo,
+        RendererBindings::GBufferAlbedo,
         RHIBindingType::Texture2D,
         nullptr,
         0,
@@ -81,7 +130,7 @@ bool RebuildGBufferBindGroup(RHIDevice* device,
         sampler
     });
     bindGroupDesc.entries.push_back({
-        RendererBindingSlots::GBufferNormal,
+        RendererBindings::GBufferNormal,
         RHIBindingType::Texture2D,
         nullptr,
         0,
@@ -90,7 +139,7 @@ bool RebuildGBufferBindGroup(RHIDevice* device,
         sampler
     });
     bindGroupDesc.entries.push_back({
-        RendererBindingSlots::GBufferWorldPosition,
+        RendererBindings::GBufferWorldPosition,
         RHIBindingType::Texture2D,
         nullptr,
         0,
@@ -99,7 +148,7 @@ bool RebuildGBufferBindGroup(RHIDevice* device,
         sampler
     });
     bindGroupDesc.entries.push_back({
-        RendererBindingSlots::GBufferDepth,
+        RendererBindings::GBufferDepth,
         RHIBindingType::Texture2D,
         nullptr,
         0,
@@ -144,7 +193,7 @@ bool UpdateAndBindBaseColorTexture(RHIDevice* device,
         }
     }
 
-    cmdBuf->SetBindGroup(2, state.BindGroup.get());
+    cmdBuf->SetBindGroup(RendererBindGroups::MaterialTextures, state.BindGroup.get());
     return true;
 }
 
@@ -177,7 +226,7 @@ bool UpdateAndBindGBufferTextures(RHIDevice* device,
         }
     }
 
-    cmdBuf->SetBindGroup(2, state.BindGroup.get());
+    cmdBuf->SetBindGroup(RendererBindGroups::GBufferTextures, state.BindGroup.get());
     return true;
 }
 

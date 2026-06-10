@@ -90,9 +90,22 @@ bool EnsureLightUniformBindingState(RHIDevice* device, FLightUniformBindingState
         return false;
     }
 
-    if (state.UniformBuffer && state.BindGroup)
+    if (state.Layout && state.UniformBuffer && state.BindGroup)
     {
         return true;
+    }
+
+    RHIBindGroupLayoutDesc layoutDesc;
+    layoutDesc.debugName = "Renderer_LightBlock_Layout";
+    layoutDesc.entries.push_back({
+        RendererBindings::LightBlock,
+        RHIBindingType::UniformBuffer,
+        RHIShaderStage::Fragment
+    });
+    state.Layout = device->CreateBindGroupLayout(layoutDesc);
+    if (!state.Layout || !state.Layout->IsValid())
+    {
+        return false;
     }
 
     RHIBufferDesc bufferDesc;
@@ -106,9 +119,10 @@ bool EnsureLightUniformBindingState(RHIDevice* device, FLightUniformBindingState
     }
 
     RHIBindGroupDesc bindGroupDesc;
+    bindGroupDesc.layout = state.Layout.get();
     bindGroupDesc.debugName = "Renderer_LightBlock_BindGroup";
     bindGroupDesc.entries.push_back({
-        RendererBindingSlots::LightBlock,
+        RendererBindings::LightBlock,
         RHIBindingType::UniformBuffer,
         state.UniformBuffer.get(),
         0,
@@ -139,7 +153,7 @@ bool UpdateAndBindSceneLightUniforms(const FScene* scene,
         return false;
     }
 
-    cmdBuf->SetBindGroup(RendererBindingSlots::LightBlock, state.BindGroup.get());
+    cmdBuf->SetBindGroup(RendererBindGroups::LightBlock, state.BindGroup.get());
     return true;
 }
 

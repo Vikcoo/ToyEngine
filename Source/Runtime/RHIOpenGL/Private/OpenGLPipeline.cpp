@@ -2,6 +2,7 @@
 // OpenGL Pipeline 实现 - Program 链接 + VAO 顶点属性配置
 
 #include "OpenGLPipeline.h"
+#include "OpenGLPipelineLayout.h"
 #include "OpenGLShader.h"
 #include "Log/Log.h"
 
@@ -62,6 +63,13 @@ OpenGLPipeline::OpenGLPipeline(const RHIPipelineDesc& desc)
     , m_DepthStencil(desc.depthStencil)
     , m_VertexInput(desc.vertexInput)
 {
+    if (!desc.layout || !desc.layout->IsValid())
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Pipeline creation failed: invalid pipeline layout");
+        return;
+    }
+    m_Layout = static_cast<const OpenGLPipelineLayout*>(desc.layout);
+
     // 获取 OpenGL Shader ID
     auto* vertShader = static_cast<OpenGLShader*>(desc.vertexShader);
     auto* fragShader = static_cast<OpenGLShader*>(desc.fragmentShader);

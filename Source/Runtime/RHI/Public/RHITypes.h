@@ -19,6 +19,8 @@ class RHIDevice;
 class RHITexture;
 class RHISampler;
 class RHIBindGroup;
+class RHIBindGroupLayout;
+class RHIPipelineLayout;
 
 // ============================================================
 // 枚举类型
@@ -244,6 +246,7 @@ struct RHIPipelineDesc
 {
     RHIShader*              vertexShader = nullptr;
     RHIShader*              fragmentShader = nullptr;
+    RHIPipelineLayout*      layout = nullptr;
     RHIVertexInputDesc      vertexInput;
     RHIPrimitiveTopology    topology = RHIPrimitiveTopology::TriangleList;
     RHIRasterizationDesc    rasterization;
@@ -364,7 +367,23 @@ struct RHIBindGroupEntry
 /// BindGroup 创建描述
 struct RHIBindGroupDesc
 {
+    RHIBindGroupLayout* layout = nullptr;
     std::vector<RHIBindGroupEntry> entries;
+    std::string debugName;
+};
+
+/// Pipeline 中单个 BindGroupLayout 的声明。
+struct RHIPipelineBindGroupLayout
+{
+    uint32_t groupIndex = 0;
+    RHIBindGroupLayout* layout = nullptr;
+};
+
+/// Pipeline Layout 描述：声明一个 Pipeline 接受哪些 BindGroup Layout。
+/// Vulkan 后端可映射为 VkPipelineLayout，D3D12 后端可映射为 Root Signature。
+struct RHIPipelineLayoutDesc
+{
+    std::vector<RHIPipelineBindGroupLayout> bindGroupLayouts;
     std::string debugName;
 };
 

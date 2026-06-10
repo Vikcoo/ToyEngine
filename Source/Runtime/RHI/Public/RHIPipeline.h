@@ -7,6 +7,19 @@
 
 namespace TE {
 
+/// Pipeline Layout 抽象接口。
+/// 描述 Pipeline 接受的 BindGroupLayout 列表，是 Vulkan PipelineLayout / D3D12 RootSignature 的 RHI 级表达。
+class RHIPipelineLayout
+{
+public:
+    virtual ~RHIPipelineLayout() = default;
+
+    [[nodiscard]] virtual bool IsValid() const = 0;
+
+protected:
+    RHIPipelineLayout() = default;
+};
+
 /// 图形管线状态对象抽象接口
 /// 对应 Vulkan VkPipeline / D3D12 ID3D12PipelineState / OpenGL Program + VAO + 状态集
 ///

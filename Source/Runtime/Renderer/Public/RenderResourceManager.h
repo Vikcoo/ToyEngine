@@ -4,6 +4,8 @@
 #pragma once
 
 #include "MeshDrawCommand.h"
+#include "RHIBindGroup.h"
+#include "RHIPipeline.h"
 
 #include <memory>
 #include <string>
@@ -13,7 +15,9 @@
 namespace TE {
 
 class RHIDevice;
+class RHIBindGroupLayout;
 class RHIPipeline;
+class RHIPipelineLayout;
 class RHIShader;
 class RHITexture;
 class RHISampler;
@@ -27,6 +31,8 @@ struct FPreparedPipeline
 {
     std::unique_ptr<RHIShader> VertexShader;
     std::unique_ptr<RHIShader> FragmentShader;
+    std::vector<std::unique_ptr<RHIBindGroupLayout>> BindGroupLayouts;
+    std::unique_ptr<RHIPipelineLayout> PipelineLayout;
     std::unique_ptr<RHIPipeline> Pipeline;
 };
 

@@ -5,6 +5,7 @@
 
 #include "RendererLightUniforms.h"
 #include "RendererPassUniforms.h"
+#include "RendererBindingSlots.h"
 #include "RendererShaderNames.h"
 #include "RendererTextureBindings.h"
 #include "RendererScene.h"
@@ -22,10 +23,112 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <utility>
 
 namespace TE {
 
 namespace {
+
+std::unique_ptr<RHIBindGroupLayout> CreateSingleUniformLayout(RHIDevice* device,
+                                                              uint32_t binding,
+                                                              RHIShaderStage visibility,
+                                                              const char* debugName)
+{
+    RHIBindGroupLayoutDesc desc;
+    desc.debugName = debugName;
+    desc.entries.push_back({
+        binding,
+        RHIBindingType::UniformBuffer,
+        visibility
+    });
+    return device ? device->CreateBindGroupLayout(desc) : nullptr;
+}
+
+std::unique_ptr<RHIBindGroupLayout> CreateSingleTextureLayout(RHIDevice* device,
+                                                              uint32_t binding,
+                                                              const char* debugName)
+{
+    RHIBindGroupLayoutDesc desc;
+    desc.debugName = debugName;
+    desc.entries.push_back({
+        binding,
+        RHIBindingType::Texture2D,
+        RHIShaderStage::Fragment
+    });
+    return device ? device->CreateBindGroupLayout(desc) : nullptr;
+}
+
+std::unique_ptr<RHIBindGroupLayout> CreateGBufferTexturesLayout(RHIDevice* device)
+{
+    if (!device)
+    {
+        return nullptr;
+    }
+
+    RHIBindGroupLayoutDesc desc;
+    desc.debugName = "DeferredLighting_GBufferTextures_Layout";
+    desc.entries.push_back({
+        RendererBindings::GBufferAlbedo,
+        RHIBindingType::Texture2D,
+        RHIShaderStage::Fragment
+    });
+    desc.entries.push_back({
+        RendererBindings::GBufferNormal,
+        RHIBindingType::Texture2D,
+        RHIShaderStage::Fragment
+    });
+    desc.entries.push_back({
+        RendererBindings::GBufferWorldPosition,
+        RHIBindingType::Texture2D,
+        RHIShaderStage::Fragment
+    });
+    desc.entries.push_back({
+        RendererBindings::GBufferDepth,
+        RHIBindingType::Texture2D,
+        RHIShaderStage::Fragment
+    });
+    return device->CreateBindGroupLayout(desc);
+}
+
+template <typename TPipelineCache>
+bool BuildPipelineLayout(RHIDevice* device,
+                         TPipelineCache& pipeline,
+                         std::vector<std::pair<uint32_t, std::unique_ptr<RHIBindGroupLayout>>> layouts,
+                         const char* debugName)
+{
+    if (!device)
+    {
+        return false;
+    }
+
+    RHIPipelineLayoutDesc desc;
+    desc.debugName = debugName;
+    desc.bindGroupLayouts.reserve(layouts.size());
+    for (const auto& [groupIndex, layout] : layouts)
+    {
+        if (!layout || !layout->IsValid())
+        {
+            return false;
+        }
+        desc.bindGroupLayouts.push_back({groupIndex, layout.get()});
+    }
+
+    auto pipelineLayout = device->CreatePipelineLayout(desc);
+    if (!pipelineLayout || !pipelineLayout->IsValid())
+    {
+        return false;
+    }
+
+    pipeline.BindGroupLayouts.clear();
+    pipeline.BindGroupLayouts.reserve(layouts.size());
+    for (auto& [groupIndex, layout] : layouts)
+    {
+        (void)groupIndex;
+        pipeline.BindGroupLayouts.push_back(std::move(layout));
+    }
+    pipeline.PipelineLayout = std::move(pipelineLayout);
+    return true;
+}
 
 void FillStaticMeshVertexInput(RHIVertexInputDesc& vertexInput)
 {
@@ -195,9 +298,29 @@ bool FDeferredRenderPath::BuildGBufferPipeline(RHIDevice* device)
         return false;
     }
 
+    std::vector<std::pair<uint32_t, std::unique_ptr<RHIBindGroupLayout>>> layouts;
+    layouts.push_back({
+        RendererBindGroups::PassBlock,
+        CreateSingleUniformLayout(device,
+                                  RendererBindings::PassBlock,
+                                  RHIShaderStage::Vertex,
+                                  "DeferredGBuffer_ObjectBlock_Layout")
+    });
+    layouts.push_back({
+        RendererBindGroups::MaterialTextures,
+        CreateSingleTextureLayout(device,
+                                  RendererBindings::BaseColorTexture,
+                                  "DeferredGBuffer_BaseColor_Layout")
+    });
+    if (!BuildPipelineLayout(device, m_GBufferPipeline, std::move(layouts), "DeferredGBuffer_PipelineLayout"))
+    {
+        return false;
+    }
+
     RHIPipelineDesc pipelineDesc;
     pipelineDesc.vertexShader = m_GBufferPipeline.VertexShader.get();
     pipelineDesc.fragmentShader = m_GBufferPipeline.FragmentShader.get();
+    pipelineDesc.layout = m_GBufferPipeline.PipelineLayout.get();
     pipelineDesc.topology = RHIPrimitiveTopology::TriangleList;
     FillStaticMeshVertexInput(pipelineDesc.vertexInput);
     pipelineDesc.depthStencil.depthTestEnable = true;
@@ -235,9 +358,34 @@ bool FDeferredRenderPath::BuildLightingPipeline(RHIDevice* device)
         return false;
     }
 
+    std::vector<std::pair<uint32_t, std::unique_ptr<RHIBindGroupLayout>>> layouts;
+    layouts.push_back({
+        RendererBindGroups::LightBlock,
+        CreateSingleUniformLayout(device,
+                                  RendererBindings::LightBlock,
+                                  RHIShaderStage::Fragment,
+                                  "DeferredLighting_LightBlock_Layout")
+    });
+    layouts.push_back({
+        RendererBindGroups::PassBlock,
+        CreateSingleUniformLayout(device,
+                                  RendererBindings::PassBlock,
+                                  RHIShaderStage::Fragment,
+                                  "DeferredLighting_PassBlock_Layout")
+    });
+    layouts.push_back({
+        RendererBindGroups::GBufferTextures,
+        CreateGBufferTexturesLayout(device)
+    });
+    if (!BuildPipelineLayout(device, m_LightingPipeline, std::move(layouts), "DeferredLighting_PipelineLayout"))
+    {
+        return false;
+    }
+
     RHIPipelineDesc pipelineDesc;
     pipelineDesc.vertexShader = m_LightingPipeline.VertexShader.get();
     pipelineDesc.fragmentShader = m_LightingPipeline.FragmentShader.get();
+    pipelineDesc.layout = m_LightingPipeline.PipelineLayout.get();
     pipelineDesc.topology = RHIPrimitiveTopology::TriangleList;
     pipelineDesc.depthStencil.depthTestEnable = false;
     pipelineDesc.depthStencil.depthWriteEnable = false;

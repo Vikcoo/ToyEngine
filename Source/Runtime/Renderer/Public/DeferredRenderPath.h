@@ -6,6 +6,8 @@
 #include "IRenderPath.h"
 #include "MeshDrawCommand.h"
 #include "MeshPassProcessor.h"
+#include "RHIBindGroup.h"
+#include "RHIPipeline.h"
 
 #include <memory>
 #include <vector>
@@ -13,7 +15,9 @@
 namespace TE {
 
 class RHIDevice;
+class RHIBindGroupLayout;
 class RHIPipeline;
+class RHIPipelineLayout;
 class RHIRenderTarget;
 class RHIShader;
 struct FLightUniformBindingState;
@@ -39,6 +43,8 @@ private:
     {
         std::unique_ptr<RHIShader> VertexShader;
         std::unique_ptr<RHIShader> FragmentShader;
+        std::vector<std::unique_ptr<RHIBindGroupLayout>> BindGroupLayouts;
+        std::unique_ptr<RHIPipelineLayout> PipelineLayout;
         std::unique_ptr<RHIPipeline> Pipeline;
     };
 

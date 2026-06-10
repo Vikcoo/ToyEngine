@@ -9,6 +9,8 @@
 #include "OpenGLTexture.h"
 #include "OpenGLSampler.h"
 #include "OpenGLBindGroup.h"
+#include "OpenGLBindGroupLayout.h"
+#include "OpenGLPipelineLayout.h"
 #include "OpenGLRenderTarget.h"
 #include "Log/Log.h"
 #include <glad/glad.h>
@@ -118,7 +120,35 @@ std::unique_ptr<RHIRenderTarget> OpenGLDevice::CreateRenderTarget(const RHIRende
 
 std::unique_ptr<RHIBindGroup> OpenGLDevice::CreateBindGroup(const RHIBindGroupDesc& desc)
 {
-    return std::make_unique<OpenGLBindGroup>(desc);
+    auto bindGroup = std::make_unique<OpenGLBindGroup>(desc);
+    if (!bindGroup->IsValid())
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Failed to create BindGroup '{}'", desc.debugName);
+        return nullptr;
+    }
+    return bindGroup;
+}
+
+std::unique_ptr<RHIBindGroupLayout> OpenGLDevice::CreateBindGroupLayout(const RHIBindGroupLayoutDesc& desc)
+{
+    auto layout = std::make_unique<OpenGLBindGroupLayout>(desc);
+    if (!layout->IsValid())
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Failed to create BindGroupLayout '{}'", desc.debugName);
+        return nullptr;
+    }
+    return layout;
+}
+
+std::unique_ptr<RHIPipelineLayout> OpenGLDevice::CreatePipelineLayout(const RHIPipelineLayoutDesc& desc)
+{
+    auto layout = std::make_unique<OpenGLPipelineLayout>(desc);
+    if (!layout->IsValid())
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Failed to create PipelineLayout '{}'", desc.debugName);
+        return nullptr;
+    }
+    return layout;
 }
 
 const RHIBackendTraits& OpenGLDevice::GetBackendTraits() const

@@ -3,6 +3,7 @@
 
 #include "RenderResourceManager.h"
 
+#include "RendererBindingSlots.h"
 #include "RendererShaderNames.h"
 #include "StaticMeshRenderData.h"
 #include "StaticMeshSceneProxy.h"
@@ -18,11 +19,84 @@
 #include <cstddef>
 #include <filesystem>
 #include <string>
+#include <utility>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 namespace TE {
+
+namespace {
+
+std::unique_ptr<RHIBindGroupLayout> CreateSingleUniformLayout(RHIDevice* device,
+                                                              uint32_t binding,
+                                                              RHIShaderStage visibility,
+                                                              const char* debugName)
+{
+    RHIBindGroupLayoutDesc desc;
+    desc.debugName = debugName;
+    desc.entries.push_back({
+        binding,
+        RHIBindingType::UniformBuffer,
+        visibility
+    });
+    return device ? device->CreateBindGroupLayout(desc) : nullptr;
+}
+
+std::unique_ptr<RHIBindGroupLayout> CreateSingleTextureLayout(RHIDevice* device,
+                                                              uint32_t binding,
+                                                              const char* debugName)
+{
+    RHIBindGroupLayoutDesc desc;
+    desc.debugName = debugName;
+    desc.entries.push_back({
+        binding,
+        RHIBindingType::Texture2D,
+        RHIShaderStage::Fragment
+    });
+    return device ? device->CreateBindGroupLayout(desc) : nullptr;
+}
+
+bool BuildPipelineLayout(RHIDevice* device,
+                         FPreparedPipeline& pipeline,
+                         std::vector<std::pair<uint32_t, std::unique_ptr<RHIBindGroupLayout>>> layouts,
+                         const char* debugName)
+{
+    if (!device)
+    {
+        return false;
+    }
+
+    RHIPipelineLayoutDesc desc;
+    desc.debugName = debugName;
+    desc.bindGroupLayouts.reserve(layouts.size());
+    for (const auto& [groupIndex, layout] : layouts)
+    {
+        if (!layout || !layout->IsValid())
+        {
+            return false;
+        }
+        desc.bindGroupLayouts.push_back({groupIndex, layout.get()});
+    }
+
+    auto pipelineLayout = device->CreatePipelineLayout(desc);
+    if (!pipelineLayout || !pipelineLayout->IsValid())
+    {
+        return false;
+    }
+
+    pipeline.BindGroupLayouts.clear();
+    pipeline.BindGroupLayouts.reserve(layouts.size());
+    for (auto& [groupIndex, layout] : layouts)
+    {
+        (void)groupIndex;
+        pipeline.BindGroupLayouts.push_back(std::move(layout));
+    }
+    pipeline.PipelineLayout = std::move(pipelineLayout);
+    return true;
+}
+
+} // namespace
 
 FRenderResourceManager::FRenderResourceManager(RHIDevice* device)
     : m_Device(device)
@@ -324,9 +398,36 @@ bool FRenderResourceManager::BuildStaticMeshBasePassPipeline(FPreparedPipeline& 
         return false;
     }
 
+    std::vector<std::pair<uint32_t, std::unique_ptr<RHIBindGroupLayout>>> layouts;
+    layouts.push_back({
+        RendererBindGroups::LightBlock,
+        CreateSingleUniformLayout(m_Device,
+                                  RendererBindings::LightBlock,
+                                  RHIShaderStage::Fragment,
+                                  "StaticMeshBasePass_LightBlock_Layout")
+    });
+    layouts.push_back({
+        RendererBindGroups::PassBlock,
+        CreateSingleUniformLayout(m_Device,
+                                  RendererBindings::PassBlock,
+                                  RHIShaderStage::Vertex,
+                                  "StaticMeshBasePass_ObjectBlock_Layout")
+    });
+    layouts.push_back({
+        RendererBindGroups::MaterialTextures,
+        CreateSingleTextureLayout(m_Device,
+                                  RendererBindings::BaseColorTexture,
+                                  "StaticMeshBasePass_BaseColor_Layout")
+    });
+    if (!BuildPipelineLayout(m_Device, outPipeline, std::move(layouts), "StaticMeshBasePass_PipelineLayout"))
+    {
+        return false;
+    }
+
     RHIPipelineDesc pipelineDesc;
     pipelineDesc.vertexShader = outPipeline.VertexShader.get();
     pipelineDesc.fragmentShader = outPipeline.FragmentShader.get();
+    pipelineDesc.layout = outPipeline.PipelineLayout.get();
     pipelineDesc.topology = RHIPrimitiveTopology::TriangleList;
 
     RHIVertexBindingDesc binding;

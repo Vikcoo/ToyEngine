@@ -15,6 +15,7 @@ namespace TE {
 class OpenGLBuffer;
 class OpenGLTexture;
 class OpenGLSampler;
+class OpenGLBindGroupLayout;
 
 /// 缓存单条绑定的 OpenGL 资源句柄
 struct OpenGLBindEntry
@@ -43,9 +44,13 @@ public:
 
     [[nodiscard]] bool IsValid() const override { return m_Valid; }
     [[nodiscard]] const std::vector<OpenGLBindEntry>& GetEntries() const { return m_Entries; }
+    [[nodiscard]] const OpenGLBindGroupLayout* GetLayout() const { return m_Layout; }
 
 private:
+    [[nodiscard]] bool ValidateEntryAgainstLayout(const RHIBindGroupEntry& entry) const;
+
     std::vector<OpenGLBindEntry> m_Entries;
+    const OpenGLBindGroupLayout* m_Layout = nullptr;
     bool m_Valid = false;
 };
 

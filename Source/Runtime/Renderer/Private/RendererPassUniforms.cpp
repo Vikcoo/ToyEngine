@@ -59,9 +59,23 @@ bool CreateUniformBindingState(RHIDevice* device,
                                TBindingState& state,
                                uint64_t bufferSize,
                                const char* bufferDebugName,
-                               const char* bindGroupDebugName)
+                               const char* bindGroupDebugName,
+                               RHIShaderStage visibility)
 {
     if (!device)
+    {
+        return false;
+    }
+
+    RHIBindGroupLayoutDesc layoutDesc;
+    layoutDesc.debugName = bindGroupDebugName;
+    layoutDesc.entries.push_back({
+        RendererBindings::PassBlock,
+        RHIBindingType::UniformBuffer,
+        visibility
+    });
+    state.Layout = device->CreateBindGroupLayout(layoutDesc);
+    if (!state.Layout || !state.Layout->IsValid())
     {
         return false;
     }
@@ -78,9 +92,10 @@ bool CreateUniformBindingState(RHIDevice* device,
     }
 
     RHIBindGroupDesc bindGroupDesc;
+    bindGroupDesc.layout = state.Layout.get();
     bindGroupDesc.debugName = bindGroupDebugName;
     bindGroupDesc.entries.push_back({
-        RendererBindingSlots::PassBlock,
+        RendererBindings::PassBlock,
         RHIBindingType::UniformBuffer,
         state.UniformBuffer.get(),
         0,
@@ -104,7 +119,8 @@ bool CreateUniformBindingState(RHIDevice* device,
 
 bool EnsureObjectUniformBindingState(RHIDevice* device, FObjectUniformBindingState& state)
 {
-    if (state.UniformBuffer &&
+    if (state.Layout &&
+        state.UniformBuffer &&
         state.BindGroup && state.BindGroup->IsValid())
     {
         return true;
@@ -114,7 +130,8 @@ bool EnsureObjectUniformBindingState(RHIDevice* device, FObjectUniformBindingSta
                                      state,
                                      sizeof(FObjectBlockCPU),
                                      "Renderer_ObjectBlock_UBO",
-                                     "Renderer_ObjectBlock_BindGroup");
+                                     "Renderer_ObjectBlock_BindGroup",
+                                     RHIShaderStage::Vertex);
 }
 
 bool UpdateAndBindObjectUniforms(RHIDevice* device,
@@ -139,13 +156,14 @@ bool UpdateAndBindObjectUniforms(RHIDevice* device,
         return false;
     }
 
-    cmdBuf->SetBindGroup(RendererBindingSlots::PassBlock, state.BindGroup.get());
+    cmdBuf->SetBindGroup(RendererBindGroups::PassBlock, state.BindGroup.get());
     return true;
 }
 
 bool EnsureDeferredPassUniformBindingState(RHIDevice* device, FDeferredPassUniformBindingState& state)
 {
-    if (state.UniformBuffer &&
+    if (state.Layout &&
+        state.UniformBuffer &&
         state.BindGroup && state.BindGroup->IsValid())
     {
         return true;
@@ -155,7 +173,8 @@ bool EnsureDeferredPassUniformBindingState(RHIDevice* device, FDeferredPassUnifo
                                      state,
                                      sizeof(FDeferredPassBlockCPU),
                                      "Renderer_DeferredPassBlock_UBO",
-                                     "Renderer_DeferredPassBlock_BindGroup");
+                                     "Renderer_DeferredPassBlock_BindGroup",
+                                     RHIShaderStage::Fragment);
 }
 
 bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
@@ -178,7 +197,7 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
         return false;
     }
 
-    cmdBuf->SetBindGroup(RendererBindingSlots::PassBlock, state.BindGroup.get());
+    cmdBuf->SetBindGroup(RendererBindGroups::PassBlock, state.BindGroup.get());
     return true;
 }
 

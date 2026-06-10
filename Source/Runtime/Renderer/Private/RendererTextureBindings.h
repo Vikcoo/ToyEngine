@@ -8,6 +8,7 @@
 namespace TE {
 
 class RHIBindGroup;
+class RHIBindGroupLayout;
 class RHICommandBuffer;
 class RHIDevice;
 class RHISampler;
@@ -18,6 +19,7 @@ struct FBaseColorTextureBindingState
 {
     RHITexture* Texture = nullptr;
     RHISampler* Sampler = nullptr;
+    std::unique_ptr<RHIBindGroupLayout> Layout;
     std::unique_ptr<RHIBindGroup> BindGroup;
 };
 
@@ -28,6 +30,7 @@ struct FGBufferTextureBindingState
     RHITexture* WorldPosition = nullptr;
     RHITexture* Depth = nullptr;
     RHISampler* Sampler = nullptr;
+    std::unique_ptr<RHIBindGroupLayout> Layout;
     std::unique_ptr<RHIBindGroup> BindGroup;
 };
 

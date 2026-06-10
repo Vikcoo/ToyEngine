@@ -49,6 +49,12 @@ public:
     /// 创建资源绑定组（Vulkan: DescriptorSet, D3D12: Descriptor Table, OpenGL: UBO+Texture 绑定集）
     [[nodiscard]] virtual std::unique_ptr<RHIBindGroup> CreateBindGroup(const RHIBindGroupDesc& desc) = 0;
 
+    /// 创建资源绑定布局（Vulkan: DescriptorSetLayout, D3D12: Descriptor Table / Root Parameter 描述）
+    [[nodiscard]] virtual std::unique_ptr<RHIBindGroupLayout> CreateBindGroupLayout(const RHIBindGroupLayoutDesc& desc) = 0;
+
+    /// 创建 Pipeline 资源布局（Vulkan: PipelineLayout, D3D12: RootSignature）
+    [[nodiscard]] virtual std::unique_ptr<RHIPipelineLayout> CreatePipelineLayout(const RHIPipelineLayoutDesc& desc) = 0;
+
     /// 创建渲染目标（离屏 FBO / MRT）
     [[nodiscard]] virtual std::unique_ptr<RHIRenderTarget> CreateRenderTarget(const RHIRenderTargetDesc& desc) = 0;
 

@@ -8,8 +8,21 @@
 
 namespace TE {
 
-/// 资源绑定组抽象接口
-/// 将 UBO、纹理、采样器等资源打包为一组，供 Pipeline 使用。
+/// BindGroup 布局抽象接口。
+/// 描述一组资源绑定的接口形状，不持有具体资源。
+class RHIBindGroupLayout
+{
+public:
+    virtual ~RHIBindGroupLayout() = default;
+
+    [[nodiscard]] virtual bool IsValid() const = 0;
+
+protected:
+    RHIBindGroupLayout() = default;
+};
+
+/// 资源绑定组抽象接口。
+/// 将 UBO、纹理、采样器等具体资源打包为一组，必须匹配某个 BindGroupLayout。
 class RHIBindGroup
 {
 public:

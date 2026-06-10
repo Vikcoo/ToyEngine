@@ -11,6 +11,7 @@
 namespace TE {
 
 class OpenGLShader;
+class OpenGLPipelineLayout;
 
 class OpenGLPipeline final : public RHIPipeline
 {
@@ -39,6 +40,7 @@ public:
 
     /// 获取顶点输入布局描述（用于 BindVertexBuffer 时配置顶点属性）
     [[nodiscard]] const RHIVertexInputDesc& GetVertexInputDesc() const { return m_VertexInput; }
+    [[nodiscard]] const OpenGLPipelineLayout* GetLayout() const { return m_Layout; }
 
 private:
     /// 创建并链接 Program
@@ -53,6 +55,7 @@ private:
     RHIRasterizationDesc    m_Rasterization;
     RHIDepthStencilDesc     m_DepthStencil;
     RHIVertexInputDesc      m_VertexInput;
+    const OpenGLPipelineLayout* m_Layout = nullptr;
 };
 
 } // namespace TE

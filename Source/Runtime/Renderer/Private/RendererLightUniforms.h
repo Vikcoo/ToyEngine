@@ -11,11 +11,13 @@
 namespace TE {
 
 class FScene;
+class RHIBindGroupLayout;
 class RHICommandBuffer;
 class RHIDevice;
 
 struct FLightUniformBindingState
 {
+    std::unique_ptr<RHIBindGroupLayout> Layout;
     std::unique_ptr<RHIBuffer> UniformBuffer;
     std::unique_ptr<RHIBindGroup> BindGroup;
 };

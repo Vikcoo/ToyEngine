@@ -84,20 +84,6 @@ public:
     /// @param bindGroup  资源绑定组
     virtual void SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGroup) = 0;
 
-    // ==================== 旧版 Uniform 接口（兼容过渡期） ====================
-    // 这些 name-based 接口仅供 OpenGL 后端在过渡期使用。
-    // Vulkan/D3D12 后端应通过 BindGroup 内的 UBO 设置 Uniform 数据。
-    // 后续将逐步移除这些接口，全部迁移到 BindGroup 模型。
-
-    virtual void SetUniformMatrix4(const char* name, const float* data) = 0;
-    virtual void SetUniformMatrix3(const char* name, const float* data) = 0;
-    virtual void SetUniformFloat(const char* name, float value) = 0;
-    virtual void SetUniformVec3(const char* name, const float* data) = 0;
-    virtual void SetUniformInt(const char* name, int32_t value) = 0;
-
-    /// 绑定 2D 纹理与采样器到指定槽位（旧版接口，建议使用 BindGroup）
-    virtual void BindTexture2D(uint32_t slot, RHITexture* texture, RHISampler* sampler = nullptr) = 0;
-
     /// 结束录制命令
     virtual void End() = 0;
 

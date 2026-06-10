@@ -10,6 +10,7 @@
 namespace TE {
 
 class RHIBindGroup;
+class RHIBindGroupLayout;
 class RHIBuffer;
 class RHICommandBuffer;
 class RHIDevice;
@@ -17,12 +18,14 @@ enum class ERenderDebugView : uint8_t;
 
 struct FObjectUniformBindingState
 {
+    std::unique_ptr<RHIBindGroupLayout> Layout;
     std::unique_ptr<RHIBuffer> UniformBuffer;
     std::unique_ptr<RHIBindGroup> BindGroup;
 };
 
 struct FDeferredPassUniformBindingState
 {
+    std::unique_ptr<RHIBindGroupLayout> Layout;
     std::unique_ptr<RHIBuffer> UniformBuffer;
     std::unique_ptr<RHIBindGroup> BindGroup;
 };

@@ -4,8 +4,6 @@
 #include "OpenGLCommandBuffer.h"
 #include "OpenGLPipeline.h"
 #include "OpenGLBuffer.h"
-#include "OpenGLTexture.h"
-#include "OpenGLSampler.h"
 #include "OpenGLBindGroup.h"
 #include "OpenGLRenderTarget.h"
 #include "Log/Log.h"
@@ -272,91 +270,6 @@ void OpenGLCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t firstIndex,
     }
 }
 
-void OpenGLCommandBuffer::SetUniformMatrix4(const char* name, const float* data)
-{
-    if (!m_BoundPipeline)
-    {
-        TE_LOG_WARN("[RHIOpenGL] SetUniformMatrix4 called without bound pipeline");
-        return;
-    }
-
-    GLint location = glGetUniformLocation(m_BoundPipeline->GetGLProgram(), name);
-    if (location == -1)
-    {
-        TE_LOG_WARN("[RHIOpenGL] Uniform '{}' not found in shader program", name);
-        return;
-    }
-    glUniformMatrix4fv(location, 1, GL_FALSE, data);
-}
-
-void OpenGLCommandBuffer::SetUniformMatrix3(const char* name, const float* data)
-{
-    if (!m_BoundPipeline)
-    {
-        TE_LOG_WARN("[RHIOpenGL] SetUniformMatrix3 called without bound pipeline");
-        return;
-    }
-
-    GLint location = glGetUniformLocation(m_BoundPipeline->GetGLProgram(), name);
-    if (location == -1)
-    {
-        TE_LOG_WARN("[RHIOpenGL] Uniform '{}' not found in shader program", name);
-        return;
-    }
-    glUniformMatrix3fv(location, 1, GL_FALSE, data);
-}
-
-void OpenGLCommandBuffer::SetUniformFloat(const char* name, float value)
-{
-    if (!m_BoundPipeline)
-    {
-        TE_LOG_WARN("[RHIOpenGL] SetUniformFloat called without bound pipeline");
-        return;
-    }
-
-    GLint location = glGetUniformLocation(m_BoundPipeline->GetGLProgram(), name);
-    if (location == -1)
-    {
-        TE_LOG_WARN("[RHIOpenGL] Uniform '{}' not found in shader program", name);
-        return;
-    }
-    glUniform1f(location, value);
-}
-
-void OpenGLCommandBuffer::SetUniformVec3(const char* name, const float* data)
-{
-    if (!m_BoundPipeline)
-    {
-        TE_LOG_WARN("[RHIOpenGL] SetUniformVec3 called without bound pipeline");
-        return;
-    }
-
-    GLint location = glGetUniformLocation(m_BoundPipeline->GetGLProgram(), name);
-    if (location == -1)
-    {
-        TE_LOG_WARN("[RHIOpenGL] Uniform '{}' not found in shader program", name);
-        return;
-    }
-    glUniform3fv(location, 1, data);
-}
-
-void OpenGLCommandBuffer::SetUniformInt(const char* name, int32_t value)
-{
-    if (!m_BoundPipeline)
-    {
-        TE_LOG_WARN("[RHIOpenGL] SetUniformInt called without bound pipeline");
-        return;
-    }
-
-    GLint location = glGetUniformLocation(m_BoundPipeline->GetGLProgram(), name);
-    if (location == -1)
-    {
-        TE_LOG_WARN("[RHIOpenGL] Uniform '{}' not found in shader program", name);
-        return;
-    }
-    glUniform1i(location, value);
-}
-
 void OpenGLCommandBuffer::SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGroup)
 {
     if (!bindGroup)
@@ -409,35 +322,6 @@ void OpenGLCommandBuffer::SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGr
             break;
         }
         }
-    }
-}
-
-void OpenGLCommandBuffer::BindTexture2D(uint32_t slot, RHITexture* texture, RHISampler* sampler)
-{
-    if (!texture)
-    {
-        TE_LOG_WARN("[RHIOpenGL] BindTexture2D called with null texture");
-        return;
-    }
-
-    auto* glTexture = static_cast<OpenGLTexture*>(texture);
-    if (!glTexture->IsValid())
-    {
-        TE_LOG_WARN("[RHIOpenGL] BindTexture2D called with invalid texture");
-        return;
-    }
-
-    glActiveTexture(GL_TEXTURE0 + slot);
-    glBindTexture(GL_TEXTURE_2D, glTexture->GetGLTextureID());
-
-    if (sampler)
-    {
-        auto* glSampler = static_cast<OpenGLSampler*>(sampler);
-        glBindSampler(slot, glSampler->GetGLSamplerID());
-    }
-    else
-    {
-        glBindSampler(slot, 0);
     }
 }
 
