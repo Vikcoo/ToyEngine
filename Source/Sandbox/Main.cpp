@@ -149,7 +149,7 @@ void OverrideMeshBaseColorTexture(const std::shared_ptr<TE::StaticMesh>& mesh, c
 
     for (auto& material : materials)
     {
-        material.BaseColorTexturePath = texturePath;
+        material.SetBaseColorTexturePath(texturePath);
     }
     mesh->SetMaterials(std::move(materials));
 }

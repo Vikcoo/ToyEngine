@@ -207,7 +207,7 @@ bool FRenderResourceManager::EnsureStaticMeshMaterialTextures(const StaticMesh& 
             std::shared_ptr<RHITexture> texture;
             if (material.HasBaseColorTexture())
             {
-                texture = CreateTextureFromFile(material.BaseColorTexturePath,
+                texture = CreateTextureFromFile(material.GetBaseColorTexturePath(),
                                                 "BaseColor_" + staticMesh.GetName() + "_" + std::to_string(materialIndex));
             }
 

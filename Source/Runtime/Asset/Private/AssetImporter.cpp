@@ -5,6 +5,7 @@
 // 这是 UE5 中 "模块内部实现细节不暴露" 原则的体现
 
 #include "AssetImporter.h"
+#include "Material.h"
 #include "StaticMesh.h"
 #include "Log/Log.h"
 
@@ -15,8 +16,43 @@
 #include <assimp/material.h>
 
 #include <filesystem>
+#include <string>
 
 namespace TE {
+
+namespace {
+
+std::string ResolveTexturePath(const aiString& texturePath, const std::filesystem::path& baseDir)
+{
+    if (texturePath.length == 0)
+    {
+        return {};
+    }
+
+    std::filesystem::path resolvedPath = std::filesystem::path(texturePath.C_Str());
+    if (resolvedPath.is_relative())
+    {
+        resolvedPath = baseDir / resolvedPath;
+    }
+    return resolvedPath.lexically_normal().string();
+}
+
+bool ReadTexturePath(const aiMaterial& aiMaterial,
+                     aiTextureType textureType,
+                     const std::filesystem::path& baseDir,
+                     std::string& outTexturePath)
+{
+    aiString texturePath;
+    if (aiMaterial.GetTexture(textureType, 0, &texturePath) != aiReturn_SUCCESS)
+    {
+        return false;
+    }
+
+    outTexturePath = ResolveTexturePath(texturePath, baseDir);
+    return !outTexturePath.empty();
+}
+
+} // namespace
 
 /// 从 aiMesh 提取数据，转换为引擎自有的 FMeshSection
 static FMeshSection ProcessAiMesh(const aiMesh* mesh)
@@ -119,10 +155,11 @@ static void ProcessAiNode(const aiNode* node, const aiScene* scene,
     }
 }
 
-/// 构建静态网格材质槽（当前仅导入 BaseColor / Diffuse 贴图路径）
-static std::vector<FStaticMeshMaterial> BuildMaterials(const aiScene* scene, const std::filesystem::path& baseDir)
+/// 构建静态网格材质槽。
+/// 当前 Renderer 仍只消费 BaseColor；其它 PBR 字段先作为资产语义保存。
+static std::vector<FMaterial> BuildMaterials(const aiScene* scene, const std::filesystem::path& baseDir)
 {
-    std::vector<FStaticMeshMaterial> materials;
+    std::vector<FMaterial> materials;
     if (!scene || scene->mNumMaterials == 0)
     {
         return materials;
@@ -137,25 +174,77 @@ static std::vector<FStaticMeshMaterial> BuildMaterials(const aiScene* scene, con
             continue;
         }
 
-        aiString texPath;
-        aiReturn result = aiMat->GetTexture(aiTextureType_BASE_COLOR, 0, &texPath);
-        if (result != aiReturn_SUCCESS)
+        auto& material = materials[materialIndex];
+
+        aiString materialName;
+        if (aiMat->Get(AI_MATKEY_NAME, materialName) == aiReturn_SUCCESS && materialName.length > 0)
         {
-            result = aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &texPath);
+            material.Name = materialName.C_Str();
+        }
+        else
+        {
+            material.Name = "Material_" + std::to_string(materialIndex);
         }
 
-        if (result != aiReturn_SUCCESS || texPath.length == 0)
+        aiColor4D baseColor;
+        if (aiMat->Get(AI_MATKEY_BASE_COLOR, baseColor) == aiReturn_SUCCESS)
         {
-            continue;
+            material.BaseColorFactor = Vector3(baseColor.r, baseColor.g, baseColor.b);
+        }
+        else
+        {
+            aiColor3D diffuseColor;
+            if (aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == aiReturn_SUCCESS)
+            {
+                material.BaseColorFactor = Vector3(diffuseColor.r, diffuseColor.g, diffuseColor.b);
+            }
         }
 
-        std::filesystem::path texturePath = std::filesystem::path(texPath.C_Str());
-        if (texturePath.is_relative())
+        float metallicFactor = material.MetallicFactor;
+        if (aiMat->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor) == aiReturn_SUCCESS)
         {
-            texturePath = baseDir / texturePath;
+            material.MetallicFactor = metallicFactor;
         }
-        texturePath = texturePath.lexically_normal();
-        materials[materialIndex].BaseColorTexturePath = texturePath.string();
+
+        float roughnessFactor = material.RoughnessFactor;
+        if (aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor) == aiReturn_SUCCESS)
+        {
+            material.RoughnessFactor = roughnessFactor;
+        }
+
+        aiColor3D emissiveColor;
+        if (aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == aiReturn_SUCCESS)
+        {
+            material.EmissiveFactor = Vector3(emissiveColor.r, emissiveColor.g, emissiveColor.b);
+        }
+
+        float emissiveStrength = material.EmissiveStrength;
+        if (aiMat->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissiveStrength) == aiReturn_SUCCESS)
+        {
+            material.EmissiveStrength = emissiveStrength;
+        }
+
+        if (!ReadTexturePath(*aiMat, aiTextureType_BASE_COLOR, baseDir, material.BaseColorTexture.TexturePath))
+        {
+            ReadTexturePath(*aiMat, aiTextureType_DIFFUSE, baseDir, material.BaseColorTexture.TexturePath);
+        }
+
+        ReadTexturePath(*aiMat, aiTextureType_METALNESS, baseDir, material.MetallicTexture.TexturePath);
+        ReadTexturePath(*aiMat, aiTextureType_DIFFUSE_ROUGHNESS, baseDir, material.RoughnessTexture.TexturePath);
+        ReadTexturePath(*aiMat, aiTextureType_NORMALS, baseDir, material.NormalTexture.TexturePath);
+        ReadTexturePath(*aiMat, aiTextureType_AMBIENT_OCCLUSION, baseDir, material.AmbientOcclusionTexture.TexturePath);
+
+        if (!ReadTexturePath(*aiMat, aiTextureType_EMISSION_COLOR, baseDir, material.EmissiveTexture.TexturePath))
+        {
+            ReadTexturePath(*aiMat, aiTextureType_EMISSIVE, baseDir, material.EmissiveTexture.TexturePath);
+        }
+
+        if (material.MetallicTexture.HasTexture() &&
+            material.RoughnessTexture.HasTexture() &&
+            material.MetallicTexture.TexturePath == material.RoughnessTexture.TexturePath)
+        {
+            material.MetallicRoughnessTexture.TexturePath = material.MetallicTexture.TexturePath;
+        }
     }
 
     return materials;

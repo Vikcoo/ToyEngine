@@ -14,10 +14,12 @@
 
 #pragma once
 
+#include "Material.h"
 #include "Math/MathTypes.h"
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <utility>
 
 namespace TE {
 
@@ -46,15 +48,6 @@ struct FMeshSection
     std::vector<FStaticMeshVertex>  Vertices;           // 该 Section 的顶点数据
     std::vector<uint32_t>           Indices;            // 该 Section 的索引数据
     uint32_t                        MaterialIndex = 0;  // 材质索引
-};
-
-/// 静态网格材质槽（简化版）
-/// 当前仅保留 BaseColor 纹理路径，后续可扩展到法线/金属度/粗糙度等贴图。
-struct FStaticMeshMaterial
-{
-    std::string BaseColorTexturePath;
-
-    [[nodiscard]] bool HasBaseColorTexture() const { return !BaseColorTexturePath.empty(); }
 };
 
 /// 静态网格资产（对应 UE5 UStaticMesh）
@@ -98,8 +91,8 @@ public:
     [[nodiscard]] uint32_t GetSectionCount() const { return static_cast<uint32_t>(m_Sections.size()); }
 
     /// 获取材质槽
-    [[nodiscard]] const std::vector<FStaticMeshMaterial>& GetMaterials() const { return m_Materials; }
-    [[nodiscard]] const FStaticMeshMaterial* GetMaterial(uint32_t materialIndex) const;
+    [[nodiscard]] const std::vector<FMaterial>& GetMaterials() const { return m_Materials; }
+    [[nodiscard]] const FMaterial* GetMaterial(uint32_t materialIndex) const;
 
     // ==================== 构建接口（供 FAssetImporter 使用） ====================
 
@@ -110,12 +103,12 @@ public:
     void AddSection(FMeshSection section);
 
     /// 设置材质槽（由导入器填充）
-    void SetMaterials(std::vector<FStaticMeshMaterial> materials) { m_Materials = std::move(materials); }
+    void SetMaterials(std::vector<FMaterial> materials) { m_Materials = std::move(materials); }
 
 private:
     std::string               m_Name;       // 资产名称（通常为文件名）
     std::vector<FMeshSection> m_Sections;   // 所有子网格段
-    std::vector<FStaticMeshMaterial> m_Materials; // 材质槽
+    std::vector<FMaterial> m_Materials; // 材质槽
 };
 
 } // namespace TE
