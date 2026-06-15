@@ -26,15 +26,14 @@ namespace TE {
 
 /// 引擎主类 - UE5 架构单线程版本
 ///
-/// 数据流（每帧）：
+/// 单线程帧管线（每帧）：
 /// Engine::Tick(deltaTime)
-///   → PollEvents()
-///   → 应用层 FrameUpdateCallback      // Sandbox/应用逻辑
-///   → World::Tick(deltaTime)          // 逻辑更新
-///   → World::SyncToScene()            // 脏 Component 同步到渲染场景接口
-///   → CameraComponent::BuildViewInfo  // 构建视图信息
-///   → SceneRenderer::Render(FScene)   // 遍历 Proxy → 收集 DrawCmd → RHI 提交
-///   → SwapBuffers()
+///   → PumpPlatformMessages()
+///   → TickInput(deltaTime)
+///   → TickGameThread(deltaTime)       // 应用层逻辑 + World Tick
+///   → SendAllEndOfFrameUpdates()      // 游戏侧状态同步到渲染侧
+///   → TickRenderThread(deltaTime)     // 当前仍在主线程中模拟渲染阶段
+///   → EndFrame(deltaTime)             // 输入收尾、Present、统计
 class Engine
 {
 public:
@@ -105,6 +104,14 @@ private:
 
     /// 单帧更新
     void Tick(float deltaTime);
+    void PumpPlatformMessages() const;
+    void TickInput(float deltaTime) const;
+    void TickGameThread(float deltaTime);
+    void SendAllEndOfFrameUpdates() const;
+    void TickRenderThread(float deltaTime) const;
+    void EndFrame(float deltaTime);
+    void PresentFrame();
+    void UpdateFrameStats(float deltaTime);
 
     // Platform 子系统
     std::unique_ptr<IWindow> m_Window;

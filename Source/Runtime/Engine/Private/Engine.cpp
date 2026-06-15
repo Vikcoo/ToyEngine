@@ -197,43 +197,55 @@ void Engine::Run()
     TE_LOG_INFO("Engine main loop ended. Total frames: {}", m_FrameCount);
 }
 
-void Engine::Tick(float deltaTime)
+void Engine::Tick(const float deltaTime)
 {
-    // ========================================
-    // UE5 单线程数据流
-    // ========================================
+    PumpPlatformMessages();
+    TickInput(deltaTime);
+    TickGameThread(deltaTime);
+    SendAllEndOfFrameUpdates();
+    TickRenderThread(deltaTime);
+    EndFrame(deltaTime);
+}
 
-    // 1. 处理窗口事件
+void Engine::PumpPlatformMessages() const {
     if (m_Window)
     {
         m_Window->PollEvents();
     }
+}
 
-    // 2. World::Tick - 逻辑更新
+void Engine::TickInput(const float deltaTime) const {
+    (void)deltaTime;
+
     if (m_InputManager)
     {
         m_InputManager->Tick();
     }
+}
 
-    // 3. 应用层每帧逻辑回调（示例逻辑由 Sandbox 注入）
+void Engine::TickGameThread(const float deltaTime)
+{
     if (m_FrameUpdateCallback)
     {
         m_FrameUpdateCallback(*this, deltaTime);
     }
 
-    // 4. World::Tick - 逻辑更新
     if (m_World)
     {
         m_World->Tick(deltaTime);
     }
+}
 
-    // 5. SyncToScene - 脏 Component 同步到渲染场景接口
+void Engine::SendAllEndOfFrameUpdates() const {
     if (m_World && m_Scene)
     {
         m_World->SyncToScene();
     }
+}
 
-    // 6. 更新 ViewInfo（从 CameraComponent 构建）
+void Engine::TickRenderThread(const float deltaTime) const {
+    (void)deltaTime;
+
     if (m_CameraComponent && m_Scene)
     {
         // 更新视口尺寸（以防窗口大小改变）
@@ -249,24 +261,33 @@ void Engine::Tick(float deltaTime)
         m_Scene->SetViewInfo(viewInfo);
     }
 
-    // 7. SceneRenderer::Render - 遍历 Proxy → DrawCmd → RHI 提交
     if (m_SceneRenderer && m_Scene && m_CommandBuffer)
     {
         m_SceneRenderer->Render(m_Scene.get(), m_RHIDevice.get(), m_CommandBuffer.get());
     }
+}
 
+void Engine::EndFrame(float deltaTime)
+{
     if (m_InputManager)
     {
         m_InputManager->PostTick();
     }
 
-    // 8. 交换缓冲区
+    PresentFrame();
+    UpdateFrameStats(deltaTime);
+}
+
+void Engine::PresentFrame()
+{
     if (m_Window)
     {
         m_Window->SwapBuffers();
     }
+}
 
-    // 每 0.5 秒输出一次平均 FPS + 渲染统计（滑动窗口）
+void Engine::UpdateFrameStats(float deltaTime)
+{
     m_FPSAccumulatedTime += deltaTime;
     m_FPSAccumulatedFrames++;
     if (m_FPSAccumulatedTime >= FPS_UPDATE_INTERVAL)

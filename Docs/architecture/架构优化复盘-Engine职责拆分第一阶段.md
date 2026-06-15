@@ -44,3 +44,37 @@
 后续可在不破坏本阶段边界的前提下继续演进：
 1. 引入显式 `Application` 接口（Startup/Update/Shutdown）。
 2. 评估逐步弱化单例依赖。
+
+## 第二阶段增量：单线程帧阶段拆分（2026-06-16）
+
+### 背景与问题
+
+第一阶段后，`Engine` 已经不再直接包含示例场景逻辑，但 `Engine::Tick` 内部仍把平台事件、输入推进、应用回调、World Tick、游戏侧到渲染侧同步、渲染提交、Present 和统计输出写在同一个函数里。
+
+这在当前规模下可以工作，但会带来两个后续问题：
+- 单帧顺序依赖只能靠注释维护，新增调试、编辑器、异步资源或渲染线程准备逻辑时容易插错位置。
+- `World::SyncToScene()` 作为游戏侧到渲染侧边界不够醒目，后续命令队列化时缺少清晰替换点。
+
+### 方案与取舍
+
+第二阶段采用“阶段函数拆分，不引入完整 Tick 系统”的方案。`Engine::Tick` 现在只负责编排以下阶段：
+- `PumpPlatformMessages()`
+- `TickInput(deltaTime)`
+- `TickGameThread(deltaTime)`
+- `SendAllEndOfFrameUpdates()`
+- `TickRenderThread(deltaTime)`
+- `EndFrame(deltaTime)`
+
+其中 `TickGameThread` / `TickRenderThread` 借鉴 UE5 的职责命名，但当前仍运行在同一个主线程中。这样做的取舍是：先把单帧职责边界稳定下来，避免过早引入 `TickTaskManager`、TickGroup 或多线程调度的复杂度。
+
+### 收益
+
+- `Engine::Tick` 从具体执行细节变成帧管线编排入口，后续新增阶段时更容易判断插入点。
+- `SendAllEndOfFrameUpdates()` 明确承载游戏侧状态提交到渲染侧的语义，后续可自然替换为渲染命令队列提交。
+- `EndFrame()` 把输入过渡态清理、Present 和统计输出收拢到帧尾，避免这些维护性逻辑散落在渲染流程中。
+
+### 限制与后续方向
+
+- 当前只是函数级拆分，没有改变 Actor / Component 的 Tick 注册模型。
+- `TickGameThread` 和 `TickRenderThread` 只是阶段名，不代表已经有独立线程。
+- 后续如果引入物理、动画、编辑器或 UI，再评估是否需要 UE 风格的 TickGroup；在那之前不建议引入完整 Tick 调度系统。
