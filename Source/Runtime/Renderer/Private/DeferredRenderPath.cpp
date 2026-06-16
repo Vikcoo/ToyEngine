@@ -58,6 +58,24 @@ std::unique_ptr<RHIBindGroupLayout> CreateSingleTextureLayout(RHIDevice* device,
     return device ? device->CreateBindGroupLayout(desc) : nullptr;
 }
 
+std::unique_ptr<RHIBindGroupLayout> CreateMaterialTexturesLayout(RHIDevice* device, const char* debugName)
+{
+    if (!device)
+    {
+        return nullptr;
+    }
+
+    RHIBindGroupLayoutDesc desc;
+    desc.debugName = debugName;
+    desc.entries.push_back({RendererBindings::BaseColorTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::NormalTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::MetallicTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::RoughnessTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::AOTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::EmissiveTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    return device->CreateBindGroupLayout(desc);
+}
+
 std::unique_ptr<RHIBindGroupLayout> CreateGBufferTexturesLayout(RHIDevice* device)
 {
     if (!device)
@@ -79,6 +97,11 @@ std::unique_ptr<RHIBindGroupLayout> CreateGBufferTexturesLayout(RHIDevice* devic
     });
     desc.entries.push_back({
         RendererBindings::GBufferWorldPosition,
+        RHIBindingType::Texture2D,
+        RHIShaderStage::Fragment
+    });
+    desc.entries.push_back({
+        RendererBindings::GBufferMaterial,
         RHIBindingType::Texture2D,
         RHIShaderStage::Fragment
     });
@@ -141,6 +164,7 @@ void FillStaticMeshVertexInput(RHIVertexInputDesc& vertexInput)
     vertexInput.attributes.push_back({1, RHIFormat::Float3, offsetof(FStaticMeshVertex, Normal)});
     vertexInput.attributes.push_back({2, RHIFormat::Float2, offsetof(FStaticMeshVertex, TexCoord)});
     vertexInput.attributes.push_back({3, RHIFormat::Float3, offsetof(FStaticMeshVertex, Color)});
+    vertexInput.attributes.push_back({4, RHIFormat::Float3, offsetof(FStaticMeshVertex, Tangent)});
 }
 
 } // namespace
@@ -150,7 +174,8 @@ FDeferredRenderPath::FDeferredRenderPath()
     , m_LightBindingState(std::make_unique<FLightUniformBindingState>())
     , m_ObjectBindingState(std::make_unique<FObjectUniformBindingState>())
     , m_DeferredPassBindingState(std::make_unique<FDeferredPassUniformBindingState>())
-    , m_BaseColorTextureBindingState(std::make_unique<FBaseColorTextureBindingState>())
+    , m_MaterialTextureBindingState(std::make_unique<FMaterialTextureBindingState>())
+    , m_MaterialBindingState(std::make_unique<FMaterialUniformBindingState>())
     , m_GBufferTextureBindingState(std::make_unique<FGBufferTextureBindingState>())
 {
 }
@@ -255,6 +280,7 @@ bool FDeferredRenderPath::EnsureGBuffer(RHIDevice* device, uint32_t width, uint3
     desc.colorAttachments.push_back({RHIFormat::RGBA8_UNorm, false});
     desc.colorAttachments.push_back({RHIFormat::RGBA8_UNorm, false});
     desc.colorAttachments.push_back({RHIFormat::RGBA32_Float, false});
+    desc.colorAttachments.push_back({RHIFormat::RGBA8_UNorm, false});
     desc.hasDepthStencil = true;
     desc.depthStencilAttachment.format = RHIFormat::D32_Float;
     desc.depthStencilAttachment.isDepthStencil = true;
@@ -308,9 +334,14 @@ bool FDeferredRenderPath::BuildGBufferPipeline(RHIDevice* device)
     });
     layouts.push_back({
         RendererBindGroups::MaterialTextures,
-        CreateSingleTextureLayout(device,
-                                  RendererBindings::BaseColorTexture,
-                                  "DeferredGBuffer_BaseColor_Layout")
+        CreateMaterialTexturesLayout(device, "DeferredGBuffer_MaterialTextures_Layout")
+    });
+    layouts.push_back({
+        RendererBindGroups::MaterialBlock,
+        CreateSingleUniformLayout(device,
+                                  RendererBindings::MaterialBlock,
+                                  RHIShaderStage::Fragment,
+                                  "DeferredGBuffer_MaterialBlock_Layout")
     });
     if (!BuildPipelineLayout(device, m_GBufferPipeline, std::move(layouts), "DeferredGBuffer_PipelineLayout"))
     {
@@ -453,16 +484,18 @@ void FDeferredRenderPath::SubmitGBufferPass(const std::vector<FMeshDrawCommand>&
             ++outStats.IBOBindCount;
         }
 
-        auto* baseColorTexture = scene->ResolvePreparedBaseColorTexture(cmd.StaticMeshAsset, cmd.MaterialIndex);
+        const auto* material = scene->ResolveMaterial(cmd.StaticMeshAsset, cmd.MaterialIndex);
+        const auto* materialTextures = scene->ResolvePreparedMaterialTextures(cmd.StaticMeshAsset, cmd.MaterialIndex);
         auto* defaultSampler = scene->ResolveDefaultSampler();
-        if (baseColorTexture)
+        if (materialTextures)
         {
-            UpdateAndBindBaseColorTexture(device,
+            UpdateAndBindMaterialTextures(device,
                                           cmdBuf,
-                                          *m_BaseColorTextureBindingState,
-                                          baseColorTexture,
+                                          *m_MaterialTextureBindingState,
+                                          materialTextures,
                                           defaultSampler);
         }
+        UpdateAndBindMaterialUniforms(device, cmdBuf, *m_MaterialBindingState, material, viewInfo.CameraPosition);
 
         Matrix4 mvp = adjustedVP * cmd.WorldMatrix;
         Matrix3 normalMatrix = cmd.WorldMatrix.GetNormalMatrix();
@@ -497,7 +530,8 @@ void FDeferredRenderPath::SubmitLightingPass(const FScene* scene,
                                       cmdBuf,
                                       *m_DeferredPassBindingState,
                                       device->GetBackendTraits().bRTSampleRequiresFlipY,
-                                      m_DebugViewMode);
+                                      m_DebugViewMode,
+                                      scene->GetViewInfo().CameraPosition);
     UpdateAndBindSceneLightUniforms(scene, device, cmdBuf, *m_LightBindingState);
 
     cmdBuf->Draw(3);

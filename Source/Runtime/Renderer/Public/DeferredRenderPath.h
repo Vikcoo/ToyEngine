@@ -23,7 +23,8 @@ class RHIShader;
 struct FLightUniformBindingState;
 struct FObjectUniformBindingState;
 struct FDeferredPassUniformBindingState;
-struct FBaseColorTextureBindingState;
+struct FMaterialTextureBindingState;
+struct FMaterialUniformBindingState;
 struct FGBufferTextureBindingState;
 
 class FDeferredRenderPath final : public IRenderPath
@@ -75,7 +76,8 @@ private:
     std::unique_ptr<FLightUniformBindingState> m_LightBindingState;
     std::unique_ptr<FObjectUniformBindingState> m_ObjectBindingState;
     std::unique_ptr<FDeferredPassUniformBindingState> m_DeferredPassBindingState;
-    std::unique_ptr<FBaseColorTextureBindingState> m_BaseColorTextureBindingState;
+    std::unique_ptr<FMaterialTextureBindingState> m_MaterialTextureBindingState;
+    std::unique_ptr<FMaterialUniformBindingState> m_MaterialBindingState;
     std::unique_ptr<FGBufferTextureBindingState> m_GBufferTextureBindingState;
 };
 

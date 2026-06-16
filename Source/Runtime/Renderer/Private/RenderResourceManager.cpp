@@ -5,6 +5,7 @@
 
 #include "RendererBindingSlots.h"
 #include "RendererShaderNames.h"
+#include "Material.h"
 #include "StaticMeshRenderData.h"
 #include "StaticMeshSceneProxy.h"
 #include "RHIDevice.h"
@@ -55,6 +56,24 @@ std::unique_ptr<RHIBindGroupLayout> CreateSingleTextureLayout(RHIDevice* device,
         RHIShaderStage::Fragment
     });
     return device ? device->CreateBindGroupLayout(desc) : nullptr;
+}
+
+std::unique_ptr<RHIBindGroupLayout> CreateMaterialTexturesLayout(RHIDevice* device, const char* debugName)
+{
+    if (!device)
+    {
+        return nullptr;
+    }
+
+    RHIBindGroupLayoutDesc desc;
+    desc.debugName = debugName;
+    desc.entries.push_back({RendererBindings::BaseColorTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::NormalTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::MetallicTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::RoughnessTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::AOTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::EmissiveTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    return device->CreateBindGroupLayout(desc);
 }
 
 bool BuildPipelineLayout(RHIDevice* device,
@@ -139,7 +158,7 @@ void FRenderResourceManager::PurgeExpiredStaticMeshRenderData()
     {
         if (it->second.expired())
         {
-            m_StaticMeshBaseColorTextureCache.erase(it->first);
+            m_StaticMeshMaterialTextureCache.erase(it->first);
             it = m_StaticMeshRenderDataCache.erase(it);
         }
         else
@@ -181,7 +200,7 @@ std::shared_ptr<const FStaticMeshRenderData> FRenderResourceManager::GetOrCreate
 bool FRenderResourceManager::EnsureStaticMeshMaterialTextures(const StaticMesh& staticMesh)
 {
     const StaticMesh* key = &staticMesh;
-    if (m_StaticMeshBaseColorTextureCache.find(key) != m_StaticMeshBaseColorTextureCache.end())
+    if (m_StaticMeshMaterialTextureCache.find(key) != m_StaticMeshMaterialTextureCache.end())
     {
         return true;
     }
@@ -192,41 +211,59 @@ bool FRenderResourceManager::EnsureStaticMeshMaterialTextures(const StaticMesh& 
     }
 
     const auto& materials = staticMesh.GetMaterials();
-    std::vector<std::shared_ptr<RHITexture>> textures;
+    std::vector<FPreparedMaterialTextures> textures;
     textures.reserve(materials.empty() ? 1 : materials.size());
 
     if (materials.empty())
     {
-        textures.push_back(m_DefaultWhiteTexture);
+        FPreparedMaterialTextures defaultTextures;
+        defaultTextures.BaseColor = m_DefaultWhiteTexture;
+        defaultTextures.Normal = m_DefaultNormalTexture;
+        defaultTextures.Metallic = m_DefaultBlackTexture;
+        defaultTextures.Roughness = m_DefaultWhiteTexture;
+        defaultTextures.AmbientOcclusion = m_DefaultWhiteTexture;
+        defaultTextures.Emissive = m_DefaultBlackTexture;
+        textures.push_back(std::move(defaultTextures));
     }
     else
     {
         for (uint32_t materialIndex = 0; materialIndex < materials.size(); ++materialIndex)
         {
             const auto& material = materials[materialIndex];
-            std::shared_ptr<RHITexture> texture;
-            if (material.HasBaseColorTexture())
-            {
-                texture = CreateTextureFromFile(material.GetBaseColorTexturePath(),
-                                                "BaseColor_" + staticMesh.GetName() + "_" + std::to_string(materialIndex));
-            }
+            const std::string materialDebugName = staticMesh.GetName() + "_" + std::to_string(materialIndex);
 
-            if (!texture)
-            {
-                texture = m_DefaultWhiteTexture;
-            }
+            FPreparedMaterialTextures preparedTextures;
+            preparedTextures.BaseColor = GetOrCreateTextureFromSlot(material.BaseColorTexture,
+                                                                    "BaseColor_" + materialDebugName);
+            preparedTextures.Normal = GetOrCreateTextureFromSlot(material.NormalTexture,
+                                                                 "Normal_" + materialDebugName);
+            preparedTextures.Metallic = GetOrCreateTextureFromSlot(material.MetallicTexture,
+                                                                   "Metallic_" + materialDebugName);
+            preparedTextures.Roughness = GetOrCreateTextureFromSlot(material.RoughnessTexture,
+                                                                    "Roughness_" + materialDebugName);
+            preparedTextures.AmbientOcclusion = GetOrCreateTextureFromSlot(material.AmbientOcclusionTexture,
+                                                                          "AO_" + materialDebugName);
+            preparedTextures.Emissive = GetOrCreateTextureFromSlot(material.EmissiveTexture,
+                                                                   "Emissive_" + materialDebugName);
 
-            textures.push_back(std::move(texture));
+            if (!preparedTextures.BaseColor) preparedTextures.BaseColor = m_DefaultWhiteTexture;
+            if (!preparedTextures.Normal) preparedTextures.Normal = m_DefaultNormalTexture;
+            if (!preparedTextures.Metallic) preparedTextures.Metallic = m_DefaultBlackTexture;
+            if (!preparedTextures.Roughness) preparedTextures.Roughness = m_DefaultWhiteTexture;
+            if (!preparedTextures.AmbientOcclusion) preparedTextures.AmbientOcclusion = m_DefaultWhiteTexture;
+            if (!preparedTextures.Emissive) preparedTextures.Emissive = m_DefaultBlackTexture;
+
+            textures.push_back(std::move(preparedTextures));
         }
     }
 
-    m_StaticMeshBaseColorTextureCache[key] = std::move(textures);
+    m_StaticMeshMaterialTextureCache[key] = std::move(textures);
     return true;
 }
 
 bool FRenderResourceManager::EnsureDefaultTextureResources()
 {
-    if (m_DefaultWhiteTexture && m_DefaultSampler && m_GBufferSampler)
+    if (m_DefaultWhiteTexture && m_DefaultBlackTexture && m_DefaultNormalTexture && m_DefaultSampler && m_GBufferSampler)
     {
         return true;
     }
@@ -255,6 +292,48 @@ bool FRenderResourceManager::EnsureDefaultTextureResources()
             return false;
         }
         m_DefaultWhiteTexture = std::shared_ptr<RHITexture>(texture.release());
+    }
+
+    if (!m_DefaultBlackTexture)
+    {
+        const uint8_t blackPixel[4] = {0, 0, 0, 255};
+        RHITextureDesc desc;
+        desc.width = 1;
+        desc.height = 1;
+        desc.format = RHIFormat::RGBA8_UNorm;
+        desc.initialData = blackPixel;
+        desc.generateMips = false;
+        desc.srgb = false;
+        desc.debugName = "Default_Black_Texture";
+
+        auto texture = m_Device->CreateTexture(desc);
+        if (!texture || !texture->IsValid())
+        {
+            TE_LOG_ERROR("[Renderer] Failed to create default black texture");
+            return false;
+        }
+        m_DefaultBlackTexture = std::shared_ptr<RHITexture>(texture.release());
+    }
+
+    if (!m_DefaultNormalTexture)
+    {
+        const uint8_t normalPixel[4] = {128, 128, 255, 255};
+        RHITextureDesc desc;
+        desc.width = 1;
+        desc.height = 1;
+        desc.format = RHIFormat::RGBA8_UNorm;
+        desc.initialData = normalPixel;
+        desc.generateMips = false;
+        desc.srgb = false;
+        desc.debugName = "Default_Normal_Texture";
+
+        auto texture = m_Device->CreateTexture(desc);
+        if (!texture || !texture->IsValid())
+        {
+            TE_LOG_ERROR("[Renderer] Failed to create default normal texture");
+            return false;
+        }
+        m_DefaultNormalTexture = std::shared_ptr<RHITexture>(texture.release());
     }
 
     if (!m_DefaultSampler)
@@ -296,7 +375,38 @@ bool FRenderResourceManager::EnsureDefaultTextureResources()
     return true;
 }
 
+std::shared_ptr<RHITexture> FRenderResourceManager::GetOrCreateTextureFromSlot(const FMaterialTextureSlot& textureSlot,
+                                                                                const std::string& debugName)
+{
+    if (!textureSlot.HasTexture())
+    {
+        return nullptr;
+    }
+
+    const std::filesystem::path normalizedPath = std::filesystem::path(textureSlot.TexturePath).lexically_normal();
+    const std::string cacheKey = normalizedPath.string() + "|" +
+        (textureSlot.ColorSpace == ETextureColorSpace::SRGB ? "srgb" : "linear") + "|" +
+        std::to_string(static_cast<uint32_t>(textureSlot.Semantic));
+
+    const auto found = m_TextureCache.find(cacheKey);
+    if (found != m_TextureCache.end())
+    {
+        if (auto cached = found->second.lock())
+        {
+            return cached;
+        }
+    }
+
+    auto texture = CreateTextureFromFile(normalizedPath.string(), textureSlot.ColorSpace, debugName);
+    if (texture)
+    {
+        m_TextureCache[cacheKey] = texture;
+    }
+    return texture;
+}
+
 std::shared_ptr<RHITexture> FRenderResourceManager::CreateTextureFromFile(const std::string& filePath,
+                                                                           ETextureColorSpace colorSpace,
                                                                            const std::string& debugName) const
 {
     if (!m_Device || filePath.empty())
@@ -330,7 +440,7 @@ std::shared_ptr<RHITexture> FRenderResourceManager::CreateTextureFromFile(const 
     desc.format = RHIFormat::RGBA8_UNorm;
     desc.initialData = pixels;
     desc.generateMips = true;
-    desc.srgb = true;
+    desc.srgb = colorSpace == ETextureColorSpace::SRGB;
     desc.debugName = debugName;
 
     auto texture = m_Device->CreateTexture(desc);
@@ -415,9 +525,14 @@ bool FRenderResourceManager::BuildStaticMeshBasePassPipeline(FPreparedPipeline& 
     });
     layouts.push_back({
         RendererBindGroups::MaterialTextures,
-        CreateSingleTextureLayout(m_Device,
-                                  RendererBindings::BaseColorTexture,
-                                  "StaticMeshBasePass_BaseColor_Layout")
+        CreateMaterialTexturesLayout(m_Device, "StaticMeshBasePass_MaterialTextures_Layout")
+    });
+    layouts.push_back({
+        RendererBindGroups::MaterialBlock,
+        CreateSingleUniformLayout(m_Device,
+                                  RendererBindings::MaterialBlock,
+                                  RHIShaderStage::Fragment,
+                                  "StaticMeshBasePass_MaterialBlock_Layout")
     });
     if (!BuildPipelineLayout(m_Device, outPipeline, std::move(layouts), "StaticMeshBasePass_PipelineLayout"))
     {
@@ -439,6 +554,7 @@ bool FRenderResourceManager::BuildStaticMeshBasePassPipeline(FPreparedPipeline& 
     pipelineDesc.vertexInput.attributes.push_back({1, RHIFormat::Float3, offsetof(FStaticMeshVertex, Normal)});
     pipelineDesc.vertexInput.attributes.push_back({2, RHIFormat::Float2, offsetof(FStaticMeshVertex, TexCoord)});
     pipelineDesc.vertexInput.attributes.push_back({3, RHIFormat::Float3, offsetof(FStaticMeshVertex, Color)});
+    pipelineDesc.vertexInput.attributes.push_back({4, RHIFormat::Float3, offsetof(FStaticMeshVertex, Tangent)});
 
     pipelineDesc.depthStencil.depthTestEnable = true;
     pipelineDesc.depthStencil.depthWriteEnable = true;
@@ -464,30 +580,56 @@ RHIPipeline* FRenderResourceManager::GetPreparedPipeline(const FPipelineKey& pip
 
 RHITexture* FRenderResourceManager::GetPreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const
 {
+    const auto* textures = GetPreparedMaterialTextures(staticMesh, materialIndex);
+    return textures && textures->BaseColor ? textures->BaseColor.get() : m_DefaultWhiteTexture.get();
+}
+
+const FPreparedMaterialTextures* FRenderResourceManager::GetPreparedMaterialTextures(const StaticMesh* staticMesh,
+                                                                                     uint32_t materialIndex) const
+{
     if (!staticMesh)
     {
-        return m_DefaultWhiteTexture.get();
+        return nullptr;
     }
 
-    const auto found = m_StaticMeshBaseColorTextureCache.find(staticMesh);
-    if (found == m_StaticMeshBaseColorTextureCache.end())
+    const auto found = m_StaticMeshMaterialTextureCache.find(staticMesh);
+    if (found == m_StaticMeshMaterialTextureCache.end())
     {
-        return m_DefaultWhiteTexture.get();
+        return nullptr;
     }
-
     const auto& textures = found->second;
     if (textures.empty())
     {
-        return m_DefaultWhiteTexture.get();
+        return nullptr;
     }
 
     if (materialIndex >= textures.size())
     {
-        return m_DefaultWhiteTexture.get();
+        return &textures.front();
     }
 
-    auto* texture = textures[materialIndex].get();
-    return texture ? texture : m_DefaultWhiteTexture.get();
+    return &textures[materialIndex];
+}
+
+const FMaterial* FRenderResourceManager::GetMaterial(const StaticMesh* staticMesh, uint32_t materialIndex) const
+{
+    if (!staticMesh)
+    {
+        return nullptr;
+    }
+
+    const auto& materials = staticMesh->GetMaterials();
+    if (materials.empty())
+    {
+        return nullptr;
+    }
+
+    if (materialIndex >= materials.size())
+    {
+        return &materials.front();
+    }
+
+    return &materials[materialIndex];
 }
 
 RHISampler* FRenderResourceManager::GetDefaultSampler() const

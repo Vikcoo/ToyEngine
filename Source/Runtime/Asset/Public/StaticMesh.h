@@ -9,7 +9,7 @@
 // ToyEngine 简化版：
 // - 暂不实现 LOD，只保留一级
 // - TStaticMesh 持有 vector<FMeshSection>，每个 Section 包含独立的顶点和索引数据
-// - 顶点结构统一为 FStaticMeshVertex（Position + Normal + TexCoord + Color）
+// - 顶点结构统一为 FStaticMeshVertex（Position + Normal + Tangent + TexCoord + Color）
 // - 资产可以被多个 TMeshComponent 共享引用（通过 shared_ptr）
 
 #pragma once
@@ -28,15 +28,17 @@ namespace TE {
 /// 包含渲染所需的全部逐顶点属性：
 /// - Position: 模型空间坐标
 /// - Normal:   法线方向（用于光照计算）
+/// - Tangent:  切线方向（用于 Normal Map）
 /// - TexCoord: 纹理坐标（UV映射）
 /// - Color:    顶点色（用于无纹理时的着色）
 struct FStaticMeshVertex
 {
     Vector3 Position;   // 位置     (12 bytes)
     Vector3 Normal;     // 法线     (12 bytes)
+    Vector3 Tangent;    // 切线     (12 bytes)
     Vector2 TexCoord;   // 纹理坐标 (8 bytes)
     Vector3 Color;      // 顶点色   (12 bytes)
-    // Total: 44 bytes per vertex
+    // Total: 56 bytes per vertex
 };
 
 /// 子网格 / 段（对应 UE5 FStaticMeshSection）

@@ -14,10 +14,24 @@ class RHIDevice;
 class RHISampler;
 class RHITexture;
 class RHIRenderTarget;
+struct FPreparedMaterialTextures;
 
 struct FBaseColorTextureBindingState
 {
     RHITexture* Texture = nullptr;
+    RHISampler* Sampler = nullptr;
+    std::unique_ptr<RHIBindGroupLayout> Layout;
+    std::unique_ptr<RHIBindGroup> BindGroup;
+};
+
+struct FMaterialTextureBindingState
+{
+    RHITexture* BaseColor = nullptr;
+    RHITexture* Normal = nullptr;
+    RHITexture* Metallic = nullptr;
+    RHITexture* Roughness = nullptr;
+    RHITexture* AmbientOcclusion = nullptr;
+    RHITexture* Emissive = nullptr;
     RHISampler* Sampler = nullptr;
     std::unique_ptr<RHIBindGroupLayout> Layout;
     std::unique_ptr<RHIBindGroup> BindGroup;
@@ -28,6 +42,7 @@ struct FGBufferTextureBindingState
     RHITexture* Albedo = nullptr;
     RHITexture* Normal = nullptr;
     RHITexture* WorldPosition = nullptr;
+    RHITexture* Material = nullptr;
     RHITexture* Depth = nullptr;
     RHISampler* Sampler = nullptr;
     std::unique_ptr<RHIBindGroupLayout> Layout;
@@ -38,6 +53,12 @@ bool UpdateAndBindBaseColorTexture(RHIDevice* device,
                                    RHICommandBuffer* cmdBuf,
                                    FBaseColorTextureBindingState& state,
                                    RHITexture* texture,
+                                   RHISampler* sampler);
+
+bool UpdateAndBindMaterialTextures(RHIDevice* device,
+                                   RHICommandBuffer* cmdBuf,
+                                   FMaterialTextureBindingState& state,
+                                   const FPreparedMaterialTextures* textures,
                                    RHISampler* sampler);
 
 bool UpdateAndBindGBufferTextures(RHIDevice* device,

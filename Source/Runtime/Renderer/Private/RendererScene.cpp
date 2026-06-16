@@ -152,6 +152,25 @@ RHITexture* FScene::ResolvePreparedBaseColorTexture(const StaticMesh* staticMesh
     return m_RenderResourceManager->GetPreparedBaseColorTexture(staticMesh, materialIndex);
 }
 
+const FPreparedMaterialTextures* FScene::ResolvePreparedMaterialTextures(const StaticMesh* staticMesh,
+                                                                         uint32_t materialIndex) const
+{
+    if (!m_RenderResourceManager)
+    {
+        return nullptr;
+    }
+    return m_RenderResourceManager->GetPreparedMaterialTextures(staticMesh, materialIndex);
+}
+
+const FMaterial* FScene::ResolveMaterial(const StaticMesh* staticMesh, uint32_t materialIndex) const
+{
+    if (!m_RenderResourceManager)
+    {
+        return nullptr;
+    }
+    return m_RenderResourceManager->GetMaterial(staticMesh, materialIndex);
+}
+
 RHISampler* FScene::ResolveDefaultSampler() const
 {
     if (!m_RenderResourceManager)

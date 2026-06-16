@@ -6,6 +6,7 @@
 #include "MeshDrawCommand.h"
 #include "RHIBindGroup.h"
 #include "RHIPipeline.h"
+#include "Material.h"
 
 #include <memory>
 #include <string>
@@ -36,6 +37,16 @@ struct FPreparedPipeline
     std::unique_ptr<RHIPipeline> Pipeline;
 };
 
+struct FPreparedMaterialTextures
+{
+    std::shared_ptr<RHITexture> BaseColor;
+    std::shared_ptr<RHITexture> Normal;
+    std::shared_ptr<RHITexture> Metallic;
+    std::shared_ptr<RHITexture> Roughness;
+    std::shared_ptr<RHITexture> AmbientOcclusion;
+    std::shared_ptr<RHITexture> Emissive;
+};
+
 class FRenderResourceManager
 {
 public:
@@ -45,6 +56,8 @@ public:
     [[nodiscard]] bool PrepareStaticMeshProxy(FStaticMeshSceneProxy& proxy);
     [[nodiscard]] RHIPipeline* GetPreparedPipeline(const FPipelineKey& pipelineKey) const;
     [[nodiscard]] RHITexture* GetPreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const;
+    [[nodiscard]] const FPreparedMaterialTextures* GetPreparedMaterialTextures(const StaticMesh* staticMesh, uint32_t materialIndex) const;
+    [[nodiscard]] const FMaterial* GetMaterial(const StaticMesh* staticMesh, uint32_t materialIndex) const;
     [[nodiscard]] RHISampler* GetDefaultSampler() const;
     [[nodiscard]] RHISampler* GetGBufferSampler() const;
     void PurgeExpiredStaticMeshRenderData();
@@ -54,15 +67,22 @@ private:
         const std::shared_ptr<StaticMesh>& staticMesh);
     [[nodiscard]] bool EnsureStaticMeshMaterialTextures(const StaticMesh& staticMesh);
     [[nodiscard]] bool EnsureDefaultTextureResources();
-    [[nodiscard]] std::shared_ptr<RHITexture> CreateTextureFromFile(const std::string& filePath, const std::string& debugName) const;
+    [[nodiscard]] std::shared_ptr<RHITexture> GetOrCreateTextureFromSlot(const FMaterialTextureSlot& textureSlot,
+                                                                         const std::string& debugName);
+    [[nodiscard]] std::shared_ptr<RHITexture> CreateTextureFromFile(const std::string& filePath,
+                                                                    ETextureColorSpace colorSpace,
+                                                                    const std::string& debugName) const;
     [[nodiscard]] bool EnsurePipeline(const FPipelineKey& pipelineKey);
     [[nodiscard]] bool BuildStaticMeshBasePassPipeline(FPreparedPipeline& outPipeline);
 
     RHIDevice* m_Device = nullptr;
     std::unordered_map<const StaticMesh*, std::weak_ptr<const FStaticMeshRenderData>> m_StaticMeshRenderDataCache;
-    std::unordered_map<const StaticMesh*, std::vector<std::shared_ptr<RHITexture>>> m_StaticMeshBaseColorTextureCache;
+    std::unordered_map<const StaticMesh*, std::vector<FPreparedMaterialTextures>> m_StaticMeshMaterialTextureCache;
+    std::unordered_map<std::string, std::weak_ptr<RHITexture>> m_TextureCache;
     std::unordered_map<FPipelineKey, FPreparedPipeline, FPipelineKeyHash> m_PipelineCache;
     std::shared_ptr<RHITexture> m_DefaultWhiteTexture;
+    std::shared_ptr<RHITexture> m_DefaultBlackTexture;
+    std::shared_ptr<RHITexture> m_DefaultNormalTexture;
     std::shared_ptr<RHISampler> m_DefaultSampler;
     std::shared_ptr<RHISampler> m_GBufferSampler;
 };

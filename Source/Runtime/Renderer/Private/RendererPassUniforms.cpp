@@ -28,10 +28,20 @@ struct alignas(16) FDeferredPassBlockCPU
     int32_t DebugViewMode = 0;
     int32_t Reserved0 = 0;
     int32_t Reserved1 = 0;
+    Vector4 CameraPosition_Pad;
+};
+
+struct alignas(16) FMaterialBlockCPU
+{
+    Vector4 BaseColorFactor_Metallic;
+    Vector4 RoughnessAOEmissiveStrength_Pad;
+    Vector4 EmissiveFactor_Pad;
+    Vector4 CameraPosition_Pad;
 };
 
 static_assert(sizeof(FObjectBlockCPU) % 16 == 0);
 static_assert(sizeof(FDeferredPassBlockCPU) % 16 == 0);
+static_assert(sizeof(FMaterialBlockCPU) % 16 == 0);
 
 Matrix4 ExpandNormalMatrixToMatrix4(const Matrix3& normalMatrix)
 {
@@ -58,6 +68,7 @@ template <typename TBindingState>
 bool CreateUniformBindingState(RHIDevice* device,
                                TBindingState& state,
                                uint64_t bufferSize,
+                               uint32_t binding,
                                const char* bufferDebugName,
                                const char* bindGroupDebugName,
                                RHIShaderStage visibility)
@@ -70,7 +81,7 @@ bool CreateUniformBindingState(RHIDevice* device,
     RHIBindGroupLayoutDesc layoutDesc;
     layoutDesc.debugName = bindGroupDebugName;
     layoutDesc.entries.push_back({
-        RendererBindings::PassBlock,
+        binding,
         RHIBindingType::UniformBuffer,
         visibility
     });
@@ -95,7 +106,7 @@ bool CreateUniformBindingState(RHIDevice* device,
     bindGroupDesc.layout = state.Layout.get();
     bindGroupDesc.debugName = bindGroupDebugName;
     bindGroupDesc.entries.push_back({
-        RendererBindings::PassBlock,
+        binding,
         RHIBindingType::UniformBuffer,
         state.UniformBuffer.get(),
         0,
@@ -129,6 +140,7 @@ bool EnsureObjectUniformBindingState(RHIDevice* device, FObjectUniformBindingSta
     return CreateUniformBindingState(device,
                                      state,
                                      sizeof(FObjectBlockCPU),
+                                     RendererBindings::PassBlock,
                                      "Renderer_ObjectBlock_UBO",
                                      "Renderer_ObjectBlock_BindGroup",
                                      RHIShaderStage::Vertex);
@@ -172,6 +184,7 @@ bool EnsureDeferredPassUniformBindingState(RHIDevice* device, FDeferredPassUnifo
     return CreateUniformBindingState(device,
                                      state,
                                      sizeof(FDeferredPassBlockCPU),
+                                     RendererBindings::PassBlock,
                                      "Renderer_DeferredPassBlock_UBO",
                                      "Renderer_DeferredPassBlock_BindGroup",
                                      RHIShaderStage::Fragment);
@@ -181,7 +194,8 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
                                        RHICommandBuffer* cmdBuf,
                                        FDeferredPassUniformBindingState& state,
                                        bool rtSampleFlipY,
-                                       ERenderDebugView debugViewMode)
+                                       ERenderDebugView debugViewMode,
+                                       const Vector3& cameraPosition)
 {
     if (!cmdBuf || !EnsureDeferredPassUniformBindingState(device, state))
     {
@@ -191,6 +205,7 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
     FDeferredPassBlockCPU passBlock{};
     passBlock.RTSampleFlipY = rtSampleFlipY ? 1 : 0;
     passBlock.DebugViewMode = static_cast<int32_t>(debugViewMode);
+    passBlock.CameraPosition_Pad = Vector4(cameraPosition, 0.0f);
 
     if (!state.UniformBuffer->UpdateData(&passBlock, sizeof(passBlock)))
     {
@@ -198,6 +213,56 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
     }
 
     cmdBuf->SetBindGroup(RendererBindGroups::PassBlock, state.BindGroup.get());
+    return true;
+}
+
+bool EnsureMaterialUniformBindingState(RHIDevice* device, FMaterialUniformBindingState& state)
+{
+    if (state.Layout &&
+        state.UniformBuffer &&
+        state.BindGroup && state.BindGroup->IsValid())
+    {
+        return true;
+    }
+
+    return CreateUniformBindingState(device,
+                                     state,
+                                     sizeof(FMaterialBlockCPU),
+                                     RendererBindings::MaterialBlock,
+                                     "Renderer_MaterialBlock_UBO",
+                                     "Renderer_MaterialBlock_BindGroup",
+                                     RHIShaderStage::Fragment);
+}
+
+bool UpdateAndBindMaterialUniforms(RHIDevice* device,
+                                   RHICommandBuffer* cmdBuf,
+                                   FMaterialUniformBindingState& state,
+                                   const FMaterial* material,
+                                   const Vector3& cameraPosition)
+{
+    if (!cmdBuf || !EnsureMaterialUniformBindingState(device, state))
+    {
+        return false;
+    }
+
+    FMaterial defaultMaterial;
+    const FMaterial& sourceMaterial = material ? *material : defaultMaterial;
+
+    FMaterialBlockCPU materialBlock{};
+    materialBlock.BaseColorFactor_Metallic = Vector4(sourceMaterial.BaseColorFactor, sourceMaterial.MetallicFactor);
+    materialBlock.RoughnessAOEmissiveStrength_Pad = Vector4(sourceMaterial.RoughnessFactor,
+                                                            sourceMaterial.AmbientOcclusionFactor,
+                                                            sourceMaterial.EmissiveStrength,
+                                                            0.0f);
+    materialBlock.EmissiveFactor_Pad = Vector4(sourceMaterial.EmissiveFactor, 0.0f);
+    materialBlock.CameraPosition_Pad = Vector4(cameraPosition, 0.0f);
+
+    if (!state.UniformBuffer->UpdateData(&materialBlock, sizeof(materialBlock)))
+    {
+        return false;
+    }
+
+    cmdBuf->SetBindGroup(RendererBindGroups::MaterialBlock, state.BindGroup.get());
     return true;
 }
 

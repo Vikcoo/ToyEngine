@@ -14,6 +14,7 @@ struct FViewInfo
     Matrix4 ViewMatrix;           // 世界空间 -> 相机空间
     Matrix4 ProjectionMatrix;     // 相机空间 -> 裁剪空间（NDC）
     Matrix4 ViewProjectionMatrix; // Projection * View 的预乘结果
+    Vector3 CameraPosition = Vector3::Zero;
 
     float ViewportWidth = 1280.0f;  // 视口宽度
     float ViewportHeight = 720.0f;  // 视口高度

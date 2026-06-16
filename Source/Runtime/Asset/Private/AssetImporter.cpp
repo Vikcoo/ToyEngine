@@ -90,6 +90,19 @@ static FMeshSection ProcessAiMesh(const aiMesh* mesh)
             vertex.Normal = Vector3(0.0f, 0.0f, 1.0f);
         }
 
+        if (mesh->HasTangentsAndBitangents())
+        {
+            vertex.Tangent = Vector3(
+                mesh->mTangents[i].x,
+                mesh->mTangents[i].y,
+                mesh->mTangents[i].z
+            );
+        }
+        else
+        {
+            vertex.Tangent = Vector3(1.0f, 0.0f, 0.0f);
+        }
+
         // TexCoord（取第一组 UV，可能缺失，fallback 为 (0, 0)）
         // Assimp 支持最多 8 组 UV，我们只使用第一组
         if (mesh->HasTextureCoords(0))

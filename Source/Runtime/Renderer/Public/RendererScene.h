@@ -26,6 +26,8 @@ class RHIPipeline;
 class RHISampler;
 class RHITexture;
 class StaticMesh;
+struct FMaterial;
+struct FPreparedMaterialTextures;
 
 class FScene : public IRenderScene
 {
@@ -50,6 +52,8 @@ public:
 
     [[nodiscard]] RHIPipeline* ResolvePreparedPipeline(const FPipelineKey& pipelineKey) const;
     [[nodiscard]] RHITexture* ResolvePreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const;
+    [[nodiscard]] const FPreparedMaterialTextures* ResolvePreparedMaterialTextures(const StaticMesh* staticMesh, uint32_t materialIndex) const;
+    [[nodiscard]] const FMaterial* ResolveMaterial(const StaticMesh* staticMesh, uint32_t materialIndex) const;
     [[nodiscard]] RHISampler* ResolveDefaultSampler() const;
     [[nodiscard]] RHISampler* ResolveGBufferSampler() const;
 

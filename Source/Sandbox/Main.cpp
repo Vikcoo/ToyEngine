@@ -85,40 +85,40 @@ std::shared_ptr<TE::StaticMesh> LoadOrCreateDemoMesh(const std::string& modelNam
 
     // 立方体 24 个顶点（每面 4 个独立顶点，每面不同颜色）
     // 前面 (Z+) - 红色
-    section.Vertices.push_back({{-0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 0.0f}, {0.9f, 0.2f, 0.2f}});
-    section.Vertices.push_back({{ 0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 0.0f}, {0.9f, 0.2f, 0.2f}});
-    section.Vertices.push_back({{ 0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 1.0f}, {0.9f, 0.2f, 0.2f}});
-    section.Vertices.push_back({{-0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 1.0f}, {0.9f, 0.2f, 0.2f}});
+    section.Vertices.push_back({{-0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.9f, 0.2f, 0.2f}});
+    section.Vertices.push_back({{ 0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {0.9f, 0.2f, 0.2f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {0.9f, 0.2f, 0.2f}});
+    section.Vertices.push_back({{-0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.9f, 0.2f, 0.2f}});
 
     // 后面 (Z-) - 绿色
-    section.Vertices.push_back({{ 0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}, {0.2f, 0.9f, 0.2f}});
-    section.Vertices.push_back({{-0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 0.0f}, {0.2f, 0.9f, 0.2f}});
-    section.Vertices.push_back({{-0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 1.0f}, {0.2f, 0.9f, 0.2f}});
-    section.Vertices.push_back({{ 0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 1.0f}, {0.2f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{ 0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.2f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {0.2f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {0.2f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.2f, 0.9f, 0.2f}});
 
     // 右面 (X+) - 蓝色
-    section.Vertices.push_back({{ 0.5f, -0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.2f, 0.2f, 0.9f}});
-    section.Vertices.push_back({{ 0.5f, -0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {0.2f, 0.2f, 0.9f}});
-    section.Vertices.push_back({{ 0.5f,  0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {0.2f, 0.2f, 0.9f}});
-    section.Vertices.push_back({{ 0.5f,  0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.2f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f, -0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}, {0.2f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f, -0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 0.0f}, {0.2f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 1.0f}, {0.2f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 1.0f}, {0.2f, 0.2f, 0.9f}});
 
     // 左面 (X-) - 黄色
-    section.Vertices.push_back({{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.9f, 0.9f, 0.2f}});
-    section.Vertices.push_back({{-0.5f, -0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {0.9f, 0.9f, 0.2f}});
-    section.Vertices.push_back({{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {0.9f, 0.9f, 0.2f}});
-    section.Vertices.push_back({{-0.5f,  0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.9f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 0.0f}, {0.9f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f, -0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 0.0f}, {0.9f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {1.0f, 1.0f}, {0.9f, 0.9f, 0.2f}});
+    section.Vertices.push_back({{-0.5f,  0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f,  1.0f}, {0.0f, 1.0f}, {0.9f, 0.9f, 0.2f}});
 
     // 顶面 (Y+) - 青色
-    section.Vertices.push_back({{-0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 0.0f}, {0.2f, 0.9f, 0.9f}});
-    section.Vertices.push_back({{ 0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 0.0f}, {0.2f, 0.9f, 0.9f}});
-    section.Vertices.push_back({{ 0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 1.0f}, {0.2f, 0.9f, 0.9f}});
-    section.Vertices.push_back({{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {0.0f, 1.0f}, {0.2f, 0.9f, 0.9f}});
+    section.Vertices.push_back({{-0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.2f, 0.9f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {0.2f, 0.9f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {0.2f, 0.9f, 0.9f}});
+    section.Vertices.push_back({{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.2f, 0.9f, 0.9f}});
 
     // 底面 (Y-) - 品红
-    section.Vertices.push_back({{-0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {0.0f, 0.0f}, {0.9f, 0.2f, 0.9f}});
-    section.Vertices.push_back({{ 0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 0.0f}, {0.9f, 0.2f, 0.9f}});
-    section.Vertices.push_back({{ 0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 1.0f}, {0.9f, 0.2f, 0.9f}});
-    section.Vertices.push_back({{-0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {0.0f, 1.0f}, {0.9f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{-0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}, {0.9f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}, {0.9f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{ 0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}, {0.9f, 0.2f, 0.9f}});
+    section.Vertices.push_back({{-0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, { 1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}, {0.9f, 0.2f, 0.9f}});
 
     // 36 个索引（6 面 × 2 三角形 × 3 顶点，CCW 正面）
     section.Indices = {
@@ -154,6 +154,38 @@ void OverrideMeshBaseColorTexture(const std::shared_ptr<TE::StaticMesh>& mesh, c
     mesh->SetMaterials(std::move(materials));
 }
 
+void OverrideMeshPBRTextures(const std::shared_ptr<TE::StaticMesh>& mesh,
+                             const std::string& baseColorPath,
+                             const std::string& normalPath,
+                             const std::string& metallicPath,
+                             const std::string& roughnessPath,
+                             const std::string& aoPath)
+{
+    if (!mesh)
+    {
+        return;
+    }
+
+    auto materials = mesh->GetMaterials();
+    if (materials.empty())
+    {
+        materials.resize(1);
+    }
+
+    for (auto& material : materials)
+    {
+        material.SetBaseColorTexturePath(baseColorPath);
+        material.NormalTexture.TexturePath = normalPath;
+        material.MetallicTexture.TexturePath = metallicPath;
+        material.RoughnessTexture.TexturePath = roughnessPath;
+        material.AmbientOcclusionTexture.TexturePath = aoPath;
+        material.MetallicFactor = 1.0f;
+        material.RoughnessFactor = 1.0f;
+        material.AmbientOcclusionFactor = 1.0f;
+    }
+    mesh->SetMaterials(std::move(materials));
+}
+
 void SetupSandboxScene(TE::Engine& engine)
 {
     auto* world = engine.GetWorld();
@@ -170,26 +202,39 @@ void SetupSandboxScene(TE::Engine& engine)
     const std::string textureDir = std::string(TE_PROJECT_ROOT_DIR) + "Content/Textures/";
     const std::string textureA = textureDir + "orientation_cube_atlas.png";
     const std::string textureB = textureDir + "orientation_cube_atlas.png";
+    const std::string pbrDir = textureDir + "PBR/";
+    const std::string pbrBaseColor = pbrDir + "RedRock04_4K_BaseColor.png";
+    const std::string pbrNormal = pbrDir + "RedRock04_4K_Normal.png";
+    const std::string pbrMetallic = pbrDir + "RedRock04_4K_Metallic.png";
+    const std::string pbrRoughness = pbrDir + "RedRock04_4K_Roughness.png";
+    const std::string pbrAO = pbrDir + "RedRock04_4K_AO.png";
 
-    if (std::filesystem::exists(textureA))
+    if (std::filesystem::exists(pbrBaseColor) &&
+        std::filesystem::exists(pbrNormal) &&
+        std::filesystem::exists(pbrMetallic) &&
+        std::filesystem::exists(pbrRoughness) &&
+        std::filesystem::exists(pbrAO))
+    {
+        OverrideMeshPBRTextures(loadedMesh, pbrBaseColor, pbrNormal, pbrMetallic, pbrRoughness, pbrAO);
+        OverrideMeshPBRTextures(loadedMeshTop, pbrBaseColor, pbrNormal, pbrMetallic, pbrRoughness, pbrAO);
+        OverrideMeshPBRTextures(loadedMeshPointLight, pbrBaseColor, pbrNormal, pbrMetallic, pbrRoughness, pbrAO);
+        TE_LOG_INFO("[Sandbox] PBR material textures: {}", pbrDir);
+    }
+    else if (std::filesystem::exists(textureA))
     {
         OverrideMeshBaseColorTexture(loadedMesh, textureA);
         TE_LOG_INFO("[Sandbox] MeshActor texture: {}", textureA);
-    }
-    else
-    {
-        TE_LOG_WARN("[Sandbox] Texture file not found: {}", textureA);
-    }
 
-    if (std::filesystem::exists(textureB))
-    {
-        OverrideMeshBaseColorTexture(loadedMeshTop, textureB);
-        OverrideMeshBaseColorTexture(loadedMeshPointLight, textureB);
-        TE_LOG_INFO("[Sandbox] MeshActorTop texture: {}", textureB);
+        if (std::filesystem::exists(textureB))
+        {
+            OverrideMeshBaseColorTexture(loadedMeshTop, textureB);
+            OverrideMeshBaseColorTexture(loadedMeshPointLight, textureB);
+            TE_LOG_INFO("[Sandbox] MeshActorTop texture: {}", textureB);
+        }
     }
     else
     {
-        TE_LOG_WARN("[Sandbox] Texture file not found: {}", textureB);
+        TE_LOG_WARN("[Sandbox] Texture files not found: {} or {}", pbrDir, textureA);
     }
 
     auto meshActor = std::make_unique<TE::Actor>();
@@ -240,13 +285,13 @@ void SetupSandboxScene(TE::Engine& engine)
     flyCamCtrl->SetInputManager(engine.GetInputManager());
     flyCamCtrl->SetWindow(engine.GetWindow());
 
-    // auto directionalLightActor = std::make_unique<TE::Actor>();
-    // directionalLightActor->SetName("DirectionalLightActor");
-    // auto* directionalLight = directionalLightActor->AddComponent<TE::DirectionalLightComponent>();
-    // directionalLight->SetName("MainDirectionalLight");
-    // directionalLight->SetColor(TE::Vector3(1.0f, 0.96f, 0.9f));
-    // directionalLight->SetIntensity(1.0f);
-    // directionalLight->GetTransform().SetForward(TE::Vector3(0.5f, 1.0f, 0.8f).Normalize());
+    auto directionalLightActor = std::make_unique<TE::Actor>();
+    directionalLightActor->SetName("DirectionalLightActor");
+    auto* directionalLight = directionalLightActor->AddComponent<TE::DirectionalLightComponent>();
+    directionalLight->SetName("MainDirectionalLight");
+    directionalLight->SetColor(TE::Vector3(1.0f, 0.96f, 0.9f));
+    directionalLight->SetIntensity(5.0f);
+    directionalLight->GetTransform().SetForward(TE::Vector3(0.5f, 1.0f, 0.8f).Normalize());
 
     auto pointLightActor = std::make_unique<TE::Actor>();
     pointLightActor->SetName("PointLightActor");
@@ -261,7 +306,7 @@ void SetupSandboxScene(TE::Engine& engine)
     world->AddActor(std::move(meshActorTop));
     world->AddActor(std::move(pointLightMarkerActor));
     world->AddActor(std::move(cameraActor));
-    //world->AddActor(std::move(directionalLightActor));
+    world->AddActor(std::move(directionalLightActor));
     world->AddActor(std::move(pointLightActor));
 
     engine.SetActiveCameraComponent(cameraComp);

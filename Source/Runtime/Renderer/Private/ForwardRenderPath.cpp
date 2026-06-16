@@ -22,7 +22,8 @@ FForwardRenderPath::FForwardRenderPath()
     : m_BasePassProcessor(EMeshPassType::BasePass)
     , m_LightBindingState(std::make_unique<FLightUniformBindingState>())
     , m_ObjectBindingState(std::make_unique<FObjectUniformBindingState>())
-    , m_BaseColorTextureBindingState(std::make_unique<FBaseColorTextureBindingState>())
+    , m_MaterialTextureBindingState(std::make_unique<FMaterialTextureBindingState>())
+    , m_MaterialBindingState(std::make_unique<FMaterialUniformBindingState>())
 {
 }
 
@@ -138,16 +139,18 @@ void FForwardRenderPath::SubmitDrawCommands(const std::vector<FMeshDrawCommand>&
             ++outStats.IBOBindCount;
         }
 
-        auto* baseColorTexture = scene->ResolvePreparedBaseColorTexture(cmd.StaticMeshAsset, cmd.MaterialIndex);
+        const auto* material = scene->ResolveMaterial(cmd.StaticMeshAsset, cmd.MaterialIndex);
+        const auto* materialTextures = scene->ResolvePreparedMaterialTextures(cmd.StaticMeshAsset, cmd.MaterialIndex);
         auto* defaultSampler = scene->ResolveDefaultSampler();
-        if (baseColorTexture)
+        if (materialTextures)
         {
-            UpdateAndBindBaseColorTexture(device,
+            UpdateAndBindMaterialTextures(device,
                                           cmdBuf,
-                                          *m_BaseColorTextureBindingState,
-                                          baseColorTexture,
+                                          *m_MaterialTextureBindingState,
+                                          materialTextures,
                                           defaultSampler);
         }
+        UpdateAndBindMaterialUniforms(device, cmdBuf, *m_MaterialBindingState, material, viewInfo.CameraPosition);
 
         Matrix4 mvp = adjustedVP * cmd.WorldMatrix;
         Matrix3 normalMatrix = cmd.WorldMatrix.GetNormalMatrix();

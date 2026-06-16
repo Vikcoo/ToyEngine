@@ -33,6 +33,7 @@ FViewInfo CameraComponent::BuildViewInfo() const
     const Vector3 up = m_Transform.GetUp();
     const Vector3 target = eye + forward;
 
+    viewInfo.CameraPosition = eye;
     viewInfo.ViewMatrix = Matrix4::LookAt(eye, target, up);
 
     // 2. 构建 Projection 矩阵

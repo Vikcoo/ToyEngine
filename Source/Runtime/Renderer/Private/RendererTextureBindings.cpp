@@ -4,6 +4,7 @@
 #include "RendererTextureBindings.h"
 
 #include "RendererBindingSlots.h"
+#include "RenderResourceManager.h"
 #include "RHIBindGroup.h"
 #include "RHICommandBuffer.h"
 #include "RHIDevice.h"
@@ -80,8 +81,9 @@ bool RebuildGBufferBindGroup(RHIDevice* device,
     auto* albedo = gbuffer->GetColorAttachment(0);
     auto* normal = gbuffer->GetColorAttachment(1);
     auto* worldPosition = gbuffer->GetColorAttachment(2);
+    auto* material = gbuffer->GetColorAttachment(3);
     auto* depth = gbuffer->GetDepthStencilAttachment();
-    if (!albedo || !normal || !worldPosition || !depth)
+    if (!albedo || !normal || !worldPosition || !material || !depth)
     {
         return false;
     }
@@ -102,6 +104,11 @@ bool RebuildGBufferBindGroup(RHIDevice* device,
         });
         layoutDesc.entries.push_back({
             RendererBindings::GBufferWorldPosition,
+            RHIBindingType::Texture2D,
+            RHIShaderStage::Fragment
+        });
+        layoutDesc.entries.push_back({
+            RendererBindings::GBufferMaterial,
             RHIBindingType::Texture2D,
             RHIShaderStage::Fragment
         });
@@ -148,6 +155,15 @@ bool RebuildGBufferBindGroup(RHIDevice* device,
         sampler
     });
     bindGroupDesc.entries.push_back({
+        RendererBindings::GBufferMaterial,
+        RHIBindingType::Texture2D,
+        nullptr,
+        0,
+        0,
+        material,
+        sampler
+    });
+    bindGroupDesc.entries.push_back({
         RendererBindings::GBufferDepth,
         RHIBindingType::Texture2D,
         nullptr,
@@ -167,7 +183,68 @@ bool RebuildGBufferBindGroup(RHIDevice* device,
     state.Albedo = albedo;
     state.Normal = normal;
     state.WorldPosition = worldPosition;
+    state.Material = material;
     state.Depth = depth;
+    state.Sampler = sampler;
+    return true;
+}
+
+bool RebuildMaterialTexturesBindGroup(RHIDevice* device,
+                                      FMaterialTextureBindingState& state,
+                                      const FPreparedMaterialTextures& textures,
+                                      RHISampler* sampler)
+{
+    if (!device ||
+        !textures.BaseColor ||
+        !textures.Normal ||
+        !textures.Metallic ||
+        !textures.Roughness ||
+        !textures.AmbientOcclusion ||
+        !textures.Emissive)
+    {
+        return false;
+    }
+
+    if (!state.Layout)
+    {
+        RHIBindGroupLayoutDesc layoutDesc;
+        layoutDesc.debugName = "Renderer_MaterialTextures_Layout";
+        layoutDesc.entries.push_back({RendererBindings::BaseColorTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+        layoutDesc.entries.push_back({RendererBindings::NormalTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+        layoutDesc.entries.push_back({RendererBindings::MetallicTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+        layoutDesc.entries.push_back({RendererBindings::RoughnessTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+        layoutDesc.entries.push_back({RendererBindings::AOTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+        layoutDesc.entries.push_back({RendererBindings::EmissiveTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+        state.Layout = device->CreateBindGroupLayout(layoutDesc);
+        if (!state.Layout || !state.Layout->IsValid())
+        {
+            return false;
+        }
+    }
+
+    RHIBindGroupDesc bindGroupDesc;
+    bindGroupDesc.layout = state.Layout.get();
+    bindGroupDesc.debugName = "Renderer_MaterialTextures_BindGroup";
+    bindGroupDesc.entries.push_back({RendererBindings::BaseColorTexture, RHIBindingType::Texture2D, nullptr, 0, 0, textures.BaseColor.get(), sampler});
+    bindGroupDesc.entries.push_back({RendererBindings::NormalTexture, RHIBindingType::Texture2D, nullptr, 0, 0, textures.Normal.get(), sampler});
+    bindGroupDesc.entries.push_back({RendererBindings::MetallicTexture, RHIBindingType::Texture2D, nullptr, 0, 0, textures.Metallic.get(), sampler});
+    bindGroupDesc.entries.push_back({RendererBindings::RoughnessTexture, RHIBindingType::Texture2D, nullptr, 0, 0, textures.Roughness.get(), sampler});
+    bindGroupDesc.entries.push_back({RendererBindings::AOTexture, RHIBindingType::Texture2D, nullptr, 0, 0, textures.AmbientOcclusion.get(), sampler});
+    bindGroupDesc.entries.push_back({RendererBindings::EmissiveTexture, RHIBindingType::Texture2D, nullptr, 0, 0, textures.Emissive.get(), sampler});
+
+    state.BindGroup = device->CreateBindGroup(bindGroupDesc);
+    if (!state.BindGroup || !state.BindGroup->IsValid())
+    {
+        state.BindGroup.reset();
+        return false;
+    }
+
+    state.BaseColor = textures.BaseColor.get();
+    state.Normal = textures.Normal.get();
+    state.Metallic = textures.Metallic.get();
+    state.Roughness = textures.Roughness.get();
+    state.AmbientOcclusion = textures.AmbientOcclusion.get();
+    state.Emissive = textures.Emissive.get();
     state.Sampler = sampler;
     return true;
 }
@@ -197,6 +274,36 @@ bool UpdateAndBindBaseColorTexture(RHIDevice* device,
     return true;
 }
 
+bool UpdateAndBindMaterialTextures(RHIDevice* device,
+                                   RHICommandBuffer* cmdBuf,
+                                   FMaterialTextureBindingState& state,
+                                   const FPreparedMaterialTextures* textures,
+                                   RHISampler* sampler)
+{
+    if (!cmdBuf || !textures)
+    {
+        return false;
+    }
+
+    if (!state.BindGroup ||
+        state.BaseColor != textures->BaseColor.get() ||
+        state.Normal != textures->Normal.get() ||
+        state.Metallic != textures->Metallic.get() ||
+        state.Roughness != textures->Roughness.get() ||
+        state.AmbientOcclusion != textures->AmbientOcclusion.get() ||
+        state.Emissive != textures->Emissive.get() ||
+        state.Sampler != sampler)
+    {
+        if (!RebuildMaterialTexturesBindGroup(device, state, *textures, sampler))
+        {
+            return false;
+        }
+    }
+
+    cmdBuf->SetBindGroup(RendererBindGroups::MaterialTextures, state.BindGroup.get());
+    return true;
+}
+
 bool UpdateAndBindGBufferTextures(RHIDevice* device,
                                   RHICommandBuffer* cmdBuf,
                                   FGBufferTextureBindingState& state,
@@ -211,12 +318,14 @@ bool UpdateAndBindGBufferTextures(RHIDevice* device,
     auto* albedo = gbuffer->GetColorAttachment(0);
     auto* normal = gbuffer->GetColorAttachment(1);
     auto* worldPosition = gbuffer->GetColorAttachment(2);
+    auto* material = gbuffer->GetColorAttachment(3);
     auto* depth = gbuffer->GetDepthStencilAttachment();
 
     if (!state.BindGroup ||
         state.Albedo != albedo ||
         state.Normal != normal ||
         state.WorldPosition != worldPosition ||
+        state.Material != material ||
         state.Depth != depth ||
         state.Sampler != sampler)
     {

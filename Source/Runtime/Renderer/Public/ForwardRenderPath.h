@@ -17,7 +17,8 @@ class RHIDevice;
 class RHIPipeline;
 struct FLightUniformBindingState;
 struct FObjectUniformBindingState;
-struct FBaseColorTextureBindingState;
+struct FMaterialTextureBindingState;
+struct FMaterialUniformBindingState;
 
 class FForwardRenderPath final : public IRenderPath
 {
@@ -41,7 +42,8 @@ private:
     FMeshPassProcessor m_BasePassProcessor;
     std::unique_ptr<FLightUniformBindingState> m_LightBindingState;
     std::unique_ptr<FObjectUniformBindingState> m_ObjectBindingState;
-    std::unique_ptr<FBaseColorTextureBindingState> m_BaseColorTextureBindingState;
+    std::unique_ptr<FMaterialTextureBindingState> m_MaterialTextureBindingState;
+    std::unique_ptr<FMaterialUniformBindingState> m_MaterialBindingState;
 };
 
 } // namespace TE

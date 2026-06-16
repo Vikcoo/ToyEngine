@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "Material.h"
 #include "Math/MathTypes.h"
 
 #include <memory>
@@ -30,6 +31,13 @@ struct FDeferredPassUniformBindingState
     std::unique_ptr<RHIBindGroup> BindGroup;
 };
 
+struct FMaterialUniformBindingState
+{
+    std::unique_ptr<RHIBindGroupLayout> Layout;
+    std::unique_ptr<RHIBuffer> UniformBuffer;
+    std::unique_ptr<RHIBindGroup> BindGroup;
+};
+
 bool EnsureObjectUniformBindingState(RHIDevice* device, FObjectUniformBindingState& state);
 bool UpdateAndBindObjectUniforms(RHIDevice* device,
                                  RHICommandBuffer* cmdBuf,
@@ -43,6 +51,14 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
                                        RHICommandBuffer* cmdBuf,
                                        FDeferredPassUniformBindingState& state,
                                        bool rtSampleFlipY,
-                                       ERenderDebugView debugViewMode);
+                                       ERenderDebugView debugViewMode,
+                                       const Vector3& cameraPosition);
+
+bool EnsureMaterialUniformBindingState(RHIDevice* device, FMaterialUniformBindingState& state);
+bool UpdateAndBindMaterialUniforms(RHIDevice* device,
+                                   RHICommandBuffer* cmdBuf,
+                                   FMaterialUniformBindingState& state,
+                                   const FMaterial* material,
+                                   const Vector3& cameraPosition);
 
 } // namespace TE
