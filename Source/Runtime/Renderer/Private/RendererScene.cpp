@@ -171,6 +171,15 @@ const FMaterial* FScene::ResolveMaterial(const StaticMesh* staticMesh, uint32_t 
     return m_RenderResourceManager->GetMaterial(staticMesh, materialIndex);
 }
 
+const FEnvironmentIBLResources* FScene::ResolveEnvironmentIBLResources() const
+{
+    if (!m_RenderResourceManager)
+    {
+        return nullptr;
+    }
+    return m_RenderResourceManager->GetEnvironmentIBLResources();
+}
+
 RHISampler* FScene::ResolveDefaultSampler() const
 {
     if (!m_RenderResourceManager)
@@ -178,6 +187,15 @@ RHISampler* FScene::ResolveDefaultSampler() const
         return nullptr;
     }
     return m_RenderResourceManager->GetDefaultSampler();
+}
+
+RHISampler* FScene::ResolveEnvironmentSampler() const
+{
+    if (!m_RenderResourceManager)
+    {
+        return nullptr;
+    }
+    return m_RenderResourceManager->GetEnvironmentSampler();
 }
 
 RHISampler* FScene::ResolveGBufferSampler() const

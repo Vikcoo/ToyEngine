@@ -31,6 +31,9 @@ layout(binding = 4) uniform sampler2D u_MetallicTex;
 layout(binding = 5) uniform sampler2D u_RoughnessTex;
 layout(binding = 6) uniform sampler2D u_AOTex;
 layout(binding = 7) uniform sampler2D u_EmissiveTex;
+layout(binding = 9) uniform samplerCube u_IrradianceMap;
+layout(binding = 10) uniform samplerCube u_PrefilterMap;
+layout(binding = 11) uniform sampler2D u_BRDFLUT;
 
 out vec4 fragColor;
 
@@ -72,6 +75,11 @@ vec3 FresnelSchlick(float cosTheta, vec3 f0)
     return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 f0, float roughness)
+{
+    return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 vec3 EvaluatePBRLight(vec3 n, vec3 v, vec3 l, vec3 radiance, vec3 baseColor, float metallic, float roughness)
 {
     vec3 h = normalize(v + l);
@@ -108,7 +116,18 @@ void main()
 
     vec3 n = GetMaterialNormal();
     vec3 v = normalize(u_CameraPosition_Pad.xyz - vWorldPosition);
-    vec3 color = baseColor * 0.03 * ao;
+    vec3 f0 = mix(vec3(0.04), baseColor, metallic);
+    float nDotV = max(dot(n, v), 0.0);
+    vec3 f = FresnelSchlickRoughness(nDotV, f0, roughness);
+    vec3 kS = f;
+    vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
+    vec3 irradiance = texture(u_IrradianceMap, n).rgb;
+    vec3 diffuseIBL = irradiance * baseColor;
+    vec3 reflection = reflect(-v, n);
+    vec3 prefilteredColor = textureLod(u_PrefilterMap, reflection, roughness * 4.0).rgb;
+    vec2 brdf = texture(u_BRDFLUT, vec2(nDotV, roughness)).rg;
+    vec3 specularIBL = prefilteredColor * (f * brdf.x + brdf.y);
+    vec3 color = (kD * diffuseIBL + specularIBL) * ao;
 
     for (int i = 0; i < u_LightCounts.x; ++i)
     {

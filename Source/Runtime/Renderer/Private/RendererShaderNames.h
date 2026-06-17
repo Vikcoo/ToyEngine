@@ -11,5 +11,7 @@ inline constexpr const char* StaticMeshGBufferVS = "StaticMesh/GBufferVS";
 inline constexpr const char* StaticMeshGBufferPS = "StaticMesh/GBufferPS";
 inline constexpr const char* DeferredLightingVS = "Deferred/LightingVS";
 inline constexpr const char* DeferredLightingPS = "Deferred/LightingPS";
+inline constexpr const char* SkyVS = "Sky/FullscreenVS";
+inline constexpr const char* SkyPS = "Sky/SkyPS";
 
 } // namespace TE::RendererShaderNames

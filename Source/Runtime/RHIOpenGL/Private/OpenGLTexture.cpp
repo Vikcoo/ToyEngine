@@ -158,42 +158,70 @@ OpenGLTexture::OpenGLTexture(const RHITextureDesc& desc)
         }
     }
 
-    glBindTexture(GL_TEXTURE_2D, m_TextureID);
-    glTexImage2D(GL_TEXTURE_2D,
-                 0,
-                 internalFormat,
-                 static_cast<GLsizei>(desc.width),
-                 static_cast<GLsizei>(desc.height),
-                 0,
-                 format,
-                 type,
-                 uploadData);
+    m_TextureTarget = desc.dimension == RHITextureDimension::TextureCube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
+    glBindTexture(m_TextureTarget, m_TextureID);
+
+    if (desc.dimension == RHITextureDimension::TextureCube)
+    {
+        const uint32_t bpp = GetPixelByteSize(desc.format);
+        const auto* cubeBytes = static_cast<const uint8_t*>(desc.initialData);
+        const size_t faceBytes = static_cast<size_t>(desc.width) * desc.height * bpp;
+        for (uint32_t face = 0; face < 6; ++face)
+        {
+            const void* faceData = cubeBytes ? cubeBytes + faceBytes * face : nullptr;
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
+                         0,
+                         internalFormat,
+                         static_cast<GLsizei>(desc.width),
+                         static_cast<GLsizei>(desc.height),
+                         0,
+                         format,
+                         type,
+                         faceData);
+        }
+    }
+    else
+    {
+        glTexImage2D(GL_TEXTURE_2D,
+                     0,
+                     internalFormat,
+                     static_cast<GLsizei>(desc.width),
+                     static_cast<GLsizei>(desc.height),
+                     0,
+                     format,
+                     type,
+                     uploadData);
+    }
 
     // 深度纹理作为 RT 附件时使用 CLAMP_TO_EDGE + NEAREST，且不生成 mipmap（FBO 渲染到 mip0）。
     // 彩色纹理沿用原有 REPEAT + LINEAR 行为，便于材质贴图采样。
     if (isDepth)
     {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(m_TextureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(m_TextureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(m_TextureTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(m_TextureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
     else
     {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(m_TextureTarget, GL_TEXTURE_WRAP_S, desc.dimension == RHITextureDimension::TextureCube ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        glTexParameteri(m_TextureTarget, GL_TEXTURE_WRAP_T, desc.dimension == RHITextureDimension::TextureCube ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        if (desc.dimension == RHITextureDimension::TextureCube)
+        {
+            glTexParameteri(m_TextureTarget, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        }
         // 作为 RT 附件（无初始数据 + 不生成 mipmap）时用 LINEAR 基层采样，避免 MIP 过滤器要求完整 mip 链。
         const bool useMipFilter = desc.generateMips && desc.initialData != nullptr;
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, useMipFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(m_TextureTarget, GL_TEXTURE_MIN_FILTER, useMipFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+        glTexParameteri(m_TextureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         if (useMipFilter)
         {
-            glGenerateMipmap(GL_TEXTURE_2D);
+            glGenerateMipmap(m_TextureTarget);
         }
     }
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(m_TextureTarget, 0);
 }
 
 OpenGLTexture::~OpenGLTexture()

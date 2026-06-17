@@ -303,12 +303,20 @@ enum class RHITextureAddressMode : uint8_t
     ClampToEdge,
 };
 
+enum class RHITextureDimension : uint8_t
+{
+    Texture2D,
+    TextureCube,
+};
+
 /// 2D 纹理创建描述符
 struct RHITextureDesc
 {
+    RHITextureDimension dimension = RHITextureDimension::Texture2D;
     uint32_t    width = 0;
     uint32_t    height = 0;
     RHIFormat   format = RHIFormat::RGBA8_UNorm;
+    /// Texture2D 时指向单张图；TextureCube 时指向 +X/-X/+Y/-Y/+Z/-Z 六面连续数据。
     const void* initialData = nullptr;
     bool        generateMips = true;
     bool        srgb = true;
@@ -322,6 +330,7 @@ struct RHISamplerDesc
     RHITextureFilter     magFilter = RHITextureFilter::Linear;
     RHITextureAddressMode addressU = RHITextureAddressMode::Repeat;
     RHITextureAddressMode addressV = RHITextureAddressMode::Repeat;
+    RHITextureAddressMode addressW = RHITextureAddressMode::Repeat;
     std::string           debugName;
 };
 
@@ -334,6 +343,7 @@ enum class RHIBindingType : uint8_t
 {
     UniformBuffer,  // Vulkan UBO / D3D12 CBV / OpenGL UBO
     Texture2D,      // Vulkan Combined Image Sampler / D3D12 SRV / OpenGL texture unit
+    TextureCube,    // Cubemap SRV / OpenGL samplerCube
     Sampler,        // 独立采样器（当前简化为与 Texture2D 配对）
 };
 

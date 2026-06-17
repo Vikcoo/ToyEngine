@@ -23,13 +23,14 @@ public:
     [[nodiscard]] RHIFormat GetFormat() const override { return m_Format; }
 
     [[nodiscard]] GLuint GetGLTextureID() const { return m_TextureID; }
+    [[nodiscard]] GLenum GetGLTextureTarget() const { return m_TextureTarget; }
 
 private:
     GLuint    m_TextureID = 0;
+    GLenum    m_TextureTarget = GL_TEXTURE_2D;
     uint32_t  m_Width = 0;
     uint32_t  m_Height = 0;
     RHIFormat m_Format = RHIFormat::Undefined;
 };
 
 } // namespace TE
-

@@ -26,6 +26,7 @@ struct FDeferredPassUniformBindingState;
 struct FMaterialTextureBindingState;
 struct FMaterialUniformBindingState;
 struct FGBufferTextureBindingState;
+struct FEnvironmentTextureBindingState;
 
 class FDeferredRenderPath final : public IRenderPath
 {
@@ -79,6 +80,7 @@ private:
     std::unique_ptr<FMaterialTextureBindingState> m_MaterialTextureBindingState;
     std::unique_ptr<FMaterialUniformBindingState> m_MaterialBindingState;
     std::unique_ptr<FGBufferTextureBindingState> m_GBufferTextureBindingState;
+    std::unique_ptr<FEnvironmentTextureBindingState> m_EnvironmentTextureBindingState;
 };
 
 } // namespace TE

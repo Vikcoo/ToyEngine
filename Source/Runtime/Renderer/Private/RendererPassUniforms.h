@@ -38,6 +38,13 @@ struct FMaterialUniformBindingState
     std::unique_ptr<RHIBindGroup> BindGroup;
 };
 
+struct FSkyUniformBindingState
+{
+    std::unique_ptr<RHIBindGroupLayout> Layout;
+    std::unique_ptr<RHIBuffer> UniformBuffer;
+    std::unique_ptr<RHIBindGroup> BindGroup;
+};
+
 bool EnsureObjectUniformBindingState(RHIDevice* device, FObjectUniformBindingState& state);
 bool UpdateAndBindObjectUniforms(RHIDevice* device,
                                  RHICommandBuffer* cmdBuf,
@@ -52,7 +59,8 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
                                        FDeferredPassUniformBindingState& state,
                                        bool rtSampleFlipY,
                                        ERenderDebugView debugViewMode,
-                                       const Vector3& cameraPosition);
+                                       const Vector3& cameraPosition,
+                                       const Matrix4& invViewProjection);
 
 bool EnsureMaterialUniformBindingState(RHIDevice* device, FMaterialUniformBindingState& state);
 bool UpdateAndBindMaterialUniforms(RHIDevice* device,
@@ -60,5 +68,12 @@ bool UpdateAndBindMaterialUniforms(RHIDevice* device,
                                    FMaterialUniformBindingState& state,
                                    const FMaterial* material,
                                    const Vector3& cameraPosition);
+
+bool EnsureSkyUniformBindingState(RHIDevice* device, FSkyUniformBindingState& state);
+bool UpdateAndBindSkyUniforms(RHIDevice* device,
+                              RHICommandBuffer* cmdBuf,
+                              FSkyUniformBindingState& state,
+                              const Matrix4& invViewProjection,
+                              const Vector3& cameraPosition);
 
 } // namespace TE

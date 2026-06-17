@@ -47,6 +47,14 @@ struct FPreparedMaterialTextures
     std::shared_ptr<RHITexture> Emissive;
 };
 
+struct FEnvironmentIBLResources
+{
+    std::shared_ptr<RHITexture> EnvironmentMap;
+    std::shared_ptr<RHITexture> IrradianceMap;
+    std::shared_ptr<RHITexture> PrefilterMap;
+    std::shared_ptr<RHITexture> BRDFLUT;
+};
+
 class FRenderResourceManager
 {
 public:
@@ -58,7 +66,9 @@ public:
     [[nodiscard]] RHITexture* GetPreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const;
     [[nodiscard]] const FPreparedMaterialTextures* GetPreparedMaterialTextures(const StaticMesh* staticMesh, uint32_t materialIndex) const;
     [[nodiscard]] const FMaterial* GetMaterial(const StaticMesh* staticMesh, uint32_t materialIndex) const;
+    [[nodiscard]] const FEnvironmentIBLResources* GetEnvironmentIBLResources() const;
     [[nodiscard]] RHISampler* GetDefaultSampler() const;
+    [[nodiscard]] RHISampler* GetEnvironmentSampler() const;
     [[nodiscard]] RHISampler* GetGBufferSampler() const;
     void PurgeExpiredStaticMeshRenderData();
 
@@ -67,6 +77,7 @@ private:
         const std::shared_ptr<StaticMesh>& staticMesh);
     [[nodiscard]] bool EnsureStaticMeshMaterialTextures(const StaticMesh& staticMesh);
     [[nodiscard]] bool EnsureDefaultTextureResources();
+    [[nodiscard]] bool EnsureEnvironmentResources();
     [[nodiscard]] std::shared_ptr<RHITexture> GetOrCreateTextureFromSlot(const FMaterialTextureSlot& textureSlot,
                                                                          const std::string& debugName);
     [[nodiscard]] std::shared_ptr<RHITexture> CreateTextureFromFile(const std::string& filePath,
@@ -83,7 +94,9 @@ private:
     std::shared_ptr<RHITexture> m_DefaultWhiteTexture;
     std::shared_ptr<RHITexture> m_DefaultBlackTexture;
     std::shared_ptr<RHITexture> m_DefaultNormalTexture;
+    FEnvironmentIBLResources m_EnvironmentIBLResources;
     std::shared_ptr<RHISampler> m_DefaultSampler;
+    std::shared_ptr<RHISampler> m_EnvironmentSampler;
     std::shared_ptr<RHISampler> m_GBufferSampler;
 };
 

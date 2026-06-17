@@ -15,6 +15,7 @@ class RHISampler;
 class RHITexture;
 class RHIRenderTarget;
 struct FPreparedMaterialTextures;
+struct FEnvironmentIBLResources;
 
 struct FBaseColorTextureBindingState
 {
@@ -49,6 +50,16 @@ struct FGBufferTextureBindingState
     std::unique_ptr<RHIBindGroup> BindGroup;
 };
 
+struct FEnvironmentTextureBindingState
+{
+    RHITexture* IrradianceMap = nullptr;
+    RHITexture* PrefilterMap = nullptr;
+    RHITexture* BRDFLUT = nullptr;
+    RHISampler* Sampler = nullptr;
+    std::unique_ptr<RHIBindGroupLayout> Layout;
+    std::unique_ptr<RHIBindGroup> BindGroup;
+};
+
 bool UpdateAndBindBaseColorTexture(RHIDevice* device,
                                    RHICommandBuffer* cmdBuf,
                                    FBaseColorTextureBindingState& state,
@@ -66,5 +77,11 @@ bool UpdateAndBindGBufferTextures(RHIDevice* device,
                                   FGBufferTextureBindingState& state,
                                   RHIRenderTarget* gbuffer,
                                   RHISampler* sampler);
+
+bool UpdateAndBindEnvironmentTextures(RHIDevice* device,
+                                      RHICommandBuffer* cmdBuf,
+                                      FEnvironmentTextureBindingState& state,
+                                      const FEnvironmentIBLResources* resources,
+                                      RHISampler* sampler);
 
 } // namespace TE

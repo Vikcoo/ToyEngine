@@ -30,6 +30,7 @@ struct OpenGLBindEntry
 
     // Texture2D + Sampler
     GLuint glTexture = 0;
+    GLenum glTextureTarget = GL_TEXTURE_2D;
     GLuint glSampler = 0;
 };
 

@@ -28,6 +28,8 @@ constexpr FOpenGLShaderAsset ShaderAssets[] = {
     {"StaticMesh/GBufferPS", "gbuffer.frag"},
     {"Deferred/LightingVS", "deferred_lighting.vert"},
     {"Deferred/LightingPS", "deferred_lighting.frag"},
+    {"Sky/FullscreenVS", "deferred_lighting.vert"},
+    {"Sky/SkyPS", "sky.frag"},
 };
 
 } // namespace

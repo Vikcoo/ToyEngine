@@ -48,10 +48,12 @@ OpenGLBindGroup::OpenGLBindGroup(const RHIBindGroupDesc& desc)
             break;
         }
         case RHIBindingType::Texture2D:
+        case RHIBindingType::TextureCube:
         {
             if (!entry.texture) return;
             auto* glTex = static_cast<OpenGLTexture*>(entry.texture);
             glEntry.glTexture = glTex->GetGLTextureID();
+            glEntry.glTextureTarget = glTex->GetGLTextureTarget();
             if (entry.sampler)
             {
                 auto* glSmp = static_cast<OpenGLSampler*>(entry.sampler);

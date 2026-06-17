@@ -31,6 +31,7 @@ OpenGLSampler::OpenGLSampler(const RHISamplerDesc& desc)
     glSamplerParameteri(m_SamplerID, GL_TEXTURE_MAG_FILTER, ConvertFilter(desc.magFilter));
     glSamplerParameteri(m_SamplerID, GL_TEXTURE_WRAP_S, ConvertAddressMode(desc.addressU));
     glSamplerParameteri(m_SamplerID, GL_TEXTURE_WRAP_T, ConvertAddressMode(desc.addressV));
+    glSamplerParameteri(m_SamplerID, GL_TEXTURE_WRAP_R, ConvertAddressMode(desc.addressW));
 }
 
 OpenGLSampler::~OpenGLSampler()
@@ -43,4 +44,3 @@ OpenGLSampler::~OpenGLSampler()
 }
 
 } // namespace TE
-

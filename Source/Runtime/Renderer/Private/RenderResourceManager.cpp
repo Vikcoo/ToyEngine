@@ -16,11 +16,16 @@
 #include "RHITypes.h"
 #include "StaticMesh.h"
 #include "Log/Log.h"
+#include "Math/ScalarMath.h"
 
+#include <algorithm>
+#include <array>
 #include <cstddef>
+#include <cmath>
 #include <filesystem>
 #include <string>
 #include <utility>
+#include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -28,6 +33,252 @@
 namespace TE {
 
 namespace {
+
+constexpr uint32_t EnvironmentCubeSize = 128;
+constexpr uint32_t IrradianceCubeSize = 32;
+constexpr uint32_t BRDFLUTSize = 128;
+constexpr uint32_t IrradiancePhiSamples = 48;
+constexpr uint32_t IrradianceThetaSamples = 16;
+constexpr uint32_t BRDFSampleCount = 128;
+
+struct FHDRImage
+{
+    int Width = 0;
+    int Height = 0;
+    std::vector<float> Pixels;
+};
+
+[[nodiscard]] Vector3 ClampColor(const Vector3& color)
+{
+    return Vector3(std::max(color.X, 0.0f), std::max(color.Y, 0.0f), std::max(color.Z, 0.0f));
+}
+
+[[nodiscard]] Vector3 SampleHDRBilinear(const FHDRImage& image, float u, float v)
+{
+    if (image.Width <= 0 || image.Height <= 0 || image.Pixels.empty())
+    {
+        return Vector3::Zero;
+    }
+
+    u = u - std::floor(u);
+    v = Math::Clamp(v, 0.0f, 1.0f);
+
+    const float x = u * static_cast<float>(image.Width - 1);
+    const float y = v * static_cast<float>(image.Height - 1);
+    const int x0 = static_cast<int>(std::floor(x));
+    const int y0 = static_cast<int>(std::floor(y));
+    const int x1 = (x0 + 1) % image.Width;
+    const int y1 = std::min(y0 + 1, image.Height - 1);
+    const float tx = x - static_cast<float>(x0);
+    const float ty = y - static_cast<float>(y0);
+
+    auto fetch = [&image](int px, int py)
+    {
+        const size_t index = (static_cast<size_t>(py) * image.Width + px) * 4;
+        return Vector3(image.Pixels[index + 0], image.Pixels[index + 1], image.Pixels[index + 2]);
+    };
+
+    const Vector3 c00 = fetch(x0, y0);
+    const Vector3 c10 = fetch(x1, y0);
+    const Vector3 c01 = fetch(x0, y1);
+    const Vector3 c11 = fetch(x1, y1);
+    const Vector3 cx0 = Vector3::Lerp(c00, c10, tx);
+    const Vector3 cx1 = Vector3::Lerp(c01, c11, tx);
+    return ClampColor(Vector3::Lerp(cx0, cx1, ty));
+}
+
+[[nodiscard]] Vector3 SampleEquirectangularHDR(const FHDRImage& image, const Vector3& direction)
+{
+    const Vector3 dir = direction.Normalize();
+    const float u = std::atan2(dir.Z, dir.X) / Math::TWO_PI + 0.5f;
+    const float v = 0.5f - std::asin(Math::Clamp(dir.Y, -1.0f, 1.0f)) / Math::PI;
+    return SampleHDRBilinear(image, u, v);
+}
+
+[[nodiscard]] Vector3 GetCubeFaceDirection(uint32_t face, float u, float v)
+{
+    const float x = 2.0f * u - 1.0f;
+    const float y = 2.0f * v - 1.0f;
+    switch (face)
+    {
+    case 0: return Vector3(1.0f, -y, -x).Normalize();   // +X
+    case 1: return Vector3(-1.0f, -y, x).Normalize();   // -X
+    case 2: return Vector3(x, 1.0f, y).Normalize();     // +Y
+    case 3: return Vector3(x, -1.0f, -y).Normalize();   // -Y
+    case 4: return Vector3(x, -y, 1.0f).Normalize();    // +Z
+    default: return Vector3(-x, -y, -1.0f).Normalize(); // -Z
+    }
+}
+
+void StoreRGBA(std::vector<float>& pixels, size_t pixelIndex, const Vector3& color, float alpha = 1.0f)
+{
+    const size_t index = pixelIndex * 4;
+    pixels[index + 0] = color.X;
+    pixels[index + 1] = color.Y;
+    pixels[index + 2] = color.Z;
+    pixels[index + 3] = alpha;
+}
+
+[[nodiscard]] std::vector<float> GenerateEnvironmentCubePixels(const FHDRImage& image, uint32_t size)
+{
+    std::vector<float> pixels(static_cast<size_t>(size) * size * 6 * 4, 0.0f);
+    for (uint32_t face = 0; face < 6; ++face)
+    {
+        for (uint32_t y = 0; y < size; ++y)
+        {
+            for (uint32_t x = 0; x < size; ++x)
+            {
+                const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(size);
+                const float v = (static_cast<float>(y) + 0.5f) / static_cast<float>(size);
+                const Vector3 dir = GetCubeFaceDirection(face, u, v);
+                const size_t pixelIndex = (static_cast<size_t>(face) * size * size) + (static_cast<size_t>(y) * size + x);
+                StoreRGBA(pixels, pixelIndex, SampleEquirectangularHDR(image, dir));
+            }
+        }
+    }
+    return pixels;
+}
+
+void BuildTangentBasis(const Vector3& n, Vector3& outTangent, Vector3& outBitangent)
+{
+    const Vector3 up = std::abs(n.Y) < 0.999f ? Vector3::Up : Vector3::Right;
+    outTangent = Vector3::Cross(up, n).Normalize();
+    outBitangent = Vector3::Cross(n, outTangent).Normalize();
+}
+
+[[nodiscard]] std::vector<float> GenerateIrradianceCubePixels(const FHDRImage& image, uint32_t size)
+{
+    std::vector<float> pixels(static_cast<size_t>(size) * size * 6 * 4, 0.0f);
+    for (uint32_t face = 0; face < 6; ++face)
+    {
+        for (uint32_t y = 0; y < size; ++y)
+        {
+            for (uint32_t x = 0; x < size; ++x)
+            {
+                const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(size);
+                const float v = (static_cast<float>(y) + 0.5f) / static_cast<float>(size);
+                const Vector3 n = GetCubeFaceDirection(face, u, v);
+                Vector3 tangent;
+                Vector3 bitangent;
+                BuildTangentBasis(n, tangent, bitangent);
+
+                Vector3 irradiance = Vector3::Zero;
+                float weight = 0.0f;
+                for (uint32_t phiIndex = 0; phiIndex < IrradiancePhiSamples; ++phiIndex)
+                {
+                    const float phi = (static_cast<float>(phiIndex) + 0.5f) / static_cast<float>(IrradiancePhiSamples) * Math::TWO_PI;
+                    for (uint32_t thetaIndex = 0; thetaIndex < IrradianceThetaSamples; ++thetaIndex)
+                    {
+                        const float theta = (static_cast<float>(thetaIndex) + 0.5f) / static_cast<float>(IrradianceThetaSamples) * Math::HALF_PI;
+                        const float sinTheta = std::sin(theta);
+                        const float cosTheta = std::cos(theta);
+                        const Vector3 sampleDir = (tangent * (std::cos(phi) * sinTheta) +
+                                                   bitangent * (std::sin(phi) * sinTheta) +
+                                                   n * cosTheta).Normalize();
+                        const float sampleWeight = cosTheta * sinTheta;
+                        irradiance += SampleEquirectangularHDR(image, sampleDir) * sampleWeight;
+                        weight += sampleWeight;
+                    }
+                }
+                if (weight > 0.0f)
+                {
+                    irradiance = irradiance * (Math::PI / weight);
+                }
+
+                const size_t pixelIndex = (static_cast<size_t>(face) * size * size) + (static_cast<size_t>(y) * size + x);
+                StoreRGBA(pixels, pixelIndex, irradiance);
+            }
+        }
+    }
+    return pixels;
+}
+
+float RadicalInverseVdc(uint32_t bits)
+{
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return static_cast<float>(bits) * 2.3283064365386963e-10f;
+}
+
+[[nodiscard]] Vector2 Hammersley(uint32_t i, uint32_t n)
+{
+    return Vector2(static_cast<float>(i) / static_cast<float>(n), RadicalInverseVdc(i));
+}
+
+[[nodiscard]] Vector3 ImportanceSampleGGX(const Vector2& xi, const Vector3& n, float roughness)
+{
+    const float a = roughness * roughness;
+    const float phi = Math::TWO_PI * xi.X;
+    const float cosTheta = std::sqrt((1.0f - xi.Y) / (1.0f + (a * a - 1.0f) * xi.Y));
+    const float sinTheta = std::sqrt(std::max(1.0f - cosTheta * cosTheta, 0.0f));
+    Vector3 tangent;
+    Vector3 bitangent;
+    BuildTangentBasis(n, tangent, bitangent);
+    return (tangent * (std::cos(phi) * sinTheta) +
+            bitangent * (std::sin(phi) * sinTheta) +
+            n * cosTheta).Normalize();
+}
+
+float GeometrySchlickGGX(float nDotV, float roughness)
+{
+    const float a = roughness;
+    const float k = (a * a) / 2.0f;
+    return nDotV / std::max(nDotV * (1.0f - k) + k, 0.0001f);
+}
+
+float GeometrySmithIBL(float nDotV, float nDotL, float roughness)
+{
+    return GeometrySchlickGGX(nDotV, roughness) * GeometrySchlickGGX(nDotL, roughness);
+}
+
+[[nodiscard]] Vector2 IntegrateBRDF(float nDotV, float roughness)
+{
+    const Vector3 v(std::sqrt(std::max(1.0f - nDotV * nDotV, 0.0f)), 0.0f, nDotV);
+    const Vector3 n(0.0f, 0.0f, 1.0f);
+    float a = 0.0f;
+    float b = 0.0f;
+    for (uint32_t i = 0; i < BRDFSampleCount; ++i)
+    {
+        const Vector2 xi = Hammersley(i, BRDFSampleCount);
+        const Vector3 h = ImportanceSampleGGX(xi, n, roughness);
+        const Vector3 l = (h * (2.0f * Vector3::Dot(v, h)) - v).Normalize();
+        const float nDotL = std::max(l.Z, 0.0f);
+        const float nDotH = std::max(h.Z, 0.0f);
+        const float vDotH = std::max(Vector3::Dot(v, h), 0.0f);
+        if (nDotL > 0.0f)
+        {
+            const float g = GeometrySmithIBL(nDotV, nDotL, roughness);
+            const float gVis = (g * vDotH) / std::max(nDotH * nDotV, 0.0001f);
+            const float fc = std::pow(1.0f - vDotH, 5.0f);
+            a += (1.0f - fc) * gVis;
+            b += fc * gVis;
+        }
+    }
+    return Vector2(a / static_cast<float>(BRDFSampleCount), b / static_cast<float>(BRDFSampleCount));
+}
+
+[[nodiscard]] std::vector<float> GenerateBRDFLUTPixels(uint32_t size)
+{
+    std::vector<float> pixels(static_cast<size_t>(size) * size * 4, 0.0f);
+    for (uint32_t y = 0; y < size; ++y)
+    {
+        for (uint32_t x = 0; x < size; ++x)
+        {
+            const float nDotV = (static_cast<float>(x) + 0.5f) / static_cast<float>(size);
+            const float roughness = 1.0f - (static_cast<float>(y) + 0.5f) / static_cast<float>(size);
+            const Vector2 brdf = IntegrateBRDF(nDotV, roughness);
+            const size_t index = (static_cast<size_t>(y) * size + x) * 4;
+            pixels[index + 0] = brdf.X;
+            pixels[index + 1] = brdf.Y;
+            pixels[index + 2] = 0.0f;
+            pixels[index + 3] = 1.0f;
+        }
+    }
+    return pixels;
+}
 
 std::unique_ptr<RHIBindGroupLayout> CreateSingleUniformLayout(RHIDevice* device,
                                                               uint32_t binding,
@@ -73,6 +324,21 @@ std::unique_ptr<RHIBindGroupLayout> CreateMaterialTexturesLayout(RHIDevice* devi
     desc.entries.push_back({RendererBindings::RoughnessTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
     desc.entries.push_back({RendererBindings::AOTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
     desc.entries.push_back({RendererBindings::EmissiveTexture, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    return device->CreateBindGroupLayout(desc);
+}
+
+std::unique_ptr<RHIBindGroupLayout> CreateEnvironmentTexturesLayout(RHIDevice* device, const char* debugName)
+{
+    if (!device)
+    {
+        return nullptr;
+    }
+
+    RHIBindGroupLayoutDesc desc;
+    desc.debugName = debugName;
+    desc.entries.push_back({RendererBindings::IrradianceMap, RHIBindingType::TextureCube, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::PrefilterMap, RHIBindingType::TextureCube, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::BRDFLUT, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
     return device->CreateBindGroupLayout(desc);
 }
 
@@ -147,6 +413,11 @@ bool FRenderResourceManager::PrepareStaticMeshProxy(FStaticMeshSceneProxy& proxy
     if (!EnsureStaticMeshMaterialTextures(*staticMesh))
     {
         return false;
+    }
+
+    if (!EnsureEnvironmentResources())
+    {
+        TE_LOG_WARN("[Renderer] Environment IBL resources are unavailable; PBR will fall back to direct lighting");
     }
 
     return proxy.SetRenderResources(std::move(renderData));
@@ -263,7 +534,12 @@ bool FRenderResourceManager::EnsureStaticMeshMaterialTextures(const StaticMesh& 
 
 bool FRenderResourceManager::EnsureDefaultTextureResources()
 {
-    if (m_DefaultWhiteTexture && m_DefaultBlackTexture && m_DefaultNormalTexture && m_DefaultSampler && m_GBufferSampler)
+    if (m_DefaultWhiteTexture &&
+        m_DefaultBlackTexture &&
+        m_DefaultNormalTexture &&
+        m_DefaultSampler &&
+        m_EnvironmentSampler &&
+        m_GBufferSampler)
     {
         return true;
     }
@@ -372,7 +648,126 @@ bool FRenderResourceManager::EnsureDefaultTextureResources()
         m_GBufferSampler = std::shared_ptr<RHISampler>(sampler.release());
     }
 
+    if (!m_EnvironmentSampler)
+    {
+        RHISamplerDesc desc;
+        desc.minFilter = RHITextureFilter::Linear;
+        desc.magFilter = RHITextureFilter::Linear;
+        desc.addressU = RHITextureAddressMode::ClampToEdge;
+        desc.addressV = RHITextureAddressMode::ClampToEdge;
+        desc.addressW = RHITextureAddressMode::ClampToEdge;
+        desc.debugName = "Environment_Cubemap_Sampler";
+
+        auto sampler = m_Device->CreateSampler(desc);
+        if (!sampler || !sampler->IsValid())
+        {
+            TE_LOG_ERROR("[Renderer] Failed to create environment sampler");
+            return false;
+        }
+        m_EnvironmentSampler = std::shared_ptr<RHISampler>(sampler.release());
+    }
+
     return true;
+}
+
+bool FRenderResourceManager::EnsureEnvironmentResources()
+{
+    if (m_EnvironmentIBLResources.EnvironmentMap &&
+        m_EnvironmentIBLResources.IrradianceMap &&
+        m_EnvironmentIBLResources.PrefilterMap &&
+        m_EnvironmentIBLResources.BRDFLUT)
+    {
+        return true;
+    }
+
+    if (!m_Device || !EnsureDefaultTextureResources())
+    {
+        return false;
+    }
+
+    const std::filesystem::path hdrPath =
+        std::filesystem::path(TE_PROJECT_ROOT_DIR) / "Content/Textures/HDR/citrus_orchard_road_puresky_4k.hdr";
+    if (!std::filesystem::exists(hdrPath))
+    {
+        TE_LOG_WARN("[Renderer] HDR environment file not found: {}", hdrPath.string());
+        return false;
+    }
+
+    int width = 0;
+    int height = 0;
+    int channels = 0;
+    float* rawPixels = stbi_loadf(hdrPath.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    if (!rawPixels || width <= 0 || height <= 0)
+    {
+        TE_LOG_WARN("[Renderer] Failed to load HDR environment '{}': {}", hdrPath.string(), stbi_failure_reason());
+        if (rawPixels)
+        {
+            stbi_image_free(rawPixels);
+        }
+        return false;
+    }
+
+    FHDRImage image;
+    image.Width = width;
+    image.Height = height;
+    image.Pixels.assign(rawPixels, rawPixels + static_cast<size_t>(width) * height * 4);
+    stbi_image_free(rawPixels);
+
+    TE_LOG_INFO("[Renderer] Building runtime IBL from HDR: {}", hdrPath.string());
+    const std::vector<float> environmentPixels = GenerateEnvironmentCubePixels(image, EnvironmentCubeSize);
+    const std::vector<float> irradiancePixels = GenerateIrradianceCubePixels(image, IrradianceCubeSize);
+    const std::vector<float> brdfPixels = GenerateBRDFLUTPixels(BRDFLUTSize);
+
+    auto createCube = [this](uint32_t size, const std::vector<float>& pixels, const char* debugName)
+    {
+        RHITextureDesc desc;
+        desc.dimension = RHITextureDimension::TextureCube;
+        desc.width = size;
+        desc.height = size;
+        desc.format = RHIFormat::RGBA32_Float;
+        desc.initialData = pixels.data();
+        desc.generateMips = true;
+        desc.srgb = false;
+        desc.debugName = debugName;
+        auto texture = m_Device->CreateTexture(desc);
+        if (!texture || !texture->IsValid())
+        {
+            TE_LOG_WARN("[Renderer] Failed to create IBL cubemap '{}'", debugName);
+            return std::shared_ptr<RHITexture>();
+        }
+        return std::shared_ptr<RHITexture>(texture.release());
+    };
+
+    auto create2D = [this](uint32_t size, const std::vector<float>& pixels, const char* debugName)
+    {
+        RHITextureDesc desc;
+        desc.dimension = RHITextureDimension::Texture2D;
+        desc.width = size;
+        desc.height = size;
+        desc.format = RHIFormat::RGBA32_Float;
+        desc.initialData = pixels.data();
+        desc.generateMips = false;
+        desc.srgb = false;
+        desc.debugName = debugName;
+        auto texture = m_Device->CreateTexture(desc);
+        if (!texture || !texture->IsValid())
+        {
+            TE_LOG_WARN("[Renderer] Failed to create IBL texture '{}'", debugName);
+            return std::shared_ptr<RHITexture>();
+        }
+        return std::shared_ptr<RHITexture>(texture.release());
+    };
+
+    m_EnvironmentIBLResources.EnvironmentMap = createCube(EnvironmentCubeSize, environmentPixels, "IBL_Environment_Cube");
+    m_EnvironmentIBLResources.IrradianceMap = createCube(IrradianceCubeSize, irradiancePixels, "IBL_Irradiance_Cube");
+    // 当前阶段先使用环境 cubemap 的 mip 链作为初版 specular prefilter，后续可替换为 GGX 预滤波 cubemap。
+    m_EnvironmentIBLResources.PrefilterMap = m_EnvironmentIBLResources.EnvironmentMap;
+    m_EnvironmentIBLResources.BRDFLUT = create2D(BRDFLUTSize, brdfPixels, "IBL_BRDF_LUT");
+
+    return m_EnvironmentIBLResources.EnvironmentMap &&
+           m_EnvironmentIBLResources.IrradianceMap &&
+           m_EnvironmentIBLResources.PrefilterMap &&
+           m_EnvironmentIBLResources.BRDFLUT;
 }
 
 std::shared_ptr<RHITexture> FRenderResourceManager::GetOrCreateTextureFromSlot(const FMaterialTextureSlot& textureSlot,
@@ -534,6 +929,10 @@ bool FRenderResourceManager::BuildStaticMeshBasePassPipeline(FPreparedPipeline& 
                                   RHIShaderStage::Fragment,
                                   "StaticMeshBasePass_MaterialBlock_Layout")
     });
+    layouts.push_back({
+        RendererBindGroups::Environment,
+        CreateEnvironmentTexturesLayout(m_Device, "StaticMeshBasePass_EnvironmentTextures_Layout")
+    });
     if (!BuildPipelineLayout(m_Device, outPipeline, std::move(layouts), "StaticMeshBasePass_PipelineLayout"))
     {
         return false;
@@ -632,9 +1031,25 @@ const FMaterial* FRenderResourceManager::GetMaterial(const StaticMesh* staticMes
     return &materials[materialIndex];
 }
 
+const FEnvironmentIBLResources* FRenderResourceManager::GetEnvironmentIBLResources() const
+{
+    if (!m_EnvironmentIBLResources.IrradianceMap ||
+        !m_EnvironmentIBLResources.PrefilterMap ||
+        !m_EnvironmentIBLResources.BRDFLUT)
+    {
+        return nullptr;
+    }
+    return &m_EnvironmentIBLResources;
+}
+
 RHISampler* FRenderResourceManager::GetDefaultSampler() const
 {
     return m_DefaultSampler.get();
+}
+
+RHISampler* FRenderResourceManager::GetEnvironmentSampler() const
+{
+    return m_EnvironmentSampler.get();
 }
 
 RHISampler* FRenderResourceManager::GetGBufferSampler() const

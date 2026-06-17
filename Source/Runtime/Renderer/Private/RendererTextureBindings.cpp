@@ -249,6 +249,54 @@ bool RebuildMaterialTexturesBindGroup(RHIDevice* device,
     return true;
 }
 
+bool RebuildEnvironmentTexturesBindGroup(RHIDevice* device,
+                                         FEnvironmentTextureBindingState& state,
+                                         const FEnvironmentIBLResources& resources,
+                                         RHISampler* sampler)
+{
+    if (!device ||
+        !resources.IrradianceMap ||
+        !resources.PrefilterMap ||
+        !resources.BRDFLUT)
+    {
+        return false;
+    }
+
+    if (!state.Layout)
+    {
+        RHIBindGroupLayoutDesc layoutDesc;
+        layoutDesc.debugName = "Renderer_EnvironmentTextures_Layout";
+        layoutDesc.entries.push_back({RendererBindings::IrradianceMap, RHIBindingType::TextureCube, RHIShaderStage::Fragment});
+        layoutDesc.entries.push_back({RendererBindings::PrefilterMap, RHIBindingType::TextureCube, RHIShaderStage::Fragment});
+        layoutDesc.entries.push_back({RendererBindings::BRDFLUT, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+        state.Layout = device->CreateBindGroupLayout(layoutDesc);
+        if (!state.Layout || !state.Layout->IsValid())
+        {
+            return false;
+        }
+    }
+
+    RHIBindGroupDesc bindGroupDesc;
+    bindGroupDesc.layout = state.Layout.get();
+    bindGroupDesc.debugName = "Renderer_EnvironmentTextures_BindGroup";
+    bindGroupDesc.entries.push_back({RendererBindings::IrradianceMap, RHIBindingType::TextureCube, nullptr, 0, 0, resources.IrradianceMap.get(), sampler});
+    bindGroupDesc.entries.push_back({RendererBindings::PrefilterMap, RHIBindingType::TextureCube, nullptr, 0, 0, resources.PrefilterMap.get(), sampler});
+    bindGroupDesc.entries.push_back({RendererBindings::BRDFLUT, RHIBindingType::Texture2D, nullptr, 0, 0, resources.BRDFLUT.get(), sampler});
+
+    state.BindGroup = device->CreateBindGroup(bindGroupDesc);
+    if (!state.BindGroup || !state.BindGroup->IsValid())
+    {
+        state.BindGroup.reset();
+        return false;
+    }
+
+    state.IrradianceMap = resources.IrradianceMap.get();
+    state.PrefilterMap = resources.PrefilterMap.get();
+    state.BRDFLUT = resources.BRDFLUT.get();
+    state.Sampler = sampler;
+    return true;
+}
+
 } // namespace
 
 bool UpdateAndBindBaseColorTexture(RHIDevice* device,
@@ -336,6 +384,33 @@ bool UpdateAndBindGBufferTextures(RHIDevice* device,
     }
 
     cmdBuf->SetBindGroup(RendererBindGroups::GBufferTextures, state.BindGroup.get());
+    return true;
+}
+
+bool UpdateAndBindEnvironmentTextures(RHIDevice* device,
+                                      RHICommandBuffer* cmdBuf,
+                                      FEnvironmentTextureBindingState& state,
+                                      const FEnvironmentIBLResources* resources,
+                                      RHISampler* sampler)
+{
+    if (!cmdBuf || !resources)
+    {
+        return false;
+    }
+
+    if (!state.BindGroup ||
+        state.IrradianceMap != resources->IrradianceMap.get() ||
+        state.PrefilterMap != resources->PrefilterMap.get() ||
+        state.BRDFLUT != resources->BRDFLUT.get() ||
+        state.Sampler != sampler)
+    {
+        if (!RebuildEnvironmentTexturesBindGroup(device, state, *resources, sampler))
+        {
+            return false;
+        }
+    }
+
+    cmdBuf->SetBindGroup(RendererBindGroups::Environment, state.BindGroup.get());
     return true;
 }
 

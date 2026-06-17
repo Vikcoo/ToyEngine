@@ -28,6 +28,7 @@ class RHITexture;
 class StaticMesh;
 struct FMaterial;
 struct FPreparedMaterialTextures;
+struct FEnvironmentIBLResources;
 
 class FScene : public IRenderScene
 {
@@ -54,7 +55,9 @@ public:
     [[nodiscard]] RHITexture* ResolvePreparedBaseColorTexture(const StaticMesh* staticMesh, uint32_t materialIndex) const;
     [[nodiscard]] const FPreparedMaterialTextures* ResolvePreparedMaterialTextures(const StaticMesh* staticMesh, uint32_t materialIndex) const;
     [[nodiscard]] const FMaterial* ResolveMaterial(const StaticMesh* staticMesh, uint32_t materialIndex) const;
+    [[nodiscard]] const FEnvironmentIBLResources* ResolveEnvironmentIBLResources() const;
     [[nodiscard]] RHISampler* ResolveDefaultSampler() const;
+    [[nodiscard]] RHISampler* ResolveEnvironmentSampler() const;
     [[nodiscard]] RHISampler* ResolveGBufferSampler() const;
 
     void SetViewInfo(const FViewInfo& viewInfo) { m_ViewInfo = viewInfo; }

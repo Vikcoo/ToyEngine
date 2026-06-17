@@ -25,6 +25,10 @@ target_include_directories(Renderer
         ${CMAKE_SOURCE_DIR}/ThirdParty/stb-master
 )
 
+target_compile_definitions(Renderer PRIVATE
+    TE_PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}/"
+)
+
 # 依赖 Core（Math 类型）、RHI（接口）、World（渲染场景接口）和 Asset（TStaticMesh 类型）
 target_link_libraries(Renderer
     PUBLIC

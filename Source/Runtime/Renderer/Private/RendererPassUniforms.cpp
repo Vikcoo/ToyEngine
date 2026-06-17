@@ -29,6 +29,7 @@ struct alignas(16) FDeferredPassBlockCPU
     int32_t Reserved0 = 0;
     int32_t Reserved1 = 0;
     Vector4 CameraPosition_Pad;
+    Matrix4 InvViewProjection;
 };
 
 struct alignas(16) FMaterialBlockCPU
@@ -39,9 +40,16 @@ struct alignas(16) FMaterialBlockCPU
     Vector4 CameraPosition_Pad;
 };
 
+struct alignas(16) FSkyBlockCPU
+{
+    Matrix4 InvViewProjection;
+    Vector4 CameraPosition_Pad;
+};
+
 static_assert(sizeof(FObjectBlockCPU) % 16 == 0);
 static_assert(sizeof(FDeferredPassBlockCPU) % 16 == 0);
 static_assert(sizeof(FMaterialBlockCPU) % 16 == 0);
+static_assert(sizeof(FSkyBlockCPU) % 16 == 0);
 
 Matrix4 ExpandNormalMatrixToMatrix4(const Matrix3& normalMatrix)
 {
@@ -195,7 +203,8 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
                                        FDeferredPassUniformBindingState& state,
                                        bool rtSampleFlipY,
                                        ERenderDebugView debugViewMode,
-                                       const Vector3& cameraPosition)
+                                       const Vector3& cameraPosition,
+                                       const Matrix4& invViewProjection)
 {
     if (!cmdBuf || !EnsureDeferredPassUniformBindingState(device, state))
     {
@@ -206,6 +215,7 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
     passBlock.RTSampleFlipY = rtSampleFlipY ? 1 : 0;
     passBlock.DebugViewMode = static_cast<int32_t>(debugViewMode);
     passBlock.CameraPosition_Pad = Vector4(cameraPosition, 0.0f);
+    passBlock.InvViewProjection = invViewProjection;
 
     if (!state.UniformBuffer->UpdateData(&passBlock, sizeof(passBlock)))
     {
@@ -263,6 +273,48 @@ bool UpdateAndBindMaterialUniforms(RHIDevice* device,
     }
 
     cmdBuf->SetBindGroup(RendererBindGroups::MaterialBlock, state.BindGroup.get());
+    return true;
+}
+
+bool EnsureSkyUniformBindingState(RHIDevice* device, FSkyUniformBindingState& state)
+{
+    if (state.Layout &&
+        state.UniformBuffer &&
+        state.BindGroup && state.BindGroup->IsValid())
+    {
+        return true;
+    }
+
+    return CreateUniformBindingState(device,
+                                     state,
+                                     sizeof(FSkyBlockCPU),
+                                     RendererBindings::PassBlock,
+                                     "Renderer_SkyBlock_UBO",
+                                     "Renderer_SkyBlock_BindGroup",
+                                     RHIShaderStage::Fragment);
+}
+
+bool UpdateAndBindSkyUniforms(RHIDevice* device,
+                              RHICommandBuffer* cmdBuf,
+                              FSkyUniformBindingState& state,
+                              const Matrix4& invViewProjection,
+                              const Vector3& cameraPosition)
+{
+    if (!cmdBuf || !EnsureSkyUniformBindingState(device, state))
+    {
+        return false;
+    }
+
+    FSkyBlockCPU skyBlock{};
+    skyBlock.InvViewProjection = invViewProjection;
+    skyBlock.CameraPosition_Pad = Vector4(cameraPosition, 0.0f);
+
+    if (!state.UniformBuffer->UpdateData(&skyBlock, sizeof(skyBlock)))
+    {
+        return false;
+    }
+
+    cmdBuf->SetBindGroup(RendererBindGroups::PassBlock, state.BindGroup.get());
     return true;
 }
 

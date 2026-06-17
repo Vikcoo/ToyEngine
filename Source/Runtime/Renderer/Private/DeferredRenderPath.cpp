@@ -113,6 +113,21 @@ std::unique_ptr<RHIBindGroupLayout> CreateGBufferTexturesLayout(RHIDevice* devic
     return device->CreateBindGroupLayout(desc);
 }
 
+std::unique_ptr<RHIBindGroupLayout> CreateEnvironmentTexturesLayout(RHIDevice* device)
+{
+    if (!device)
+    {
+        return nullptr;
+    }
+
+    RHIBindGroupLayoutDesc desc;
+    desc.debugName = "DeferredLighting_EnvironmentTextures_Layout";
+    desc.entries.push_back({RendererBindings::IrradianceMap, RHIBindingType::TextureCube, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::PrefilterMap, RHIBindingType::TextureCube, RHIShaderStage::Fragment});
+    desc.entries.push_back({RendererBindings::BRDFLUT, RHIBindingType::Texture2D, RHIShaderStage::Fragment});
+    return device->CreateBindGroupLayout(desc);
+}
+
 template <typename TPipelineCache>
 bool BuildPipelineLayout(RHIDevice* device,
                          TPipelineCache& pipeline,
@@ -177,6 +192,7 @@ FDeferredRenderPath::FDeferredRenderPath()
     , m_MaterialTextureBindingState(std::make_unique<FMaterialTextureBindingState>())
     , m_MaterialBindingState(std::make_unique<FMaterialUniformBindingState>())
     , m_GBufferTextureBindingState(std::make_unique<FGBufferTextureBindingState>())
+    , m_EnvironmentTextureBindingState(std::make_unique<FEnvironmentTextureBindingState>())
 {
 }
 
@@ -408,6 +424,10 @@ bool FDeferredRenderPath::BuildLightingPipeline(RHIDevice* device)
         RendererBindGroups::GBufferTextures,
         CreateGBufferTexturesLayout(device)
     });
+    layouts.push_back({
+        RendererBindGroups::Environment,
+        CreateEnvironmentTexturesLayout(device)
+    });
     if (!BuildPipelineLayout(device, m_LightingPipeline, std::move(layouts), "DeferredLighting_PipelineLayout"))
     {
         return false;
@@ -525,13 +545,23 @@ void FDeferredRenderPath::SubmitLightingPass(const FScene* scene,
                                  *m_GBufferTextureBindingState,
                                  m_GBuffer.get(),
                                  gbufferSampler);
+    UpdateAndBindEnvironmentTextures(device,
+                                     cmdBuf,
+                                     *m_EnvironmentTextureBindingState,
+                                     scene->ResolveEnvironmentIBLResources(),
+                                     scene->ResolveEnvironmentSampler());
+
+    const auto& viewInfo = scene->GetViewInfo();
+    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(viewInfo.ProjectionMatrix);
+    const Matrix4 invViewProjection = (adjustedProjection * viewInfo.ViewMatrix).Inverse();
 
     UpdateAndBindDeferredPassUniforms(device,
                                       cmdBuf,
                                       *m_DeferredPassBindingState,
                                       device->GetBackendTraits().bRTSampleRequiresFlipY,
                                       m_DebugViewMode,
-                                      scene->GetViewInfo().CameraPosition);
+                                      viewInfo.CameraPosition,
+                                      invViewProjection);
     UpdateAndBindSceneLightUniforms(scene, device, cmdBuf, *m_LightBindingState);
 
     cmdBuf->Draw(3);

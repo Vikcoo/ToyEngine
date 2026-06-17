@@ -303,9 +303,10 @@ void OpenGLCommandBuffer::SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGr
             break;
         }
         case RHIBindingType::Texture2D:
+        case RHIBindingType::TextureCube:
         {
             glActiveTexture(GL_TEXTURE0 + entry.binding);
-            glBindTexture(GL_TEXTURE_2D, entry.glTexture);
+            glBindTexture(entry.glTextureTarget, entry.glTexture);
             if (entry.glSampler != 0)
             {
                 glBindSampler(entry.binding, entry.glSampler);

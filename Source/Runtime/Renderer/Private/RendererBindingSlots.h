@@ -11,6 +11,7 @@ constexpr uint32_t LightBlock = 0;
 constexpr uint32_t PassBlock = 1;
 constexpr uint32_t MaterialTextures = 2;
 constexpr uint32_t MaterialBlock = 3;
+constexpr uint32_t Environment = 4;
 constexpr uint32_t GBufferTextures = 2;
 
 } // namespace TE::RendererBindGroups
@@ -27,6 +28,9 @@ constexpr uint32_t RoughnessTexture = 5;
 constexpr uint32_t AOTexture = 6;
 constexpr uint32_t EmissiveTexture = 7;
 constexpr uint32_t MaterialBlock = 8;
+constexpr uint32_t IrradianceMap = 9;
+constexpr uint32_t PrefilterMap = 10;
+constexpr uint32_t BRDFLUT = 11;
 
 constexpr uint32_t GBufferAlbedo = 2;
 constexpr uint32_t GBufferNormal = 3;
