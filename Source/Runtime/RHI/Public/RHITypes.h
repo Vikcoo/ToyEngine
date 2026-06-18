@@ -294,6 +294,7 @@ enum class RHITextureFilter : uint8_t
 {
     Nearest,
     Linear,
+    LinearMipmapLinear,
 };
 
 /// 纹理寻址模式
@@ -331,6 +332,8 @@ struct RHISamplerDesc
     RHITextureAddressMode addressU = RHITextureAddressMode::Repeat;
     RHITextureAddressMode addressV = RHITextureAddressMode::Repeat;
     RHITextureAddressMode addressW = RHITextureAddressMode::Repeat;
+    bool enableAnisotropy = false;
+    float maxAnisotropy = 1.0f;
     std::string           debugName;
 };
 

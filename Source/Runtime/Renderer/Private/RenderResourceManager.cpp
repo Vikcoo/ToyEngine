@@ -557,7 +557,7 @@ bool FRenderResourceManager::EnsureDefaultTextureResources()
         desc.height = 1;
         desc.format = RHIFormat::RGBA8_UNorm;
         desc.initialData = whitePixel;
-        desc.generateMips = false;
+        desc.generateMips = true;
         desc.srgb = true;
         desc.debugName = "Default_White_Texture";
 
@@ -578,7 +578,7 @@ bool FRenderResourceManager::EnsureDefaultTextureResources()
         desc.height = 1;
         desc.format = RHIFormat::RGBA8_UNorm;
         desc.initialData = blackPixel;
-        desc.generateMips = false;
+        desc.generateMips = true;
         desc.srgb = false;
         desc.debugName = "Default_Black_Texture";
 
@@ -599,7 +599,7 @@ bool FRenderResourceManager::EnsureDefaultTextureResources()
         desc.height = 1;
         desc.format = RHIFormat::RGBA8_UNorm;
         desc.initialData = normalPixel;
-        desc.generateMips = false;
+        desc.generateMips = true;
         desc.srgb = false;
         desc.debugName = "Default_Normal_Texture";
 
@@ -615,11 +615,14 @@ bool FRenderResourceManager::EnsureDefaultTextureResources()
     if (!m_DefaultSampler)
     {
         RHISamplerDesc desc;
-        desc.minFilter = RHITextureFilter::Linear;
+        desc.minFilter = RHITextureFilter::LinearMipmapLinear;
         desc.magFilter = RHITextureFilter::Linear;
         desc.addressU = RHITextureAddressMode::Repeat;
         desc.addressV = RHITextureAddressMode::Repeat;
-        desc.debugName = "Default_Linear_Sampler";
+        desc.addressW = RHITextureAddressMode::Repeat;
+        desc.enableAnisotropy = true;
+        desc.maxAnisotropy = 8.0f;
+        desc.debugName = "Default_MipAnisotropic_Sampler";
 
         auto sampler = m_Device->CreateSampler(desc);
         if (!sampler || !sampler->IsValid())
@@ -651,11 +654,13 @@ bool FRenderResourceManager::EnsureDefaultTextureResources()
     if (!m_EnvironmentSampler)
     {
         RHISamplerDesc desc;
-        desc.minFilter = RHITextureFilter::Linear;
+        desc.minFilter = RHITextureFilter::LinearMipmapLinear;
         desc.magFilter = RHITextureFilter::Linear;
         desc.addressU = RHITextureAddressMode::ClampToEdge;
         desc.addressV = RHITextureAddressMode::ClampToEdge;
         desc.addressW = RHITextureAddressMode::ClampToEdge;
+        desc.enableAnisotropy = true;
+        desc.maxAnisotropy = 8.0f;
         desc.debugName = "Environment_Cubemap_Sampler";
 
         auto sampler = m_Device->CreateSampler(desc);
@@ -746,7 +751,7 @@ bool FRenderResourceManager::EnsureEnvironmentResources()
         desc.height = size;
         desc.format = RHIFormat::RGBA32_Float;
         desc.initialData = pixels.data();
-        desc.generateMips = false;
+        desc.generateMips = true;
         desc.srgb = false;
         desc.debugName = debugName;
         auto texture = m_Device->CreateTexture(desc);
