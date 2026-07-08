@@ -294,30 +294,26 @@ Matrix3 Quat::ToMatrix3() const
 // 转换为欧拉角
 Vector3 Quat::ToEulerAngles() const
 {
-    // 归一化
-    Quat q = Normalize();
+    // 与 FromEuler 保持同一套约定：yaw(Y) * pitch(X) * roll(Z)。
+    const Matrix3 matrix = Normalize().ToMatrix3();
+    const float sinPitch = std::clamp(-matrix(2, 1), -1.0f, 1.0f);
+    const float pitch = std::asin(sinPitch);
+    const float cosPitch = std::cos(pitch);
 
-    Vector3 angles;
-
-    // sin(pitch)
-    float sinp = 2.0f * (q.W * q.Y - q.Z * q.X);
-    if (std::abs(sinp) >= 1.0f)
+    float yaw = 0.0f;
+    float roll = 0.0f;
+    if (std::abs(cosPitch) > 1e-5f)
     {
-        // 使用 90 度
-        angles.Y = std::copysign(3.14159265359f / 2.0f, sinp);  // pitch
+        yaw = std::atan2(matrix(2, 0), matrix(2, 2));
+        roll = std::atan2(matrix(0, 1), matrix(1, 1));
     }
     else
     {
-        angles.Y = std::asin(sinp);  // pitch
+        // 万向节锁时 yaw 与 roll 耦合，固定 roll 为 0，保留朝向等价的 yaw。
+        yaw = std::atan2(-matrix(0, 2), matrix(0, 0));
     }
 
-    // yaw
-    angles.X = std::atan2(2.0f * (q.W * q.Z + q.X * q.Y), 1.0f - 2.0f * (q.Y * q.Y + q.Z * q.Z));
-
-    // roll
-    angles.Z = std::atan2(2.0f * (q.W * q.X + q.Y * q.Z), 1.0f - 2.0f * (q.X * q.X + q.Y * q.Y));
-
-    return angles;
+    return {yaw, pitch, roll};
 }
 
 // 球面线性插值

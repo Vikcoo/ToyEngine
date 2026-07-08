@@ -8,6 +8,39 @@ namespace TE {
 // 常量定义
 const Transform Transform::Identity = Transform();
 
+namespace {
+
+bool BuildRotationFromForward(const Vector3& forward, const Vector3& worldUp, Quat& outRotation)
+{
+    if (forward.LengthSquared() <= 1e-8f)
+    {
+        return false;
+    }
+
+    const Vector3 forwardNorm = forward.Normalize();
+    Vector3 up = worldUp.LengthSquared() > 1e-8f ? worldUp.Normalize() : Vector3::Up;
+    if (std::abs(Vector3::Dot(forwardNorm, up)) > 0.999f)
+    {
+        up = std::abs(Vector3::Dot(forwardNorm, Vector3::Up)) > 0.999f
+            ? Vector3::Right
+            : Vector3::Up;
+    }
+
+    const Vector3 right = Vector3::Cross(up, forwardNorm).Normalize();
+    const Vector3 correctedUp = Vector3::Cross(forwardNorm, right).Normalize();
+
+    // 列主序：三列分别是局部 X/Y/Z 轴在世界空间中的方向。
+    Matrix4 rotMatrix(1.0f);
+    rotMatrix(0, 0) = right.X;       rotMatrix(0, 1) = right.Y;       rotMatrix(0, 2) = right.Z;
+    rotMatrix(1, 0) = correctedUp.X; rotMatrix(1, 1) = correctedUp.Y; rotMatrix(1, 2) = correctedUp.Z;
+    rotMatrix(2, 0) = forwardNorm.X; rotMatrix(2, 1) = forwardNorm.Y; rotMatrix(2, 2) = forwardNorm.Z;
+
+    outRotation = Transform::FromMatrix(rotMatrix).Rotation.Normalize();
+    return true;
+}
+
+} // namespace
+
 // 转换为 4x4 变换矩阵
 Matrix4 Transform::ToMatrix() const
 {
@@ -103,28 +136,11 @@ Vector3 Transform::GetUp() const
 // 设置前向方向
 void Transform::SetForward(const Vector3& forward)
 {
-    Vector3 forwardNorm = forward.Normalize();
-
-    // 默认上向量
-    Vector3 up = Vector3::Up;
-
-    // 如果前向与上向量平行，选择不同的上向量
-    if (std::abs(Vector3::Dot(forwardNorm, up)) > 0.999f)
+    Quat rotation;
+    if (BuildRotationFromForward(forward, Vector3::Up, rotation))
     {
-        up = Vector3::Right;
+        Rotation = rotation;
     }
-
-    Vector3 right = Vector3::Cross(forwardNorm, up).Normalize();
-    up = Vector3::Cross(right, forwardNorm);
-
-    // 从正交基构造旋转矩阵，再转换为四元数
-    // 旋转矩阵的列是右、上、前向
-    Matrix4 rotMatrix;
-    rotMatrix(0, 0) = right.X;  rotMatrix(0, 1) = right.Y;  rotMatrix(0, 2) = right.Z;
-    rotMatrix(1, 0) = up.X;     rotMatrix(1, 1) = up.Y;     rotMatrix(1, 2) = up.Z;
-    rotMatrix(2, 0) = forwardNorm.X; rotMatrix(2, 1) = forwardNorm.Y; rotMatrix(2, 2) = forwardNorm.Z;
-
-    Rotation = Transform::FromMatrix(rotMatrix).Rotation;
 }
 
 // 欧拉角设置
@@ -164,17 +180,11 @@ Vector3 Transform::GetEulerAnglesDegrees() const
 // LookAt
 void Transform::LookAt(const Vector3& target, const Vector3& worldUp)
 {
-    Vector3 forward = (target - Position).Normalize();
-    Vector3 right = Vector3::Cross(forward, worldUp).Normalize();
-    Vector3 up = Vector3::Cross(right, forward);
-
-    // 从正交基构造旋转矩阵
-    Matrix4 rotMatrix;
-    rotMatrix(0, 0) = right.X;  rotMatrix(0, 1) = right.Y;  rotMatrix(0, 2) = right.Z;
-    rotMatrix(1, 0) = up.X;     rotMatrix(1, 1) = up.Y;     rotMatrix(1, 2) = up.Z;
-    rotMatrix(2, 0) = forward.X; rotMatrix(2, 1) = forward.Y; rotMatrix(2, 2) = forward.Z;
-
-    Rotation = Transform::FromMatrix(rotMatrix).Rotation;
+    Quat rotation;
+    if (BuildRotationFromForward(target - Position, worldUp, rotation))
+    {
+        Rotation = rotation;
+    }
 }
 
 // 静态 LookAt
@@ -182,18 +192,11 @@ Transform Transform::LookAt(const Vector3& eye, const Vector3& center, const Vec
 {
     Transform result;
     result.Position = eye;
-    // 使用成员函数指针或显式调用避免歧义
-    // 这里直接复制成员函数 LookAt 的逻辑
-    Vector3 forward = (center - eye).Normalize();
-    Vector3 right = Vector3::Cross(forward, worldUp).Normalize();
-    Vector3 up = Vector3::Cross(right, forward);
-
-    Matrix4 rotMatrix;
-    rotMatrix(0, 0) = right.X;  rotMatrix(0, 1) = right.Y;  rotMatrix(0, 2) = right.Z;
-    rotMatrix(1, 0) = up.X;     rotMatrix(1, 1) = up.Y;     rotMatrix(1, 2) = up.Z;
-    rotMatrix(2, 0) = forward.X; rotMatrix(2, 1) = forward.Y; rotMatrix(2, 2) = forward.Z;
-
-    result.Rotation = Transform::FromMatrix(rotMatrix).Rotation;
+    Quat rotation;
+    if (BuildRotationFromForward(center - eye, worldUp, rotation))
+    {
+        result.Rotation = rotation;
+    }
     return result;
 }
 

@@ -2,7 +2,7 @@
 
 本文档记录 PBR 材质系统和颜色空间的基础概念，用于解释 `Docs/architecture/PBR渲染前置规划.md` 中的材质因子、纹理语义和 sRGB / Linear 规则。
 
-本文只描述概念和项目约定，不代表完整 PBR 渲染已经实现。当前项目资产侧已经具备最小 `FMaterial` 描述，渲染侧仍主要消费 BaseColor 贴图。
+本文只描述概念和项目约定，不代表完整工业级 PBR 渲染已经实现。当前项目资产侧已经具备最小 `FMaterial` 描述，渲染侧已经消费 BaseColor / Normal / Metallic / Roughness / AO / Emissive 贴图与材质因子，但 specular IBL 预滤波、曝光、Tonemapping 和 PBR 参数 DebugView 仍是后续工作。
 
 ## 材质 Factor 的含义
 

@@ -192,6 +192,15 @@ bool TestQuaternionBasics()
         return false;
     }
 
+    TE::Quat yawRoll = TE::Quat::FromEuler(TE::Math::PI / 4.0f, 0.0f, -TE::Math::PI / 6.0f);
+    TE::Vector3 yawRollBack = yawRoll.ToEulerAngles();
+    if (!ApproxEqual(yawRollBack.X, TE::Math::PI / 4.0f, 1e-4f) ||
+        !ApproxEqual(yawRollBack.Y, 0.0f, 1e-4f) ||
+        !ApproxEqual(yawRollBack.Z, -TE::Math::PI / 6.0f, 1e-4f)) {
+        std::cerr << "[FAIL] Quat Euler yaw/roll conversion\n";
+        return false;
+    }
+
     std::cout << "[MathTest] Quaternion basics passed.\n";
     return true;
 }
@@ -234,6 +243,25 @@ bool TestTransformBasics()
         !ApproxEqual(forward.Y, 0.0f, 1e-4f) ||
         !ApproxEqual(forward.Z, -1.0f, 1e-4f)) {
         std::cerr << "[FAIL] Transform LookAt GetForward\n";
+        return false;
+    }
+
+    TE::Transform lookAtX = TE::Transform::LookAt(
+        TE::Vector3::Zero,
+        TE::Vector3::Right,
+        TE::Vector3::Up
+    );
+    if (!ApproxEqual(lookAtX.GetForward(), TE::Vector3::Right, 1e-4f) ||
+        !ApproxEqual(lookAtX.GetUp(), TE::Vector3::Up, 1e-4f)) {
+        std::cerr << "[FAIL] Transform LookAt +X basis\n";
+        return false;
+    }
+
+    TE::Transform setForward;
+    setForward.SetForward(TE::Vector3(0.0f, 0.0f, -1.0f));
+    if (!ApproxEqual(setForward.GetForward(), TE::Vector3(0.0f, 0.0f, -1.0f), 1e-4f) ||
+        !ApproxEqual(setForward.GetUp(), TE::Vector3::Up, 1e-4f)) {
+        std::cerr << "[FAIL] Transform SetForward basis\n";
         return false;
     }
 
