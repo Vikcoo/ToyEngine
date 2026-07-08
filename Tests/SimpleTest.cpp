@@ -1,4 +1,4 @@
-// ToyEngine - 内存分配器最小回归测试（多线程 / 对齐 realloc / Shutdown 竞态）
+// ToyEngine - 内存分配器最小回归测试（多线程 / 对齐 realloc / 有序 Shutdown）
 #include "Log/Log.h"
 #include "Memory/Memory.h"
 
@@ -167,7 +167,7 @@ bool TestAlignedReallocPreservesAlignment()
     return true;
 }
 
-bool TestShutdownRaceNoCrash()
+bool TestOrderedShutdownNoCrash()
 {
     TE::MemoryInit(24ull * 1024ull * 1024ull);
 
@@ -200,19 +200,15 @@ bool TestShutdownRaceNoCrash()
         });
     }
 
-    std::thread shutdownThread([&stop]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(80));
-        TE::MemoryShutdown();
-        stop.store(true, std::memory_order_release);
-    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(80));
+    stop.store(true, std::memory_order_release);
 
-    shutdownThread.join();
     for (auto& th : workers)
     {
         th.join();
     }
 
-    // 进程内可能已被其它线程通过 MemAlloc 再次懒创建分配器；再关一次保证干净
+    // 方案 A：所有 worker 停止后才能关闭内存系统，避免 shutdown 与裸指针使用并发。
     TE::MemoryShutdown();
     return true;
 }
@@ -235,8 +231,8 @@ int main()
         return 1;
     }
 
-    std::cout << "[MemoryAllocatorRegressionTest] shutdown race...\n";
-    if (!TestShutdownRaceNoCrash())
+    std::cout << "[MemoryAllocatorRegressionTest] ordered shutdown...\n";
+    if (!TestOrderedShutdownNoCrash())
     {
         return 1;
     }

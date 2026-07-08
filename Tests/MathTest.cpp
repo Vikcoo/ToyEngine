@@ -136,7 +136,7 @@ bool TestMatrixBasics()
     }
 
     // LookAt
-    TE::Matrix4 view = TE::Matrix4::LookAt(
+    TE::Matrix4 view = TE::Matrix4::LookAtRH(
         TE::Vector3(0.0f, 0.0f, 5.0f),  // eye
         TE::Vector3(0.0f, 0.0f, 0.0f),  // center
         TE::Vector3(0.0f, 1.0f, 0.0f)   // up
@@ -233,7 +233,7 @@ bool TestTransformBasics()
     }
 
     // LookAt
-    TE::Transform lookAt = TE::Transform::LookAt(
+    TE::Transform lookAt = TE::Transform::LookAtRH(
         TE::Vector3(0.0f, 0.0f, 5.0f),
         TE::Vector3(0.0f, 0.0f, 0.0f),
         TE::Vector3::Up
@@ -242,26 +242,26 @@ bool TestTransformBasics()
     if (!ApproxEqual(forward.X, 0.0f, 1e-4f) ||
         !ApproxEqual(forward.Y, 0.0f, 1e-4f) ||
         !ApproxEqual(forward.Z, -1.0f, 1e-4f)) {
-        std::cerr << "[FAIL] Transform LookAt GetForward\n";
+        std::cerr << "[FAIL] Transform LookAtRH GetForward\n";
         return false;
     }
 
-    TE::Transform lookAtX = TE::Transform::LookAt(
+    TE::Transform lookAtX = TE::Transform::LookAtRH(
         TE::Vector3::Zero,
         TE::Vector3::Right,
         TE::Vector3::Up
     );
     if (!ApproxEqual(lookAtX.GetForward(), TE::Vector3::Right, 1e-4f) ||
         !ApproxEqual(lookAtX.GetUp(), TE::Vector3::Up, 1e-4f)) {
-        std::cerr << "[FAIL] Transform LookAt +X basis\n";
+        std::cerr << "[FAIL] Transform LookAtRH +X basis\n";
         return false;
     }
 
     TE::Transform setForward;
-    setForward.SetForward(TE::Vector3(0.0f, 0.0f, -1.0f));
+    setForward.SetForwardRH(TE::Vector3(0.0f, 0.0f, -1.0f));
     if (!ApproxEqual(setForward.GetForward(), TE::Vector3(0.0f, 0.0f, -1.0f), 1e-4f) ||
         !ApproxEqual(setForward.GetUp(), TE::Vector3::Up, 1e-4f)) {
-        std::cerr << "[FAIL] Transform SetForward basis\n";
+        std::cerr << "[FAIL] Transform SetForwardRH basis\n";
         return false;
     }
 
@@ -831,12 +831,12 @@ bool TestFrustum()
     std::cout << "[MathTest] Frustum...\n";
 
     // 创建一个简单的视图投影矩阵
-    TE::Matrix4 view = TE::Matrix4::LookAt(
+    TE::Matrix4 view = TE::Matrix4::LookAtRH(
         TE::Vector3(0.0f, 0.0f, 5.0f),   // eye
         TE::Vector3(0.0f, 0.0f, 0.0f),   // center
         TE::Vector3(0.0f, 1.0f, 0.0f)    // up
     );
-    TE::Matrix4 proj = TE::Matrix4::Perspective(
+    TE::Matrix4 proj = TE::Matrix4::PerspectiveRH_ZO(
         TE::Math::DegToRad(60.0f),  // fov
         1.0f,                         // aspect
         0.1f,                         // near

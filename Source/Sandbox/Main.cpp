@@ -291,7 +291,7 @@ void SetupSandboxScene(TE::Engine& engine)
     directionalLight->SetName("MainDirectionalLight");
     directionalLight->SetColor(TE::Vector3(1.0f, 0.96f, 0.9f));
     directionalLight->SetIntensity(5.0f);
-    directionalLight->GetTransform().SetForward(TE::Vector3(0.5f, 1.0f, 0.8f).Normalize());
+    directionalLight->GetTransform().SetForwardRH(TE::Vector3(0.5f, 1.0f, 0.8f).Normalize());
 
     auto pointLightActor = std::make_unique<TE::Actor>();
     pointLightActor->SetName("PointLightActor");

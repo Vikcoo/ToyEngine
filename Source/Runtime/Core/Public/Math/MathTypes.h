@@ -576,15 +576,29 @@ struct [[nodiscard]] Matrix4
     static Matrix4 Translate(const Vector3& translation);
     static Matrix4 Rotate(float angleRadians, const Vector3& axis);
     static Matrix4 Scale(const Vector3& scale);
-    static Matrix4 LookAt(const Vector3& eye, const Vector3& center, const Vector3& up);
-    static Matrix4 Perspective(float fovRadians, float aspect, float nearPlane, float farPlane);
+    /// 右手系 LookAt 视图矩阵。
+    static Matrix4 LookAtRH(const Vector3& eye, const Vector3& center, const Vector3& up);
 
-    /// OpenGL 专用透视投影（NDC 深度范围 [-1, 1]）
-    /// 项目默认 GLM_FORCE_DEPTH_ZERO_TO_ONE 是 Vulkan 风格 [0,1]，
-    /// 当目标后端未启用 glClipControl 时，可退回到 OpenGL 原生的 [-1,1] 范围
-    static Matrix4 PerspectiveGL(float fovRadians, float aspect, float nearPlane, float farPlane);
+    /// 左手系 LookAt 视图矩阵。
+    static Matrix4 LookAtLH(const Vector3& eye, const Vector3& center, const Vector3& up);
 
-    static Matrix4 Orthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane);
+    /// 右手系透视投影，NDC 深度范围 [0, 1]（ZO = Zero To One）。
+    static Matrix4 PerspectiveRH_ZO(float fovRadians, float aspect, float nearPlane, float farPlane);
+
+    /// 左手系透视投影，NDC 深度范围 [0, 1]（ZO = Zero To One）。
+    static Matrix4 PerspectiveLH_ZO(float fovRadians, float aspect, float nearPlane, float farPlane);
+
+    /// 右手系透视投影，NDC 深度范围 [-1, 1]（NO = Negative One To One）。
+    static Matrix4 PerspectiveRH_NO(float fovRadians, float aspect, float nearPlane, float farPlane);
+
+    /// 左手系透视投影，NDC 深度范围 [-1, 1]（NO = Negative One To One）。
+    static Matrix4 PerspectiveLH_NO(float fovRadians, float aspect, float nearPlane, float farPlane);
+
+    /// 右手系正交投影，NDC 深度范围 [0, 1]（ZO = Zero To One）。
+    static Matrix4 OrthographicRH_ZO(float left, float right, float bottom, float top, float nearPlane, float farPlane);
+
+    /// 左手系正交投影，NDC 深度范围 [0, 1]（ZO = Zero To One）。
+    static Matrix4 OrthographicLH_ZO(float left, float right, float bottom, float top, float nearPlane, float farPlane);
 };
 
 // ==================== Quat（四元数） ====================

@@ -71,9 +71,9 @@ public:
     [[nodiscard]] Vector3 GetUp() const;
 
     /// <summary>
-    /// 设置前向方向（保持上向量大致向上）
+    /// 按右手系正交基设置前向方向（保持上向量大致向上）
     /// </summary>
-    void SetForward(const Vector3& forward);
+    void SetForwardRH(const Vector3& forward);
 
     // ==================== 欧拉角支持 ====================
 
@@ -102,14 +102,14 @@ public:
     // ==================== LookAt ====================
 
     /// <summary>
-    /// 使变换朝向目标点（保持上向量）
+    /// 按右手系正交基使变换朝向目标点（保持上向量）
     /// </summary>
-    void LookAt(const Vector3& target, const Vector3& worldUp = Vector3::Up);
+    void LookAtRH(const Vector3& target, const Vector3& worldUp = Vector3::Up);
 
     /// <summary>
-    /// 创建 LookAt 变换（位置在 eye，朝向 center）
+    /// 按右手系正交基创建 LookAt 变换（位置在 eye，朝向 center）
     /// </summary>
-    [[nodiscard]] static Transform LookAt(const Vector3& eye, const Vector3& center, const Vector3& worldUp = Vector3::Up);
+    [[nodiscard]] static Transform LookAtRH(const Vector3& eye, const Vector3& center, const Vector3& worldUp = Vector3::Up);
 
     // ==================== 变换操作 ====================
 

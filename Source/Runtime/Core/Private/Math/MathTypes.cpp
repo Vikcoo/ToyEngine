@@ -232,9 +232,9 @@ Matrix4 Matrix4::Scale(const Vector3& scale)
     return FromGlm(result);
 }
 
-Matrix4 Matrix4::LookAt(const Vector3& eye, const Vector3& center, const Vector3& up)
+Matrix4 Matrix4::LookAtRH(const Vector3& eye, const Vector3& center, const Vector3& up)
 {
-    glm::mat4 result = glm::lookAt(
+    glm::mat4 result = glm::lookAtRH(
         ToGlm(eye),
         ToGlm(center),
         ToGlm(up)
@@ -242,23 +242,51 @@ Matrix4 Matrix4::LookAt(const Vector3& eye, const Vector3& center, const Vector3
     return FromGlm(result);
 }
 
-Matrix4 Matrix4::Perspective(float fovRadians, float aspect, float nearPlane, float farPlane)
+Matrix4 Matrix4::LookAtLH(const Vector3& eye, const Vector3& center, const Vector3& up)
 {
-    glm::mat4 result = glm::perspective(fovRadians, aspect, nearPlane, farPlane);
+    glm::mat4 result = glm::lookAtLH(
+        ToGlm(eye),
+        ToGlm(center),
+        ToGlm(up)
+    );
     return FromGlm(result);
 }
 
-Matrix4 Matrix4::PerspectiveGL(float fovRadians, float aspect, float nearPlane, float farPlane)
+Matrix4 Matrix4::PerspectiveRH_ZO(float fovRadians, float aspect, float nearPlane, float farPlane)
+{
+    glm::mat4 result = glm::perspectiveRH_ZO(fovRadians, aspect, nearPlane, farPlane);
+    return FromGlm(result);
+}
+
+Matrix4 Matrix4::PerspectiveLH_ZO(float fovRadians, float aspect, float nearPlane, float farPlane)
+{
+    glm::mat4 result = glm::perspectiveLH_ZO(fovRadians, aspect, nearPlane, farPlane);
+    return FromGlm(result);
+}
+
+Matrix4 Matrix4::PerspectiveRH_NO(float fovRadians, float aspect, float nearPlane, float farPlane)
 {
     // glm::perspectiveNO 强制使用 [-1, 1] 深度范围（NO = Negative One to One）
     // 无论 GLM_FORCE_DEPTH_ZERO_TO_ONE 宏如何设置
-    glm::mat4 result = glm::perspectiveNO(fovRadians, aspect, nearPlane, farPlane);
+    glm::mat4 result = glm::perspectiveRH_NO(fovRadians, aspect, nearPlane, farPlane);
     return FromGlm(result);
 }
 
-Matrix4 Matrix4::Orthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane)
+Matrix4 Matrix4::PerspectiveLH_NO(float fovRadians, float aspect, float nearPlane, float farPlane)
 {
-    glm::mat4 result = glm::ortho(left, right, bottom, top, nearPlane, farPlane);
+    glm::mat4 result = glm::perspectiveLH_NO(fovRadians, aspect, nearPlane, farPlane);
+    return FromGlm(result);
+}
+
+Matrix4 Matrix4::OrthographicRH_ZO(float left, float right, float bottom, float top, float nearPlane, float farPlane)
+{
+    glm::mat4 result = glm::orthoRH_ZO(left, right, bottom, top, nearPlane, farPlane);
+    return FromGlm(result);
+}
+
+Matrix4 Matrix4::OrthographicLH_ZO(float left, float right, float bottom, float top, float nearPlane, float farPlane)
+{
+    glm::mat4 result = glm::orthoLH_ZO(left, right, bottom, top, nearPlane, farPlane);
     return FromGlm(result);
 }
 

@@ -133,8 +133,8 @@ Vector3 Transform::GetUp() const
     return Rotation * Vector3::Up;
 }
 
-// 设置前向方向
-void Transform::SetForward(const Vector3& forward)
+// 按右手系设置前向方向
+void Transform::SetForwardRH(const Vector3& forward)
 {
     Quat rotation;
     if (BuildRotationFromForward(forward, Vector3::Up, rotation))
@@ -177,8 +177,8 @@ Vector3 Transform::GetEulerAnglesDegrees() const
     return {rad.X * rad2deg, rad.Y * rad2deg, rad.Z * rad2deg};
 }
 
-// LookAt
-void Transform::LookAt(const Vector3& target, const Vector3& worldUp)
+// 右手系 LookAt
+void Transform::LookAtRH(const Vector3& target, const Vector3& worldUp)
 {
     Quat rotation;
     if (BuildRotationFromForward(target - Position, worldUp, rotation))
@@ -187,8 +187,8 @@ void Transform::LookAt(const Vector3& target, const Vector3& worldUp)
     }
 }
 
-// 静态 LookAt
-Transform Transform::LookAt(const Vector3& eye, const Vector3& center, const Vector3& worldUp)
+// 静态右手系 LookAt
+Transform Transform::LookAtRH(const Vector3& eye, const Vector3& center, const Vector3& worldUp)
 {
     Transform result;
     result.Position = eye;

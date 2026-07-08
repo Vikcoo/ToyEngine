@@ -17,7 +17,7 @@ void CameraComponent::LookAt(const Vector3& target, const Vector3& worldUp)
     }
 
     // 相机约定：局部 -Z 为“看向前方”，因此直接从视图矩阵反解世界旋转。
-    const Matrix4 view = Matrix4::LookAt(eye, target, worldUp);
+    const Matrix4 view = Matrix4::LookAtRH(eye, target, worldUp);
     const Transform worldTransform = Transform::FromMatrix(view.Inverse());
     m_Transform.Rotation = worldTransform.Rotation.Normalize();
 }
@@ -34,12 +34,12 @@ FViewInfo CameraComponent::BuildViewInfo() const
     const Vector3 target = eye + forward;
 
     viewInfo.CameraPosition = eye;
-    viewInfo.ViewMatrix = Matrix4::LookAt(eye, target, up);
+    viewInfo.ViewMatrix = Matrix4::LookAtRH(eye, target, up);
 
     // 2. 构建 Projection 矩阵
     // 统一使用 [0, 1] 深度范围（引擎规范约定），后端在 RHI 层适配各自的原生深度范围。
     const float fovRadians = Math::DegToRad(m_FOVDegrees);
-    viewInfo.ProjectionMatrix = Matrix4::Perspective(fovRadians, m_AspectRatio, m_NearPlane, m_FarPlane);
+    viewInfo.ProjectionMatrix = Matrix4::PerspectiveRH_ZO(fovRadians, m_AspectRatio, m_NearPlane, m_FarPlane);
 
     // 3. 预计算 ViewProjection
     viewInfo.UpdateViewProjectionMatrix();

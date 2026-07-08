@@ -31,6 +31,10 @@ struct MemoryStats
 
 // 初始化默认内存系统（建议在引擎启动早期调用）
 void MemoryInit(std::size_t initialBytes = 256ull * 1024ull * 1024ull);
+
+// 关闭默认内存系统。
+// 调用前必须保证所有可能使用 MemAlloc/MemFree 的 worker 线程已经停止，
+// 且由本内存系统分配的裸指针都已经释放；该接口不支持与分配/释放并发调用。
 void MemoryShutdown();
 
 // 全局分配接口（返回值必须保存或交给 MemFree，否则泄漏）
@@ -43,4 +47,3 @@ void  MemFree(void* ptr);
 [[nodiscard]] MemoryStats GetMemoryStats();
 
 } // namespace TE
-
