@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "MathTypes.h"
+#include "Vector.h"
 #include "ScalarMath.h"
 #include <cstdint>
 

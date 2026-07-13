@@ -6,12 +6,17 @@
 
 namespace TE {
 
-// Gribb-Hartmann 方法：从 VP 矩阵行提取 6 个裁剪平面
+// Gribb-Hartmann 方法：从右手系、ZO 深度范围的 VP 矩阵行提取 6 个裁剪平面。
 // 矩阵按列主序存储：M[col][row]
 // 行向量通过 row 索引取各列元素
-Frustum Frustum::FromViewProjection(const Matrix4& vp)
+Frustum Frustum::FromViewProjectionRH_ZO(const Matrix4& vp)
 {
     Frustum frustum;
+
+    const auto makePlane = [](float a, float b, float c, float d)
+    {
+        return Plane(Vector3(a, b, c), d);
+    };
 
     // 提取矩阵各行（row 为行索引，col 为列索引，vp.M[col][row]）
     // row0 = (M[0][0], M[1][0], M[2][0], M[3][0])
@@ -21,92 +26,56 @@ Frustum Frustum::FromViewProjection(const Matrix4& vp)
 
     // Left:   row3 + row0
     {
-        float a = vp.M[0][3] + vp.M[0][0];
-        float b = vp.M[1][3] + vp.M[1][0];
-        float c = vp.M[2][3] + vp.M[2][0];
-        float d = vp.M[3][3] + vp.M[3][0];
-        float len = std::sqrt(a * a + b * b + c * c);
-        if (len > 1e-6f)
-        {
-            frustum.Planes[0] = Plane(Vector3(a, b, c), d);
-            frustum.Planes[0].Normal = Vector3(a / len, b / len, c / len);
-            frustum.Planes[0].Distance = d / len;
-        }
+        const float a = vp.M[0][3] + vp.M[0][0];
+        const float b = vp.M[1][3] + vp.M[1][0];
+        const float c = vp.M[2][3] + vp.M[2][0];
+        const float d = vp.M[3][3] + vp.M[3][0];
+        frustum.Planes[0] = makePlane(a, b, c, d);
     }
 
     // Right:  row3 - row0
     {
-        float a = vp.M[0][3] - vp.M[0][0];
-        float b = vp.M[1][3] - vp.M[1][0];
-        float c = vp.M[2][3] - vp.M[2][0];
-        float d = vp.M[3][3] - vp.M[3][0];
-        float len = std::sqrt(a * a + b * b + c * c);
-        if (len > 1e-6f)
-        {
-            frustum.Planes[1] = Plane(Vector3(a, b, c), d);
-            frustum.Planes[1].Normal = Vector3(a / len, b / len, c / len);
-            frustum.Planes[1].Distance = d / len;
-        }
+        const float a = vp.M[0][3] - vp.M[0][0];
+        const float b = vp.M[1][3] - vp.M[1][0];
+        const float c = vp.M[2][3] - vp.M[2][0];
+        const float d = vp.M[3][3] - vp.M[3][0];
+        frustum.Planes[1] = makePlane(a, b, c, d);
     }
 
     // Bottom: row3 + row1
     {
-        float a = vp.M[0][3] + vp.M[0][1];
-        float b = vp.M[1][3] + vp.M[1][1];
-        float c = vp.M[2][3] + vp.M[2][1];
-        float d = vp.M[3][3] + vp.M[3][1];
-        float len = std::sqrt(a * a + b * b + c * c);
-        if (len > 1e-6f)
-        {
-            frustum.Planes[2] = Plane(Vector3(a, b, c), d);
-            frustum.Planes[2].Normal = Vector3(a / len, b / len, c / len);
-            frustum.Planes[2].Distance = d / len;
-        }
+        const float a = vp.M[0][3] + vp.M[0][1];
+        const float b = vp.M[1][3] + vp.M[1][1];
+        const float c = vp.M[2][3] + vp.M[2][1];
+        const float d = vp.M[3][3] + vp.M[3][1];
+        frustum.Planes[2] = makePlane(a, b, c, d);
     }
 
     // Top:    row3 - row1
     {
-        float a = vp.M[0][3] - vp.M[0][1];
-        float b = vp.M[1][3] - vp.M[1][1];
-        float c = vp.M[2][3] - vp.M[2][1];
-        float d = vp.M[3][3] - vp.M[3][1];
-        float len = std::sqrt(a * a + b * b + c * c);
-        if (len > 1e-6f)
-        {
-            frustum.Planes[3] = Plane(Vector3(a, b, c), d);
-            frustum.Planes[3].Normal = Vector3(a / len, b / len, c / len);
-            frustum.Planes[3].Distance = d / len;
-        }
+        const float a = vp.M[0][3] - vp.M[0][1];
+        const float b = vp.M[1][3] - vp.M[1][1];
+        const float c = vp.M[2][3] - vp.M[2][1];
+        const float d = vp.M[3][3] - vp.M[3][1];
+        frustum.Planes[3] = makePlane(a, b, c, d);
     }
 
-    // Near:   row3 + row2
+    // Near:   row2。ZO 深度范围的裁剪条件是 z >= 0。
     {
-        float a = vp.M[0][3] + vp.M[0][2];
-        float b = vp.M[1][3] + vp.M[1][2];
-        float c = vp.M[2][3] + vp.M[2][2];
-        float d = vp.M[3][3] + vp.M[3][2];
-        float len = std::sqrt(a * a + b * b + c * c);
-        if (len > 1e-6f)
-        {
-            frustum.Planes[4] = Plane(Vector3(a, b, c), d);
-            frustum.Planes[4].Normal = Vector3(a / len, b / len, c / len);
-            frustum.Planes[4].Distance = d / len;
-        }
+        const float a = vp.M[0][2];
+        const float b = vp.M[1][2];
+        const float c = vp.M[2][2];
+        const float d = vp.M[3][2];
+        frustum.Planes[4] = makePlane(a, b, c, d);
     }
 
     // Far:    row3 - row2
     {
-        float a = vp.M[0][3] - vp.M[0][2];
-        float b = vp.M[1][3] - vp.M[1][2];
-        float c = vp.M[2][3] - vp.M[2][2];
-        float d = vp.M[3][3] - vp.M[3][2];
-        float len = std::sqrt(a * a + b * b + c * c);
-        if (len > 1e-6f)
-        {
-            frustum.Planes[5] = Plane(Vector3(a, b, c), d);
-            frustum.Planes[5].Normal = Vector3(a / len, b / len, c / len);
-            frustum.Planes[5].Distance = d / len;
-        }
+        const float a = vp.M[0][3] - vp.M[0][2];
+        const float b = vp.M[1][3] - vp.M[1][2];
+        const float c = vp.M[2][3] - vp.M[2][2];
+        const float d = vp.M[3][3] - vp.M[3][2];
+        frustum.Planes[5] = makePlane(a, b, c, d);
     }
 
     return frustum;

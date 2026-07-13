@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Geometry.h"
+#include "Matrix.h"
 
 namespace TE {
 
@@ -35,11 +36,11 @@ struct Frustum
     Frustum() = default;
 
     /// <summary>
-    /// 从 View-Projection 矩阵提取视锥体（Gribb-Hartmann 方法）
-    /// 提取的平面法线指向视锥体内部
+    /// 从右手系、NDC 深度范围 [0, 1] 的 Projection * View 矩阵提取视锥体。
+    /// 提取的平面法线指向视锥体内部；其他手性或深度范围必须使用对应的提取规则。
     /// </summary>
-    /// <param name="viewProj">视图投影矩阵（View * Projection）</param>
-    [[nodiscard]] static Frustum FromViewProjection(const Matrix4& viewProj);
+    /// <param name="viewProjRH_ZO">右手系 [0, 1] 深度范围的 Projection * View 矩阵</param>
+    [[nodiscard]] static Frustum FromViewProjectionRH_ZO(const Matrix4& viewProjRH_ZO);
 
     /// <summary>
     /// 测试点是否在视锥体内

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "MathTypes.h"
+#include "Vector.h"
 #include "ScalarMath.h"
 
 namespace TE {
@@ -46,12 +46,13 @@ struct Plane
 
     Plane() : Normal(Vector3::Up), Distance(0.0f) {}
     Plane(const Vector3& normal, float distance)
-        : Normal(normal.Normalize())
+        : Normal(normal)
         , Distance(distance)
-    {}
+    {
+        Normalize();
+    }
     Plane(const Vector3& normal, const Vector3& point)
-        : Normal(normal.Normalize())
-        , Distance(-Vector3::Dot(normal.Normalize(), point))
+        : Plane(normal, -Vector3::Dot(normal, point))
     {}
 
     /// <summary>

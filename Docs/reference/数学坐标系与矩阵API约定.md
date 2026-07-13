@@ -44,6 +44,27 @@
 
 相机需要“看向目标”时继续调用 `CameraComponent::LookAt()`。它内部使用 `Matrix4::LookAtRH()` 反解相机世界旋转，并保持相机局部 `-Z` 前向，不应改用普通 `Transform::LookAtRH()`。
 
+`Transform::RotateWorld*()` 使用世界标准轴左乘旋转；`Transform::RotateLocal*()` 使用局部标准轴右乘旋转。两类组合完成后都会归一化四元数，避免连续旋转积累长度误差。
+
+## Frustum 约定
+
+当前 `Frustum` 只提供 `Frustum::FromViewProjectionRH_ZO()`：
+
+- 输入必须是 `ProjectionRH_ZO * ViewRH`，即列向量约定下的 `Projection * View`。
+- 输入必须使用右手系和 `[0, 1]` NDC 深度范围。
+- Near 平面按 ZO 裁剪条件 `z >= 0` 从矩阵 `row2` 提取；不能复用 `[-1, 1]` 深度范围的 `row3 + row2` 公式。
+
+需要支持 `LH` 或 `NO` 时，必须新增具有对应后缀的独立入口和测试，不能把不同规则隐藏在同一个函数中。
+
+## 公共头文件分层
+
+- `Math/Vector.h`：`Vector2`、`Vector3`、`Vector4`。
+- `Math/Matrix.h`：`Matrix3`、`Matrix4`。
+- `Math/Quat.h`：`Quat`。
+- `Math/MathTypes.h`：上述三个头的兼容聚合入口；已有调用可以继续使用，新代码应按实际依赖包含具体头文件。
+
+`Transform.h` 组合依赖 Vector、Matrix、Quat；`Geometry.h`、`MathUtils.h`、`Color.h`、`Random.h` 和 `VectorInt.h` 已只包含 `Vector.h`。
+
 ## 排查建议
 
 如果出现相机方向、光照方向、剔除方向或深度测试异常，优先检查：

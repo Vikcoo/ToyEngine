@@ -214,8 +214,8 @@ void Transform::Translate(float x, float y, float z)
 // 绕世界轴旋转
 void Transform::Rotate(const Vector3& axis, float angleRadians)
 {
-    Quat rotation(axis, angleRadians);
-    Rotation = rotation * Rotation;
+    const Quat rotation(axis, angleRadians);
+    Rotation = (rotation * Rotation).Normalize();
 }
 
 void Transform::RotateWorldX(float angleRadians)
@@ -236,20 +236,20 @@ void Transform::RotateWorldZ(float angleRadians)
 // 绕局部轴旋转
 void Transform::RotateLocalX(float angleRadians)
 {
-    Quat rotation(GetRight(), angleRadians);
-    Rotation = Rotation * rotation;
+    const Quat rotation(Vector3::Right, angleRadians);
+    Rotation = (Rotation * rotation).Normalize();
 }
 
 void Transform::RotateLocalY(float angleRadians)
 {
-    Quat rotation(GetUp(), angleRadians);
-    Rotation = Rotation * rotation;
+    const Quat rotation(Vector3::Up, angleRadians);
+    Rotation = (Rotation * rotation).Normalize();
 }
 
 void Transform::RotateLocalZ(float angleRadians)
 {
-    Quat rotation(GetForward(), angleRadians);
-    Rotation = Rotation * rotation;
+    const Quat rotation(Vector3::Forward, angleRadians);
+    Rotation = (Rotation * rotation).Normalize();
 }
 
 // 统一缩放

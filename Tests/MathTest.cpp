@@ -1,7 +1,9 @@
 // ToyEngine - Math 模块完整测试
 // 测试 MathTypes, Transform, MathUtils, Color, Random, Geometry
 
-#include "Math/MathTypes.h"
+#include "Math/Vector.h"
+#include "Math/Matrix.h"
+#include "Math/Quat.h"
 #include "Math/Transform.h"
 #include "Math/MathUtils.h"
 #include "Math/Color.h"
@@ -265,6 +267,28 @@ bool TestTransformBasics()
         return false;
     }
 
+    // 局部旋转必须使用局部标准轴右乘，而不是把世界轴再作为局部旋转增量。
+    TE::Transform localRotation;
+    localRotation.RotateWorldY(TE::Math::HALF_PI);
+    localRotation.RotateLocalX(TE::Math::HALF_PI);
+    const TE::Quat expectedLocalRotation =
+        TE::Quat(TE::Vector3::Up, TE::Math::HALF_PI) *
+        TE::Quat(TE::Vector3::Right, TE::Math::HALF_PI);
+    if (!localRotation.Rotation.Equals(expectedLocalRotation, 1e-4f)) {
+        std::cerr << "[FAIL] Transform local rotation composition\n";
+        return false;
+    }
+
+    TE::Transform continuousRotation;
+    for (int i = 0; i < 1000; ++i)
+    {
+        continuousRotation.RotateWorldY(0.01f);
+    }
+    if (!ApproxEqual(continuousRotation.Rotation.Length(), 1.0f, 1e-4f)) {
+        std::cerr << "[FAIL] Transform rotation normalization\n";
+        return false;
+    }
+
     // Inverse transform
     TE::Transform inv = t.Inverse();
     TE::Vector3 back = inv.TransformPoint(transformed);
@@ -482,6 +506,14 @@ bool TestGeometry()
     }
     if (!plane.IsInFront(TE::Vector3(0.0f, 1.0f, 0.0f))) {
         std::cerr << "[FAIL] Plane IsInFront\n";
+        return false;
+    }
+
+    // Plane(normal, distance) 应将法线和常数项作为同一方程归一化。
+    TE::Plane scaledPlane(TE::Vector3(0.0f, 2.0f, 0.0f), -2.0f);
+    if (!scaledPlane.IsOnPlane(TE::Vector3(0.0f, 1.0f, 0.0f)) ||
+        !ApproxEqual(scaledPlane.Distance, -1.0f)) {
+        std::cerr << "[FAIL] Plane normalized equation\n";
         return false;
     }
 
@@ -811,6 +843,10 @@ bool TestMatrixDecompose()
         std::cerr << "[FAIL] Matrix4 Decompose scale\n";
         return false;
     }
+    if (!decRot.Equals(expectedRot, 1e-3f)) {
+        std::cerr << "[FAIL] Matrix4 Decompose rotation\n";
+        return false;
+    }
 
     // GetNormalMatrix — 正交旋转矩阵的法线矩阵应等于旋转矩阵本身
     TE::Matrix3 normalMat = rot.GetNormalMatrix();
@@ -844,7 +880,7 @@ bool TestFrustum()
     );
     TE::Matrix4 vp = proj * view;
 
-    TE::Frustum frustum = TE::Frustum::FromViewProjection(vp);
+    TE::Frustum frustum = TE::Frustum::FromViewProjectionRH_ZO(vp);
 
     // 原点应该在视锥体内（相机在 z=5 看向原点，原点在 near 和 far 之间）
     if (!frustum.ContainsPoint(TE::Vector3(0.0f, 0.0f, 0.0f))) {
@@ -855,6 +891,12 @@ bool TestFrustum()
     // 相机后方的点应该不在视锥体内
     if (frustum.ContainsPoint(TE::Vector3(0.0f, 0.0f, 10.0f))) {
         std::cerr << "[FAIL] Frustum ContainsPoint (behind camera)\n";
+        return false;
+    }
+
+    // 相机在 z=5、Near=0.1；z=4.95 位于相机与近裁剪面之间，必须被剔除。
+    if (frustum.ContainsPoint(TE::Vector3(0.0f, 0.0f, 4.95f))) {
+        std::cerr << "[FAIL] Frustum ZO near plane\n";
         return false;
     }
 

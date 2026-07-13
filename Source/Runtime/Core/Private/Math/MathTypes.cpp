@@ -1,7 +1,8 @@
 // ToyEngine Core Module
-// 数学类型实现 - MathTypes.h 的方法实现
+// 数学类型实现 - Vector、Matrix、Quat 的方法实现
 
-#include "Math/MathTypes.h"
+#include "Math/Matrix.h"
+#include "Math/Quat.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

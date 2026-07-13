@@ -3,7 +3,8 @@
 
 #pragma once
 
-#include "MathTypes.h"
+#include "Matrix.h"
+#include "Quat.h"
 
 namespace TE {
 

@@ -10,7 +10,10 @@
   - `Singleton.h` - 单例模板
 
 - **Math/** - 数学库封装（基于glm）
-  - `MathTypes.h` - Vector3, Matrix4等类型定义
+  - `Vector.h` - Vector2、Vector3、Vector4 类型定义
+  - `Matrix.h` - Matrix3、Matrix4 类型定义
+  - `Quat.h` - Quat 类型定义
+  - `MathTypes.h` - 兼容聚合头；新代码优先按需包含上述具体类型头
   - `Transform.h` - 变换类（位置、旋转、缩放）
   - `MathUtils.h` - 常用数学函数
 
@@ -66,4 +69,3 @@ int main() {
 - [ ] 文件系统工具
 - [ ] Application框架
 - [ ] 时间管理
-

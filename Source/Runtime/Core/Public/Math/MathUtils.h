@@ -4,7 +4,7 @@
 #pragma once
 
 #include "ScalarMath.h"
-#include "MathTypes.h"
+#include "Vector.h"
 
 namespace TE::Math {
 // ==================== 向量工具 ====================
