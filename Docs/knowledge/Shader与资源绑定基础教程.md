@@ -626,7 +626,7 @@ layout(std140, binding = 1) uniform DeferredPassBlock {
 };
 ```
 
-Deferred pass 参数。包括 RT 采样是否翻转、调试视图模式、相机位置、逆 ViewProjection。
+Deferred pass 参数。`u_DeferredParams.x` 是 RT 采样是否翻转，`.y` 是调试视图模式，`.z` 表示后端 NDC 深度是否为 `[0,1]`；其余字段保存相机位置和后端调整后 ViewProjection 的逆矩阵。
 
 ```glsl
 if (u_DeferredParams.x != 0)
@@ -639,23 +639,25 @@ if (u_DeferredParams.x != 0)
 
 ```glsl
 float depth = texture(u_GBufferDepth, uv).r;
-if (depth >= 0.999999)
+if (depth <= 0.000001)
 {
     fragColor = vec4(GetSkyColor(uv), 1.0);
     return;
 }
 ```
 
-如果深度接近远平面，认为这个像素没有几何体，直接画天空。
+当前主渲染路径使用 Reversed-Z，Near=1、Far=0。如果深度接近 0，认为这个像素没有几何体或位于远平面，直接画天空。Reversed-Z 不会让深度线性化；它只是反转深度方向，以利用 `D32_Float` 在 0 附近更密集的浮点分布改善远处精度。
 
 ```glsl
 vec3 baseColor = texture(u_GBufferAlbedo, uv).rgb;
 vec3 normal = normalize(texture(u_GBufferNormal, uv).rgb * 2.0 - 1.0);
-vec3 worldPosition = texture(u_GBufferWorldPosition, uv).rgb;
 vec4 material = texture(u_GBufferMaterial, uv);
+vec3 worldPosition = ReconstructWorldPosition(uv, depth);
 ```
 
-从 GBuffer 还原光照所需数据。法线从 0..1 解码回 -1..1。
+从 GBuffer 还原光照所需数据。法线从 0..1 解码回 -1..1，世界坐标则由 Reversed-Z 深度和 inverse view-projection 重建。正式 PBR 的视线向量、点光向量、距离与衰减统一使用该重建位置。
+
+`WorldPositionReconstructionError` 调试视图会把屏幕 UV 和深度转换回后端 NDC，再乘 `u_InvViewProjection` 重建世界坐标，并与 `u_GBufferWorldPosition` 比较。Position RT 目前只为这类对照调试保留，不再作为正式 Deferred 光照输入。黑色表示 `<1 μm`，蓝色表示 `[1,10) μm`，青色表示 `[10,100) μm`，绿色表示 `[0.1,1) mm`，黄色表示 `[1,10) mm`，红色表示 `≥1 cm`。
 
 ```glsl
 if (u_DeferredParams.y == 1)

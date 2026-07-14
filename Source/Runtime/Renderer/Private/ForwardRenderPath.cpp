@@ -5,6 +5,7 @@
 
 #include "RendererLightUniforms.h"
 #include "RendererPassUniforms.h"
+#include "RendererDepthConvention.h"
 #include "RendererBindingSlots.h"
 #include "RendererShaderNames.h"
 #include "RendererTextureBindings.h"
@@ -134,7 +135,7 @@ void FForwardRenderPath::Render(const FScene* scene,
     passInfo.clearColor[1] = 0.1f;
     passInfo.clearColor[2] = 0.1f;
     passInfo.clearColor[3] = 1.0f;
-    passInfo.clearDepth = 1.0f;
+    passInfo.clearDepth = RendererDepth::ClearValue;
     passInfo.viewport.x = 0;
     passInfo.viewport.y = 0;
     passInfo.viewport.width = viewInfo.ViewportWidth;
@@ -230,7 +231,8 @@ void FForwardRenderPath::SubmitSkyPass(const FScene* scene, RHIDevice* device, R
     }
 
     const auto& viewInfo = scene->GetViewInfo();
-    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(viewInfo.ProjectionMatrix);
+    const Matrix4 renderProjection = RendererDepth::BuildProjection(viewInfo.ProjectionMatrix);
+    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(renderProjection);
     const Matrix4 invViewProjection = (adjustedProjection * viewInfo.ViewMatrix).Inverse();
 
     cmdBuf->BindPipeline(m_SkyPipeline.Pipeline.get());
@@ -272,7 +274,8 @@ void FForwardRenderPath::SubmitDrawCommands(const std::vector<FMeshDrawCommand>&
 {
     const auto& viewInfo = scene->GetViewInfo();
 
-    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(viewInfo.ProjectionMatrix);
+    const Matrix4 renderProjection = RendererDepth::BuildProjection(viewInfo.ProjectionMatrix);
+    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(renderProjection);
     const Matrix4 adjustedVP = adjustedProjection * viewInfo.ViewMatrix;
 
     RHIPipeline* lastPipeline = nullptr;

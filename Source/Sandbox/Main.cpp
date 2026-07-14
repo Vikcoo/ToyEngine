@@ -46,6 +46,7 @@ const char* GetDebugViewLabel(TE::ERenderDebugView mode)
     case TE::ERenderDebugView::Normal: return "Normal";
     case TE::ERenderDebugView::WorldPosition: return "WorldPosition";
     case TE::ERenderDebugView::Depth: return "Depth";
+    case TE::ERenderDebugView::WorldPositionReconstructionError: return "WorldPositionReconstructionError";
     default: return "Unknown";
     }
 }
@@ -370,6 +371,13 @@ void TickSandboxScene(TE::Engine& engine, float deltaTime)
             engine.SetRenderDebugView(TE::ERenderDebugView::Depth);
             UpdateSandboxWindowTitle(engine);
             TE_LOG_INFO("[Sandbox] Render path: Deferred, debug view: Depth");
+        }
+        else if (input->IsKeyJustPressed(TE::Keys::F8))
+        {
+            engine.SetRenderPath(TE::ERenderPathType::Deferred);
+            engine.SetRenderDebugView(TE::ERenderDebugView::WorldPositionReconstructionError);
+            UpdateSandboxWindowTitle(engine);
+            TE_LOG_INFO("[Sandbox] Render path: Deferred, debug view: WorldPositionReconstructionError");
         }
     }
 

@@ -20,6 +20,7 @@ enum class ERenderDebugView : uint8_t
     Normal = 2,
     WorldPosition = 3,
     Depth = 4,
+    WorldPositionReconstructionError = 5,
 };
 
 } // namespace TE

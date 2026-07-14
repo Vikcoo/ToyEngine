@@ -138,6 +138,8 @@
 | UniformBuffer | `DeferredPassBlock` | 1 | Fragment | `RendererBindings::PassBlock` |
 | UniformBuffer | `LightBlock` | 0 | Fragment | `RendererBindings::LightBlock` |
 
+`DeferredPassBlock.u_DeferredParams` 当前按 `x/y/z/w` 保存 RT 采样 Y 翻转标志、`ERenderDebugView`、当前后端是否使用 `[0,1]` NDC 深度以及保留值。`u_InvViewProjection` 是 Renderer Reversed-Z 转换、再经后端调整后的 `Projection * View` 的逆矩阵；正式 Lighting 与 `WorldPositionReconstructionError` 都直接使用采样深度和该逆矩阵重建世界坐标，无需先恢复普通 Z。`u_GBufferWorldPosition` 暂时继续绑定，仅供存储位置和重建误差调试视图采样。
+
 ### `sky.frag`
 
 | 类型 | 名称 | Binding | Stage | C++ 对应 |

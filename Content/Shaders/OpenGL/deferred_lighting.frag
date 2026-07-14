@@ -45,6 +45,24 @@ vec3 GetSkyColor(vec2 uv)
     return TonemapReinhard(textureLod(u_PrefilterMap, dir, 0.0).rgb);
 }
 
+vec3 ReconstructWorldPosition(vec2 uv, float depth)
+{
+    vec2 ndcXY = uv * 2.0 - 1.0;
+    float ndcZ = u_DeferredParams.z != 0 ? depth : depth * 2.0 - 1.0;
+    vec4 world = u_InvViewProjection * vec4(ndcXY, ndcZ, 1.0);
+    return world.xyz / world.w;
+}
+
+vec3 GetPositionErrorColor(float errorMeters)
+{
+    if (errorMeters < 0.000001) return vec3(0.0);
+    if (errorMeters < 0.00001) return vec3(0.0, 0.0, 1.0);
+    if (errorMeters < 0.0001) return vec3(0.0, 1.0, 1.0);
+    if (errorMeters < 0.001) return vec3(0.0, 1.0, 0.0);
+    if (errorMeters < 0.01) return vec3(1.0, 1.0, 0.0);
+    return vec3(1.0, 0.0, 0.0);
+}
+
 float DistributionGGX(vec3 n, vec3 h, float roughness)
 {
     float a = roughness * roughness;
@@ -108,7 +126,7 @@ void main()
     }
 
     float depth = texture(u_GBufferDepth, uv).r;
-    if (depth >= 0.999999)
+    if (depth <= 0.000001)
     {
         fragColor = vec4(GetSkyColor(uv), 1.0);
         return;
@@ -116,7 +134,6 @@ void main()
 
     vec3 baseColor = texture(u_GBufferAlbedo, uv).rgb;
     vec3 normal = normalize(texture(u_GBufferNormal, uv).rgb * 2.0 - 1.0);
-    vec3 worldPosition = texture(u_GBufferWorldPosition, uv).rgb;
     vec4 material = texture(u_GBufferMaterial, uv);
     float metallic = material.r;
     float roughness = clamp(material.g, 0.04, 1.0);
@@ -135,7 +152,8 @@ void main()
     }
     if (u_DeferredParams.y == 3)
     {
-        vec3 worldPositionView = clamp(worldPosition * 0.1 + 0.5, 0.0, 1.0);
+        vec3 storedWorldPosition = texture(u_GBufferWorldPosition, uv).rgb;
+        vec3 worldPositionView = clamp(storedWorldPosition * 0.1 + 0.5, 0.0, 1.0);
         fragColor = vec4(worldPositionView, 1.0);
         return;
     }
@@ -144,7 +162,17 @@ void main()
         fragColor = vec4(vec3(depth), 1.0);
         return;
     }
+    if (u_DeferredParams.y == 5)
+    {
+        vec3 storedWorldPosition = texture(u_GBufferWorldPosition, uv).rgb;
+        vec3 reconstructedWorldPosition = ReconstructWorldPosition(uv, depth);
+        float reconstructionError = length(reconstructedWorldPosition - storedWorldPosition);
+        fragColor = vec4(GetPositionErrorColor(reconstructionError), 1.0);
+        return;
+    }
 
+    // Position RT 继续服务于对照视图，正式光照改用深度重建位置。
+    vec3 worldPosition = ReconstructWorldPosition(uv, depth);
     vec3 v = normalize(u_CameraPosition_Pad.xyz - worldPosition);
     vec3 f0 = mix(vec3(0.04), baseColor, metallic);
     float nDotV = max(dot(normal, v), 0.0);

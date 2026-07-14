@@ -259,6 +259,14 @@ Matrix4 Matrix4::PerspectiveRH_ZO(float fovRadians, float aspect, float nearPlan
     return FromGlm(result);
 }
 
+Matrix4 Matrix4::ReverseZProjectionZO(const Matrix4& projectionZO)
+{
+    Matrix4 reverseDepth(1.0f);
+    reverseDepth(2, 2) = -1.0f;
+    reverseDepth(3, 2) = 1.0f;
+    return reverseDepth * projectionZO;
+}
+
 Matrix4 Matrix4::PerspectiveLH_ZO(float fovRadians, float aspect, float nearPlane, float farPlane)
 {
     glm::mat4 result = glm::perspectiveLH_ZO(fovRadians, aspect, nearPlane, farPlane);

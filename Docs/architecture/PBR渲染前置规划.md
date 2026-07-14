@@ -46,7 +46,7 @@
 剩余工作：
 - `MetallicRoughnessTexture` 打包贴图尚未在 shader 中解包消费，当前优先支持独立 Metallic / Roughness 贴图。
 - Height / Parallax / Displacement 尚未接入，当前 `Content/Textures/PBR/RedRock04_4K_Height.png` 只作为后续资源保留。
-- PBR 参数专用 DebugView 尚未补齐，目前 Deferred 仍只提供 Lit / Albedo / Normal / WorldPosition / Depth。
+- PBR 参数专用 DebugView 尚未补齐；目前 Deferred 提供 Lit / Albedo / Normal / WorldPosition / Depth，以及仅用于校准深度重建链路的 WorldPositionReconstructionError。
 - 运行时 IBL 初版已实现：从单张 HDR equirectangular 图生成环境 cubemap、diffuse irradiance cubemap 和 BRDF LUT，并在 Forward / Deferred PBR 中采样。
 - 当前 specular prefilter 仍是环境 cubemap mip 链近似，尚未实现 GGX 重要性采样预滤波 cubemap。
 - 曝光和 Tonemapping 尚未作为正式后处理实现，天空 shader 当前只做局部 Reinhard 映射。
@@ -125,9 +125,9 @@ Forward PBR 阶段可以先在 Forward shader 中支持关键视图；Deferred P
 - `GBuffer1`：WorldNormal 编码到 0..1。
 - `GBuffer2`：WorldPosition.xyz。
 - `GBuffer3`：Metallic、Roughness、AO、Emissive Luma。
-- `Depth`：深度。
+- `Depth`：`D32_Float` Reversed-Z 深度，Near=1、Far=0。
 
-当前 `WorldPosition` RT 继续保留，以避免深度重建误差影响点光方向与衰减。后续可在投影/深度约定稳定后再评估通过 Depth + View 参数重建世界位置，减少带宽。
+当前 `WorldPosition` RT 继续保留，但正式 Deferred 光照已改用 Reversed-Z Depth 与 inverse view-projection 重建位置，视线方向、点光方向和距离衰减都消费该重建结果。Position RT 只服务于 `WorldPosition` 与 `WorldPositionReconstructionError` 对照视图；完成多场景校准并确认重建路径稳定后，再评估是否彻底移除该 RT。
 
 ## 光照约定
 

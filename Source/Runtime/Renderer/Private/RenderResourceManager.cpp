@@ -4,6 +4,7 @@
 #include "RenderResourceManager.h"
 
 #include "RendererBindingSlots.h"
+#include "RendererDepthConvention.h"
 #include "RendererShaderNames.h"
 #include "Material.h"
 #include "StaticMeshRenderData.h"
@@ -962,7 +963,7 @@ bool FRenderResourceManager::BuildStaticMeshBasePassPipeline(FPreparedPipeline& 
 
     pipelineDesc.depthStencil.depthTestEnable = true;
     pipelineDesc.depthStencil.depthWriteEnable = true;
-    pipelineDesc.depthStencil.depthCompareOp = RHICompareOp::Less;
+    pipelineDesc.depthStencil.depthCompareOp = RendererDepth::CompareOp;
     pipelineDesc.rasterization.cullMode = RHICullMode::Back;
     pipelineDesc.rasterization.frontFace = RHIFrontFace::CounterClockwise;
     pipelineDesc.debugName = "StaticMesh_Pipeline";

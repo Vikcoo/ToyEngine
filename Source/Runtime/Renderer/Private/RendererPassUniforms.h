@@ -58,6 +58,7 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
                                        RHICommandBuffer* cmdBuf,
                                        FDeferredPassUniformBindingState& state,
                                        bool rtSampleFlipY,
+                                       bool ndcDepthZeroToOne,
                                        ERenderDebugView debugViewMode,
                                        const Vector3& cameraPosition,
                                        const Matrix4& invViewProjection);

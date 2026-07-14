@@ -26,7 +26,7 @@ struct alignas(16) FDeferredPassBlockCPU
 {
     int32_t RTSampleFlipY = 0;
     int32_t DebugViewMode = 0;
-    int32_t Reserved0 = 0;
+    int32_t NDCDepthZeroToOne = 1;
     int32_t Reserved1 = 0;
     Vector4 CameraPosition_Pad;
     Matrix4 InvViewProjection;
@@ -202,6 +202,7 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
                                        RHICommandBuffer* cmdBuf,
                                        FDeferredPassUniformBindingState& state,
                                        bool rtSampleFlipY,
+                                       bool ndcDepthZeroToOne,
                                        ERenderDebugView debugViewMode,
                                        const Vector3& cameraPosition,
                                        const Matrix4& invViewProjection)
@@ -214,6 +215,7 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
     FDeferredPassBlockCPU passBlock{};
     passBlock.RTSampleFlipY = rtSampleFlipY ? 1 : 0;
     passBlock.DebugViewMode = static_cast<int32_t>(debugViewMode);
+    passBlock.NDCDepthZeroToOne = ndcDepthZeroToOne ? 1 : 0;
     passBlock.CameraPosition_Pad = Vector4(cameraPosition, 0.0f);
     passBlock.InvViewProjection = invViewProjection;
 

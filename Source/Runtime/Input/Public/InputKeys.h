@@ -18,6 +18,7 @@ constexpr int F4 = 293;
 constexpr int F5 = 294;
 constexpr int F6 = 295;
 constexpr int F7 = 296;
+constexpr int F8 = 297;
 } // namespace TE::Keys
 
 namespace TE::MouseButton

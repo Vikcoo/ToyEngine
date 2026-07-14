@@ -9,6 +9,7 @@
 - `CameraComponent` 是特例：相机局部 `-Z` 为看向前方。该特例限制在相机组件内部，普通 `Transform` 不跟随相机语义。
 - `Matrix3` / `Matrix4` 按列主序存储，与 GLM 和当前 shader 上传约定一致。
 - 引擎规范投影深度范围为 `[0, 1]`。OpenGL 后端当前通过 `glClipControl` 对齐该范围。
+- `CameraComponent`、`FViewInfo` 与 CPU Frustum 使用正向 ZO：Near=0、Far=1；Renderer 提交 GPU 前转换为 Reversed-Z：Near=1、Far=0。范围与方向是两个不同概念。
 
 ## 命名规则
 
@@ -29,6 +30,7 @@
 - `Matrix4::LookAtRH()`：右手系 View 矩阵。
 - `Matrix4::LookAtLH()`：左手系 View 矩阵。
 - `Matrix4::PerspectiveRH_ZO()`：右手系透视投影，深度 `[0, 1]`。这是当前相机默认使用的投影。
+- `Matrix4::ReverseZProjectionZO()`：对任意正向 ZO 投影执行 `z' = w - z`，保持 X/Y 和裁剪体不变，将深度方向转换为 Near=1、Far=0。
 - `Matrix4::PerspectiveLH_ZO()`：左手系透视投影，深度 `[0, 1]`。
 - `Matrix4::PerspectiveRH_NO()`：右手系透视投影，深度 `[-1, 1]`。仅在需要 OpenGL 原生 NDC 或专项验证时使用。
 - `Matrix4::PerspectiveLH_NO()`：左手系透视投影，深度 `[-1, 1]`。
@@ -56,6 +58,8 @@
 
 需要支持 `LH` 或 `NO` 时，必须新增具有对应后缀的独立入口和测试，不能把不同规则隐藏在同一个函数中。
 
+Renderer 的 Reversed-Z 投影不能传给当前 Frustum 入口。Frustum 消费 `FViewInfo` 中的正向 ZO VP；Forward/GBuffer 的 GPU MVP 和 Deferred/Sky 的 inverse VP 则消费 Renderer 转换并经 RHI 调整后的 Reversed-Z 投影。
+
 ## 公共头文件分层
 
 - `Math/Vector.h`：`Vector2`、`Vector3`、`Vector4`。
@@ -73,3 +77,4 @@
 2. 投影矩阵使用的是 `ZO` 还是 `NO` 深度范围。
 3. 当前代码使用的是普通 `Transform` 的 `+Z` 前向，还是相机的 `-Z` 前向。
 4. 后端是否在 RHI 层对 NDC Y、深度范围或正面缠绕做了额外适配。
+5. 当前检查的是 CPU 正向 ZO，还是 GPU Reversed-Z；GPU 主路径的清除值必须为 0、比较操作必须为 `Greater`。

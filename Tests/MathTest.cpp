@@ -147,6 +147,20 @@ bool TestMatrixBasics()
     TE::Vector3 forward = forward4.GetXYZ();
     // 相机朝向 -Z，所以视图矩阵应该将 -Z 映射到世界空间的 Z 方向
 
+    constexpr float nearPlane = 0.1f;
+    constexpr float farPlane = 100.0f;
+    const TE::Matrix4 projectionZO = TE::Matrix4::PerspectiveRH_ZO(
+        TE::Math::DegToRad(60.0f), 1.0f, nearPlane, farPlane);
+    const TE::Matrix4 reversedProjection = TE::Matrix4::ReverseZProjectionZO(projectionZO);
+    const TE::Vector4 nearClip = reversedProjection * TE::Vector4(0.0f, 0.0f, -nearPlane, 1.0f);
+    const TE::Vector4 farClip = reversedProjection * TE::Vector4(0.0f, 0.0f, -farPlane, 1.0f);
+    const float nearDepth = nearClip.Z / nearClip.W;
+    const float farDepth = farClip.Z / farClip.W;
+    if (!ApproxEqual(nearDepth, 1.0f, 1e-5f) || !ApproxEqual(farDepth, 0.0f, 1e-5f)) {
+        std::cerr << "[FAIL] Matrix4 ReverseZProjectionZO depth mapping\n";
+        return false;
+    }
+
     std::cout << "[MathTest] Matrix basics passed.\n";
     return true;
 }

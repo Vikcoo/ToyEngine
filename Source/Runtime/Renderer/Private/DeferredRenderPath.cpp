@@ -5,6 +5,7 @@
 
 #include "RendererLightUniforms.h"
 #include "RendererPassUniforms.h"
+#include "RendererDepthConvention.h"
 #include "RendererBindingSlots.h"
 #include "RendererShaderNames.h"
 #include "RendererTextureBindings.h"
@@ -233,7 +234,7 @@ void FDeferredRenderPath::Render(const FScene* scene,
     gBufferPassInfo.clearColor[1] = 0.0f;
     gBufferPassInfo.clearColor[2] = 0.0f;
     gBufferPassInfo.clearColor[3] = 1.0f;
-    gBufferPassInfo.clearDepth = 1.0f;
+    gBufferPassInfo.clearDepth = RendererDepth::ClearValue;
     gBufferPassInfo.viewport.x = 0;
     gBufferPassInfo.viewport.y = 0;
     gBufferPassInfo.viewport.width = viewInfo.ViewportWidth;
@@ -249,7 +250,7 @@ void FDeferredRenderPath::Render(const FScene* scene,
     lightingPassInfo.clearColor[1] = 0.1f;
     lightingPassInfo.clearColor[2] = 0.1f;
     lightingPassInfo.clearColor[3] = 1.0f;
-    lightingPassInfo.clearDepth = 1.0f;
+    lightingPassInfo.clearDepth = RendererDepth::ClearValue;
     lightingPassInfo.viewport.x = 0;
     lightingPassInfo.viewport.y = 0;
     lightingPassInfo.viewport.width = viewInfo.ViewportWidth;
@@ -372,7 +373,7 @@ bool FDeferredRenderPath::BuildGBufferPipeline(RHIDevice* device)
     FillStaticMeshVertexInput(pipelineDesc.vertexInput);
     pipelineDesc.depthStencil.depthTestEnable = true;
     pipelineDesc.depthStencil.depthWriteEnable = true;
-    pipelineDesc.depthStencil.depthCompareOp = RHICompareOp::Less;
+    pipelineDesc.depthStencil.depthCompareOp = RendererDepth::CompareOp;
     pipelineDesc.rasterization.cullMode = RHICullMode::Back;
     pipelineDesc.rasterization.frontFace = RHIFrontFace::CounterClockwise;
     pipelineDesc.debugName = "Deferred_GBuffer_Pipeline";
@@ -479,7 +480,8 @@ void FDeferredRenderPath::SubmitGBufferPass(const std::vector<FMeshDrawCommand>&
     }
 
     const auto& viewInfo = scene->GetViewInfo();
-    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(viewInfo.ProjectionMatrix);
+    const Matrix4 renderProjection = RendererDepth::BuildProjection(viewInfo.ProjectionMatrix);
+    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(renderProjection);
     const Matrix4 adjustedVP = adjustedProjection * viewInfo.ViewMatrix;
 
     cmdBuf->BindPipeline(m_GBufferPipeline.Pipeline.get());
@@ -552,13 +554,15 @@ void FDeferredRenderPath::SubmitLightingPass(const FScene* scene,
                                      scene->ResolveEnvironmentSampler());
 
     const auto& viewInfo = scene->GetViewInfo();
-    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(viewInfo.ProjectionMatrix);
+    const Matrix4 renderProjection = RendererDepth::BuildProjection(viewInfo.ProjectionMatrix);
+    const Matrix4 adjustedProjection = device->AdjustProjectionMatrix(renderProjection);
     const Matrix4 invViewProjection = (adjustedProjection * viewInfo.ViewMatrix).Inverse();
 
     UpdateAndBindDeferredPassUniforms(device,
                                       cmdBuf,
                                       *m_DeferredPassBindingState,
                                       device->GetBackendTraits().bRTSampleRequiresFlipY,
+                                      device->GetBackendTraits().bNativeNDCDepthZeroToOne,
                                       m_DebugViewMode,
                                       viewInfo.CameraPosition,
                                       invViewProjection);

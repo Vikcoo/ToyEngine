@@ -202,6 +202,13 @@ struct [[nodiscard]] Matrix4
     /// 右手系透视投影，NDC 深度范围 [0, 1]（ZO = Zero To One）。
     static Matrix4 PerspectiveRH_ZO(float fovRadians, float aspect, float nearPlane, float farPlane);
 
+    /**
+     * 将正向 ZO 投影转换为 Reversed-Z，使近裁剪面映射到 1、远裁剪面映射到 0。
+     * @param projectionZO 输入的 [0,1] NDC 深度投影矩阵
+     * @return 保持 X/Y 与裁剪范围不变的 Reversed-Z 投影矩阵
+     */
+    [[nodiscard]] static Matrix4 ReverseZProjectionZO(const Matrix4& projectionZO);
+
     /// 左手系透视投影，NDC 深度范围 [0, 1]（ZO = Zero To One）。
     static Matrix4 PerspectiveLH_ZO(float fovRadians, float aspect, float nearPlane, float farPlane);
 
