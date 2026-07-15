@@ -27,6 +27,7 @@ Makefile
 
 # 日志
 *.log
+/Saved/Logs/
 
 # 操作系统
 .DS_Store

@@ -222,21 +222,26 @@ int main()
     std::cout << "[MemoryAllocatorRegressionTest] multi-thread alloc/free...\n";
     if (!TestMultiThreadAllocFree())
     {
+        TE::Log::Shutdown();
         return 1;
     }
 
     std::cout << "[MemoryAllocatorRegressionTest] aligned realloc...\n";
     if (!TestAlignedReallocPreservesAlignment())
     {
+        TE::Log::Shutdown();
         return 1;
     }
 
     std::cout << "[MemoryAllocatorRegressionTest] ordered shutdown...\n";
     if (!TestOrderedShutdownNoCrash())
     {
+        TE::Log::Shutdown();
         return 1;
     }
 
     std::cout << "[MemoryAllocatorRegressionTest] all passed.\n";
+    TE_LOG_INFO("[MemoryAllocatorRegressionTest] all passed");
+    TE::Log::Shutdown();
     return 0;
 }

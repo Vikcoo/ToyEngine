@@ -293,8 +293,10 @@ void Engine::UpdateFrameStats(float deltaTime)
     if (m_FPSAccumulatedTime >= FPS_UPDATE_INTERVAL)
     {
         m_CurrentFPS = static_cast<float>(m_FPSAccumulatedFrames) / m_FPSAccumulatedTime;
-        TE_LOG_DEBUG("FPS: {:.1f} (avg over {:.2f}s, {} frames) | DC: {} PipeBinds: {} VBOBinds: {} IBOBinds: {}",
+        const Vector3 cameraPosition = m_Scene ? m_Scene->GetViewInfo().CameraPosition : Vector3::Zero;
+        TE_LOG_DEBUG("FPS: {:.1f} (avg over {:.2f}s, {} frames) | CameraWS: ({:.3f}, {:.3f}, {:.3f}) | DC: {} PipeBinds: {} VBOBinds: {} IBOBinds: {}",
                      m_CurrentFPS, m_FPSAccumulatedTime, m_FPSAccumulatedFrames,
+                     cameraPosition.X, cameraPosition.Y, cameraPosition.Z,
                      m_SceneRenderer ? m_SceneRenderer->GetLastDrawCallCount() : 0,
                      m_SceneRenderer ? m_SceneRenderer->GetLastPipelineBindCount() : 0,
                      m_SceneRenderer ? m_SceneRenderer->GetLastVBOBindCount() : 0,
@@ -328,6 +330,7 @@ void Engine::Shutdown()
     TE_LOG_INFO("ToyEngine shutdown complete");
 
     m_Running = false;
+    Log::Shutdown();
 }
 
 void Engine::RequestExit()

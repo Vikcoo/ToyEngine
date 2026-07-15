@@ -41,6 +41,12 @@ public:
     /// </summary>
     static void Init();
 
+    /**
+     * 刷新待写入日志并关闭日志后台线程。
+     * @note 必须在所有可能写日志的线程停止后调用。
+     */
+    static void Shutdown() noexcept;
+
     /// <summary>
     /// 获取日志实例
     /// </summary>

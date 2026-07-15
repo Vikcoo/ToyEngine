@@ -32,7 +32,7 @@
   - `FileUtils.h` - 文件读写工具
 
 - **Log/** - 日志系统
-  - `Log.h` - 日志接口（基于spdlog）
+  - `Log.h` - 引擎日志接口；同时输出到控制台和 `Saved/Logs` 下的滚动日志文件
 
 - **Application/** - 应用程序框架
   - `Application.h` - 应用程序基类
@@ -46,17 +46,18 @@
 ## 📝 使用示例
 
 ```cpp
-#include "Core/Public/Log/Log.h"
-#include "Core/Public/Math/MathTypes.h"
+#include "Log/Log.h"
+#include "Math/Vector.h"
 
 using namespace TE;
 
 int main() {
     Log::Init();
-    
-    Vector3 position(0.0f, 1.0f, 0.0f);
-    TE_LOG_INFO("Position: ({}, {}, {})", position.x, position.y, position.z);
-    
+
+    const Vector3 position(0.0f, 1.0f, 0.0f);
+    TE_LOG_INFO("Position: ({}, {}, {})", position.X, position.Y, position.Z);
+
+    Log::Shutdown();
     return 0;
 }
 ```
@@ -64,8 +65,8 @@ int main() {
 ## ✅ 实现清单
 
 - [ ] Base类型定义
-- [ ] 日志系统
-- [ ] 数学库封装
+- [x] 日志系统
+- [x] 数学库封装
 - [ ] 文件系统工具
 - [ ] Application框架
 - [ ] 时间管理
