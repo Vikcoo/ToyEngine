@@ -10,15 +10,15 @@
 
 namespace TE {
 
-std::unique_ptr<RHIDevice> RHIDevice::Create()
+std::unique_ptr<RHIDevice> RHIDevice::Create(const RHIDeviceCreateDesc& desc)
 {
 #if defined(TE_RHI_BACKEND_OPENGL)
     TE_LOG_INFO("[RHI] Creating RHIOpenGL Device");
-    return CreateRHIOpenGLDevice();
+    return CreateRHIOpenGLDevice(desc);
 
 // #elif defined(TE_RHI_BACKEND_VULKAN)
 //     TE_LOG_INFO("[RHI] Creating Vulkan RHI Device");
-//     return CreateVulkanRHIDevice();
+//     return CreateVulkanRHIDevice(desc);
 
 // #elif defined(TE_RHI_BACKEND_D3D12)
 //     TE_LOG_INFO("[RHI] Creating D3D12 RHI Device");

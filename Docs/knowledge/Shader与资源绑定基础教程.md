@@ -130,6 +130,23 @@ layout(std140, binding = 1) uniform ObjectBlock {
 - shader 希望 CPU 把这个 UBO 绑定到 binding 1。
 - shader 里面可以读取 `u_MVP`、`u_Model`、`u_NormalMatrix`。
 
+### 为什么每个 Draw 需要独立 Uniform 范围
+
+OpenGL 的 Draw 通常立即读取当时绑定的 Buffer 内容，所以“更新同一个 UBO，然后 Draw，再更新同一个 UBO”看起来能够工作。Vulkan 等录制式 API 只把 Buffer 及其范围写进 CommandBuffer，GPU 可能在 CPU 完成整帧录制后才读取；如果所有 Draw 都引用同一范围，它们就可能一起看到最后一次写入的数据。
+
+ToyEngine 当前使用按帧分段的 transient Uniform ring 解决这个问题：
+
+```text
+frame segment
+  offset 0    -> draw A 的 ObjectBlock
+  offset 256  -> draw B 的 ObjectBlock
+  offset 512  -> MaterialBlock
+```
+
+BindGroup 持有稳定的 ring buffer，`SetBindGroup` 额外传入 dynamic offset，后端只绑定当前数据范围。分配器保证 offset 满足 Uniform Buffer 对齐，并且不同 frames-in-flight 使用不同 segment；只有对应帧已经安全回收时才重置该 segment。
+
+这个方案表达的是“录制命令必须引用稳定数据快照”。它不仅是性能优化，也是从立即执行 API 迁移到显式 API 时的正确性要求。
+
 ### Texture
 
 Texture 是 GPU 纹理资源，保存图片、法线、GBuffer、BRDF LUT、cubemap 等数据。shader 不能直接读取 C++ 图片对象，而是读取图形 API 创建的 GPU texture。
@@ -289,7 +306,7 @@ group 3: MaterialBlock
 group 4: Environment
 ```
 
-OpenGL GLSL 当前只写 `binding`，没有显式写 `group` / `set`。所以 ToyEngine 现在由 C++ 的 `RendererBindGroups` 决定 group index，由 shader 的 `layout(binding = N)` 决定 binding slot。
+ToyEngine 的共享 GLSL 当前使用 `TE_RESOURCE_BINDING(group, binding)` 和 `TE_UNIFORM_BINDING(group, binding)`。OpenGL 运行时展开为 `layout(binding = N)`；Vulkan SPIR-V 编译展开为 `layout(set = group, binding = N)`。因此 group/set 已进入 shader 源级声明，但 C++ 的 PipelineLayout 仍需手工与它保持一致，自动反射与校验尚未完成。
 
 ## Shader 中的几类输入输出
 
@@ -738,7 +755,7 @@ texture(u_BaseColorTex, vTexCoord)
 - 避免 draw 时才临时猜 shader 需要什么。
 - 让多后端有统一抽象。
 
-Shader 里的 `layout(binding = N)` 是 shader 侧声明。C++ 的 `BindGroupLayout` 是 CPU / RHI 侧声明。理想状态是两者来自同一个真相源；当前 ToyEngine 还没有自动反射，所以阶段一先整理清单，后续再做校验和生成。
+Shader 里的 set/binding 宏是 shader 侧声明。C++ 的 `BindGroupLayout` 是 CPU / RHI 侧声明。理想状态是两者来自同一个真相源；当前 ToyEngine 还没有自动反射，所以先通过共享宏让 OpenGL/Vulkan 使用同一份 shader 声明，后续再做 C++ layout 校验和生成。
 
 ## 常见关键字速查
 
@@ -854,7 +871,7 @@ cmdBuf->SetBindGroup(groupIndex, bindGroup)
 GPU 执行 shader 时从 binding N 读取资源
 ```
 
-其中 `groupIndex` 由 C++ 的 `RendererBindGroups` 管理；`binding N` 由 shader 和 C++ 常量共同约定。当前项目还没有把这两者自动合并，所以才需要 `Shader资源绑定清单` 和后续反射/校验流程。
+其中 `groupIndex` 由 C++ 的 `RendererBindGroups` 管理，并由 shader 公共宏映射为 Vulkan descriptor set；`binding N` 由 shader 和 C++ 常量共同约定。当前项目还没有自动验证两者一致性，所以仍需要 `Shader资源绑定清单` 和后续反射/校验流程。
 
 ## 推荐继续阅读
 

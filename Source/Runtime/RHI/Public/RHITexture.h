@@ -18,10 +18,11 @@ public:
     [[nodiscard]] virtual uint32_t GetWidth() const = 0;
     [[nodiscard]] virtual uint32_t GetHeight() const = 0;
     [[nodiscard]] virtual RHIFormat GetFormat() const = 0;
+    [[nodiscard]] virtual RHITextureUsage GetUsage() const = 0;
+    [[nodiscard]] virtual RHISampleCount GetSampleCount() const = 0;
 
 protected:
     RHITexture() = default;
 };
 
 } // namespace TE
-

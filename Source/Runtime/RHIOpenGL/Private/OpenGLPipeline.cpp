@@ -61,8 +61,27 @@ OpenGLPipeline::OpenGLPipeline(const RHIPipelineDesc& desc)
     : m_GLTopology(TopologyToGL(desc.topology))
     , m_Rasterization(desc.rasterization)
     , m_DepthStencil(desc.depthStencil)
+    , m_Rendering(desc.rendering)
     , m_VertexInput(desc.vertexInput)
 {
+    if (desc.rendering.colorAttachmentFormats.empty() &&
+        desc.rendering.depthStencilFormat == RHIFormat::Undefined)
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Pipeline creation failed: no color or depth attachment format declared");
+        return;
+    }
+    if (!desc.rendering.colorBlendAttachments.empty() &&
+        desc.rendering.colorBlendAttachments.size() != desc.rendering.colorAttachmentFormats.size())
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Pipeline creation failed: blend attachment count does not match color formats");
+        return;
+    }
+    if (desc.rendering.sampleCount != RHISampleCount::Count1)
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Pipeline creation failed: multisample pipelines are not implemented");
+        return;
+    }
+
     if (!desc.layout || !desc.layout->IsValid())
     {
         TE_LOG_ERROR("[RHIOpenGL] Pipeline creation failed: invalid pipeline layout");

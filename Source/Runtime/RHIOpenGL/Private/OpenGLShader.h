@@ -1,6 +1,6 @@
 // ToyEngine RHIOpenGL Module
 // OpenGL Shader 实现 - 封装 glCreateShader / glCompileShader
-// 支持从文件路径读取 GLSL 源码
+// 支持从文件路径读取 GLSL 源码并展开项目内 #include
 
 #pragma once
 

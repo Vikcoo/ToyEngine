@@ -39,7 +39,7 @@ std::unique_ptr<RHIBindGroupLayout> CreateSingleUniformLayout(RHIDevice* device,
     desc.debugName = debugName;
     desc.entries.push_back({
         binding,
-        RHIBindingType::UniformBuffer,
+        RHIBindingType::DynamicUniformBuffer,
         visibility
     });
     return device ? device->CreateBindGroupLayout(desc) : nullptr;
@@ -227,8 +227,6 @@ void FDeferredRenderPath::Render(const FScene* scene,
     m_GBufferPassProcessor.BuildDrawCommands(scene, drawCommands);
     SortDrawCommands(drawCommands);
 
-    cmdBuf->Begin();
-
     RHIRenderPassBeginInfo gBufferPassInfo;
     gBufferPassInfo.clearColor[0] = 0.0f;
     gBufferPassInfo.clearColor[1] = 0.0f;
@@ -241,9 +239,48 @@ void FDeferredRenderPath::Render(const FScene* scene,
     gBufferPassInfo.viewport.height = viewInfo.ViewportHeight;
     gBufferPassInfo.renderTarget = m_GBuffer.get();
 
+    const RHIResourceState previousColorState = m_GBufferShaderReadable
+        ? RHIResourceState::ShaderResource
+        : RHIResourceState::Undefined;
+    const RHIResourceState previousDepthState = m_GBufferShaderReadable
+        ? RHIResourceState::ShaderResource
+        : RHIResourceState::Undefined;
+    for (uint32_t attachmentIndex = 0;
+         attachmentIndex < m_GBuffer->GetColorAttachmentCount();
+         ++attachmentIndex)
+    {
+        cmdBuf->TransitionTexture({
+            m_GBuffer->GetColorAttachment(attachmentIndex),
+            previousColorState,
+            RHIResourceState::RenderTarget
+        });
+    }
+    cmdBuf->TransitionTexture({
+        m_GBuffer->GetDepthStencilAttachment(),
+        previousDepthState,
+        RHIResourceState::DepthWrite
+    });
+
     cmdBuf->BeginRenderPass(gBufferPassInfo);
     SubmitGBufferPass(drawCommands, scene, device, cmdBuf, outStats);
     cmdBuf->EndRenderPass();
+
+    for (uint32_t attachmentIndex = 0;
+         attachmentIndex < m_GBuffer->GetColorAttachmentCount();
+         ++attachmentIndex)
+    {
+        cmdBuf->TransitionTexture({
+            m_GBuffer->GetColorAttachment(attachmentIndex),
+            RHIResourceState::RenderTarget,
+            RHIResourceState::ShaderResource
+        });
+    }
+    cmdBuf->TransitionTexture({
+        m_GBuffer->GetDepthStencilAttachment(),
+        RHIResourceState::DepthWrite,
+        RHIResourceState::ShaderResource
+    });
+    m_GBufferShaderReadable = true;
 
     RHIRenderPassBeginInfo lightingPassInfo;
     lightingPassInfo.clearColor[0] = 0.1f;
@@ -260,7 +297,6 @@ void FDeferredRenderPath::Render(const FScene* scene,
     SubmitLightingPass(scene, device, cmdBuf, outStats);
     cmdBuf->EndRenderPass();
 
-    cmdBuf->End();
 }
 
 bool FDeferredRenderPath::EnsureResources(RHIDevice* device, uint32_t width, uint32_t height)
@@ -309,11 +345,13 @@ bool FDeferredRenderPath::EnsureGBuffer(RHIDevice* device, uint32_t width, uint3
         m_GBuffer.reset();
         m_GBufferWidth = 0;
         m_GBufferHeight = 0;
+        m_GBufferShaderReadable = false;
         return false;
     }
 
     m_GBufferWidth = width;
     m_GBufferHeight = height;
+    m_GBufferShaderReadable = false;
     return true;
 }
 
@@ -376,6 +414,14 @@ bool FDeferredRenderPath::BuildGBufferPipeline(RHIDevice* device)
     pipelineDesc.depthStencil.depthCompareOp = RendererDepth::CompareOp;
     pipelineDesc.rasterization.cullMode = RHICullMode::Back;
     pipelineDesc.rasterization.frontFace = RHIFrontFace::CounterClockwise;
+    pipelineDesc.rendering.colorAttachmentFormats = {
+        RHIFormat::RGBA8_UNorm,
+        RHIFormat::RGBA8_UNorm,
+        RHIFormat::RGBA32_Float,
+        RHIFormat::RGBA8_UNorm
+    };
+    pipelineDesc.rendering.depthStencilFormat = RHIFormat::D32_Float;
+    pipelineDesc.rendering.colorBlendAttachments.resize(4);
     pipelineDesc.debugName = "Deferred_GBuffer_Pipeline";
 
     m_GBufferPipeline.Pipeline = device->CreatePipeline(pipelineDesc);
@@ -444,6 +490,9 @@ bool FDeferredRenderPath::BuildLightingPipeline(RHIDevice* device)
     pipelineDesc.depthStencil.depthCompareOp = RHICompareOp::Always;
     pipelineDesc.rasterization.cullMode = RHICullMode::None;
     pipelineDesc.rasterization.frontFace = RHIFrontFace::CounterClockwise;
+    pipelineDesc.rendering.colorAttachmentFormats = {device->GetBackBufferColorFormat()};
+    pipelineDesc.rendering.depthStencilFormat = device->GetBackBufferDepthFormat();
+    pipelineDesc.rendering.colorBlendAttachments.resize(1);
     pipelineDesc.debugName = "Deferred_Lighting_Pipeline";
 
     m_LightingPipeline.Pipeline = device->CreatePipeline(pipelineDesc);

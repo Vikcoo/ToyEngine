@@ -1,16 +1,18 @@
 #version 450 core
 
+#include "../Common/RHIDescriptorBindings.glsl"
+
 const int MaxDirectionalLights = 4;
 const int MaxPointLights = 8;
 const float PI = 3.14159265359;
 
-in vec3 vWorldPosition;
-in vec3 vWorldNormal;
-in vec3 vWorldTangent;
-in vec2 vTexCoord;
-in vec3 vColor;
+layout(location = 0) in vec3 vWorldPosition;
+layout(location = 1) in vec3 vWorldNormal;
+layout(location = 2) in vec3 vWorldTangent;
+layout(location = 3) in vec2 vTexCoord;
+layout(location = 4) in vec3 vColor;
 
-layout(std140, binding = 0) uniform LightBlock {
+TE_UNIFORM_BINDING(0, 0) uniform LightBlock {
     ivec4 u_LightCounts;
     vec4 u_DirectionalLightDirections[MaxDirectionalLights];
     vec4 u_DirectionalLightColors[MaxDirectionalLights];
@@ -18,24 +20,24 @@ layout(std140, binding = 0) uniform LightBlock {
     vec4 u_PointLightColorsAndRadii[MaxPointLights];
 };
 
-layout(std140, binding = 8) uniform MaterialBlock {
+TE_UNIFORM_BINDING(3, 8) uniform MaterialBlock {
     vec4 u_BaseColorFactor_Metallic;
     vec4 u_RoughnessAOEmissiveStrength_Pad;
     vec4 u_EmissiveFactor_Pad;
     vec4 u_CameraPosition_Pad;
 };
 
-layout(binding = 2) uniform sampler2D u_BaseColorTex;
-layout(binding = 3) uniform sampler2D u_NormalTex;
-layout(binding = 4) uniform sampler2D u_MetallicTex;
-layout(binding = 5) uniform sampler2D u_RoughnessTex;
-layout(binding = 6) uniform sampler2D u_AOTex;
-layout(binding = 7) uniform sampler2D u_EmissiveTex;
-layout(binding = 9) uniform samplerCube u_IrradianceMap;
-layout(binding = 10) uniform samplerCube u_PrefilterMap;
-layout(binding = 11) uniform sampler2D u_BRDFLUT;
+TE_RESOURCE_BINDING(2, 2) uniform sampler2D u_BaseColorTex;
+TE_RESOURCE_BINDING(2, 3) uniform sampler2D u_NormalTex;
+TE_RESOURCE_BINDING(2, 4) uniform sampler2D u_MetallicTex;
+TE_RESOURCE_BINDING(2, 5) uniform sampler2D u_RoughnessTex;
+TE_RESOURCE_BINDING(2, 6) uniform sampler2D u_AOTex;
+TE_RESOURCE_BINDING(2, 7) uniform sampler2D u_EmissiveTex;
+TE_RESOURCE_BINDING(4, 9) uniform samplerCube u_IrradianceMap;
+TE_RESOURCE_BINDING(4, 10) uniform samplerCube u_PrefilterMap;
+TE_RESOURCE_BINDING(4, 11) uniform sampler2D u_BRDFLUT;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 vec3 GetMaterialNormal()
 {

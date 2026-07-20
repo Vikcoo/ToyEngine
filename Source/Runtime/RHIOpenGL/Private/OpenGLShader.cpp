@@ -4,10 +4,76 @@
 #include "OpenGLShader.h"
 #include "OpenGLShaderLibrary.h"
 #include "Log/Log.h"
+#include <filesystem>
 #include <fstream>
-#include <sstream>
+#include <string_view>
+#include <unordered_set>
 
 namespace TE {
+
+namespace {
+
+bool ExpandShaderFile(const std::filesystem::path& filePath,
+                      std::string& outSource,
+                      std::unordered_set<std::string>& activeIncludes)
+{
+    const std::filesystem::path normalizedPath = filePath.lexically_normal();
+    const std::string includeKey = normalizedPath.generic_string();
+    if (!activeIncludes.insert(includeKey).second)
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Cyclic shader include detected: {}", includeKey);
+        return false;
+    }
+
+    std::ifstream file(normalizedPath, std::ios::in);
+    if (!file.is_open())
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Cannot open shader file: {}", includeKey);
+        activeIncludes.erase(includeKey);
+        return false;
+    }
+
+    std::string line;
+    while (std::getline(file, line))
+    {
+        const std::string_view lineView(line);
+        const size_t firstNonWhitespace = lineView.find_first_not_of(" \t");
+        const std::string_view trimmed = firstNonWhitespace == std::string_view::npos
+            ? std::string_view{}
+            : lineView.substr(firstNonWhitespace);
+
+        if (trimmed.starts_with("#include"))
+        {
+            const size_t firstQuote = trimmed.find('"');
+            const size_t secondQuote = firstQuote == std::string_view::npos
+                ? std::string_view::npos
+                : trimmed.find('"', firstQuote + 1);
+            if (firstQuote == std::string_view::npos || secondQuote == std::string_view::npos)
+            {
+                TE_LOG_ERROR("[RHIOpenGL] Invalid shader include in '{}': {}", includeKey, line);
+                activeIncludes.erase(includeKey);
+                return false;
+            }
+
+            const std::filesystem::path includePath = normalizedPath.parent_path() /
+                std::string(trimmed.substr(firstQuote + 1, secondQuote - firstQuote - 1));
+            if (!ExpandShaderFile(includePath, outSource, activeIncludes))
+            {
+                activeIncludes.erase(includeKey);
+                return false;
+            }
+            continue;
+        }
+
+        outSource.append(line);
+        outSource.push_back('\n');
+    }
+
+    activeIncludes.erase(includeKey);
+    return true;
+}
+
+} // namespace
 
 static GLenum ShaderStageToGL(RHIShaderStage stage)
 {
@@ -74,16 +140,12 @@ OpenGLShader::~OpenGLShader()
 
 bool OpenGLShader::ReadShaderFile(const std::string& filePath, std::string& outSource)
 {
-    std::ifstream file(filePath, std::ios::in);
-    if (!file.is_open())
+    outSource.clear();
+    std::unordered_set<std::string> activeIncludes;
+    if (!ExpandShaderFile(std::filesystem::path(filePath), outSource, activeIncludes))
     {
-        TE_LOG_ERROR("[RHIOpenGL] Cannot open shader file: {}", filePath);
         return false;
     }
-
-    std::stringstream ss;
-    ss << file.rdbuf();
-    outSource = ss.str();
 
     if (outSource.empty())
     {

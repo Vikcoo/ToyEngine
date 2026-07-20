@@ -1,27 +1,29 @@
 #version 450 core
 
+#include "../Common/RHIDescriptorBindings.glsl"
+
 const int MaxDirectionalLights = 4;
 const int MaxPointLights = 8;
 const float PI = 3.14159265359;
 
-in vec2 vScreenUV;
+layout(location = 0) in vec2 vScreenUV;
 
-layout(binding = 2) uniform sampler2D u_GBufferAlbedo;
-layout(binding = 3) uniform sampler2D u_GBufferNormal;
-layout(binding = 4) uniform sampler2D u_GBufferWorldPosition;
-layout(binding = 5) uniform sampler2D u_GBufferDepth;
-layout(binding = 6) uniform sampler2D u_GBufferMaterial;
-layout(binding = 9) uniform samplerCube u_IrradianceMap;
-layout(binding = 10) uniform samplerCube u_PrefilterMap;
-layout(binding = 11) uniform sampler2D u_BRDFLUT;
+TE_RESOURCE_BINDING(2, 2) uniform sampler2D u_GBufferAlbedo;
+TE_RESOURCE_BINDING(2, 3) uniform sampler2D u_GBufferNormal;
+TE_RESOURCE_BINDING(2, 4) uniform sampler2D u_GBufferWorldPosition;
+TE_RESOURCE_BINDING(2, 5) uniform sampler2D u_GBufferDepth;
+TE_RESOURCE_BINDING(2, 6) uniform sampler2D u_GBufferMaterial;
+TE_RESOURCE_BINDING(4, 9) uniform samplerCube u_IrradianceMap;
+TE_RESOURCE_BINDING(4, 10) uniform samplerCube u_PrefilterMap;
+TE_RESOURCE_BINDING(4, 11) uniform sampler2D u_BRDFLUT;
 
-layout(std140, binding = 1) uniform DeferredPassBlock {
+TE_UNIFORM_BINDING(1, 1) uniform DeferredPassBlock {
     ivec4 u_DeferredParams;
     vec4 u_CameraPosition_Pad;
     mat4 u_InvViewProjection;
 };
 
-layout(std140, binding = 0) uniform LightBlock {
+TE_UNIFORM_BINDING(0, 0) uniform LightBlock {
     ivec4 u_LightCounts;
     vec4 u_DirectionalLightDirections[MaxDirectionalLights];
     vec4 u_DirectionalLightColors[MaxDirectionalLights];
@@ -29,7 +31,7 @@ layout(std140, binding = 0) uniform LightBlock {
     vec4 u_PointLightColorsAndRadii[MaxPointLights];
 };
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 vec3 TonemapReinhard(vec3 color)
 {

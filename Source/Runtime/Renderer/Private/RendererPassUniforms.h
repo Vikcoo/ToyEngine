@@ -5,6 +5,7 @@
 
 #include "Material.h"
 #include "Math/MathTypes.h"
+#include "RendererTransientUniforms.h"
 
 #include <memory>
 
@@ -17,35 +18,14 @@ class RHICommandBuffer;
 class RHIDevice;
 enum class ERenderDebugView : uint8_t;
 
-struct FObjectUniformBindingState
-{
-    std::unique_ptr<RHIBindGroupLayout> Layout;
-    std::unique_ptr<RHIBuffer> UniformBuffer;
-    std::unique_ptr<RHIBindGroup> BindGroup;
-};
+struct FObjectUniformBindingState : FTransientUniformBindingState {};
 
-struct FDeferredPassUniformBindingState
-{
-    std::unique_ptr<RHIBindGroupLayout> Layout;
-    std::unique_ptr<RHIBuffer> UniformBuffer;
-    std::unique_ptr<RHIBindGroup> BindGroup;
-};
+struct FDeferredPassUniformBindingState : FTransientUniformBindingState {};
 
-struct FMaterialUniformBindingState
-{
-    std::unique_ptr<RHIBindGroupLayout> Layout;
-    std::unique_ptr<RHIBuffer> UniformBuffer;
-    std::unique_ptr<RHIBindGroup> BindGroup;
-};
+struct FMaterialUniformBindingState : FTransientUniformBindingState {};
 
-struct FSkyUniformBindingState
-{
-    std::unique_ptr<RHIBindGroupLayout> Layout;
-    std::unique_ptr<RHIBuffer> UniformBuffer;
-    std::unique_ptr<RHIBindGroup> BindGroup;
-};
+struct FSkyUniformBindingState : FTransientUniformBindingState {};
 
-bool EnsureObjectUniformBindingState(RHIDevice* device, FObjectUniformBindingState& state);
 bool UpdateAndBindObjectUniforms(RHIDevice* device,
                                  RHICommandBuffer* cmdBuf,
                                  FObjectUniformBindingState& state,
@@ -53,7 +33,6 @@ bool UpdateAndBindObjectUniforms(RHIDevice* device,
                                  const Matrix4& model,
                                  const Matrix3& normalMatrix);
 
-bool EnsureDeferredPassUniformBindingState(RHIDevice* device, FDeferredPassUniformBindingState& state);
 bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
                                        RHICommandBuffer* cmdBuf,
                                        FDeferredPassUniformBindingState& state,
@@ -63,14 +42,12 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
                                        const Vector3& cameraPosition,
                                        const Matrix4& invViewProjection);
 
-bool EnsureMaterialUniformBindingState(RHIDevice* device, FMaterialUniformBindingState& state);
 bool UpdateAndBindMaterialUniforms(RHIDevice* device,
                                    RHICommandBuffer* cmdBuf,
                                    FMaterialUniformBindingState& state,
                                    const FMaterial* material,
                                    const Vector3& cameraPosition);
 
-bool EnsureSkyUniformBindingState(RHIDevice* device, FSkyUniformBindingState& state);
 bool UpdateAndBindSkyUniforms(RHIDevice* device,
                               RHICommandBuffer* cmdBuf,
                               FSkyUniformBindingState& state,

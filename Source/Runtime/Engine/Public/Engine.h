@@ -33,7 +33,7 @@ namespace TE {
 ///   → TickGameThread(deltaTime)       // 应用层逻辑 + World Tick
 ///   → SendAllEndOfFrameUpdates()      // 游戏侧状态同步到渲染侧
 ///   → TickRenderThread(deltaTime)     // 当前仍在主线程中模拟渲染阶段
-///   → EndFrame(deltaTime)             // 输入收尾、Present、统计
+///   → EndFrame(deltaTime)             // 输入收尾、统计
 class Engine
 {
 public:
@@ -96,7 +96,7 @@ private:
 
 
 
-    /// 初始化 RHI 子系统（创建 Device 和 CommandBuffer）
+    /// 初始化 RHI 子系统；帧 CommandBuffer 由 Device 提供
     [[nodiscard]] bool InitRHI();
 
     /// 关闭 RHI 子系统
@@ -110,7 +110,6 @@ private:
     void SendAllEndOfFrameUpdates() const;
     void TickRenderThread(float deltaTime) const;
     void EndFrame(float deltaTime);
-    void PresentFrame();
     void UpdateFrameStats(float deltaTime);
 
     // Platform 子系统
@@ -118,8 +117,7 @@ private:
     std::unique_ptr<FInputManager> m_InputManager;
 
     // RHI 子系统（全局单例资源）
-    std::unique_ptr<RHIDevice>          m_RHIDevice;
-    std::unique_ptr<RHICommandBuffer>   m_CommandBuffer;
+    std::unique_ptr<RHIDevice> m_RHIDevice;
 
     // UE5 架构核心模块
     std::unique_ptr<World>         m_World;            // 游戏世界（Actor/Component）

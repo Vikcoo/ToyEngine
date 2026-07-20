@@ -7,9 +7,9 @@
 
 namespace TE {
 
-std::unique_ptr<RHIDevice> CreateRHIOpenGLDevice()
+std::unique_ptr<RHIDevice> CreateRHIOpenGLDevice(const RHIDeviceCreateDesc& desc)
 {
-    return std::make_unique<OpenGLDevice>();
+    return std::make_unique<OpenGLDevice>(desc);
 }
 
 } // namespace TE

@@ -28,6 +28,24 @@ class RHIDevice
 public:
     virtual ~RHIDevice() = default;
 
+    /** 开始一帧并返回由后端管理的当前帧 CommandBuffer。 */
+    [[nodiscard]] virtual RHIFrameStatus BeginFrame(const RHIFrameBeginInfo& beginInfo,
+                                                    RHIFrameContext& outContext) = 0;
+
+    /** 结束录制、提交并呈现当前帧。 */
+    [[nodiscard]] virtual RHIFrameStatus EndFrame(RHIFrameContext& context) = 0;
+
+    /** 等待该 Device 已提交的 GPU 工作完成。 */
+    virtual void WaitIdle() = 0;
+
+    /**
+     * 从当前帧的瞬态 Uniform ring 分配一段稳定范围并写入数据。
+     * @note 返回范围只保证存活到对应 frame fence 完成；只能在 BeginFrame/EndFrame 之间调用。
+     */
+    [[nodiscard]] virtual bool AllocateTransientUniform(const void* data,
+                                                        uint64_t size,
+                                                        RHITransientUniformAllocation& outAllocation) = 0;
+
     /// 创建 GPU 缓冲区
     [[nodiscard]] virtual std::unique_ptr<RHIBuffer> CreateBuffer(const RHIBufferDesc& desc) = 0;
 
@@ -61,6 +79,9 @@ public:
     /// 查询当前后端的特征描述（NDC 深度范围、纹理原点、Y 轴方向等）
     [[nodiscard]] virtual const RHIBackendTraits& GetBackendTraits() const = 0;
 
+    [[nodiscard]] virtual RHIFormat GetBackBufferColorFormat() const = 0;
+    [[nodiscard]] virtual RHIFormat GetBackBufferDepthFormat() const = 0;
+
     /// 对引擎约定的 [0,1] 深度、Y-up 投影矩阵做后端适配。
     /// 引擎上层生成的投影矩阵统一为 [0,1] 深度 + Y-up，此方法在提交渲染前由后端修正：
     ///   - OpenGL 未启用 glClipControl 时：将 [0,1] 重映射为 [-1,1]
@@ -69,7 +90,7 @@ public:
     [[nodiscard]] virtual Matrix4 AdjustProjectionMatrix(const Matrix4& projection) const;
 
     /// 工厂方法：根据编译选项（TE_RHI_OPENGL / TE_RHI_VULKAN 等）创建对应后端的 Device
-    [[nodiscard]] static std::unique_ptr<RHIDevice> Create();
+    [[nodiscard]] static std::unique_ptr<RHIDevice> Create(const RHIDeviceCreateDesc& desc);
 
 protected:
     RHIDevice() = default;

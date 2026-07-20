@@ -8,28 +8,29 @@ namespace TE {
 
 static GLenum BufferUsageToGLTarget(RHIBufferUsage usage)
 {
-    switch (usage)
+    if (HasAnyFlags(usage, RHIBufferUsage::Uniform))
     {
-        case RHIBufferUsage::Vertex:  return GL_ARRAY_BUFFER;
-        case RHIBufferUsage::Index:   return GL_ELEMENT_ARRAY_BUFFER;
-        case RHIBufferUsage::Uniform: return GL_UNIFORM_BUFFER;
-        default:                      return GL_ARRAY_BUFFER;
+        return GL_UNIFORM_BUFFER;
     }
+    if (HasAnyFlags(usage, RHIBufferUsage::Storage))
+    {
+        return GL_SHADER_STORAGE_BUFFER;
+    }
+    if (HasAnyFlags(usage, RHIBufferUsage::Index))
+    {
+        return GL_ELEMENT_ARRAY_BUFFER;
+    }
+    return GL_ARRAY_BUFFER;
 }
 
-static GLenum BufferUsageToGLHint(RHIBufferUsage usage)
+static GLenum BufferUsageToGLHint(const RHIBufferDesc& desc)
 {
-    switch (usage)
+    if (desc.memoryUsage != RHIMemoryUsage::GPUOnly ||
+        HasAnyFlags(desc.usage, RHIBufferUsage::Uniform | RHIBufferUsage::Storage | RHIBufferUsage::Staging))
     {
-        case RHIBufferUsage::Uniform:
-        case RHIBufferUsage::Storage:
-        case RHIBufferUsage::Staging:
-            return GL_DYNAMIC_DRAW;
-        case RHIBufferUsage::Vertex:
-        case RHIBufferUsage::Index:
-        default:
-            return GL_STATIC_DRAW;
+        return GL_DYNAMIC_DRAW;
     }
+    return GL_STATIC_DRAW;
 }
 
 OpenGLBuffer::OpenGLBuffer(const RHIBufferDesc& desc)
@@ -39,7 +40,7 @@ OpenGLBuffer::OpenGLBuffer(const RHIBufferDesc& desc)
 {
     glGenBuffers(1, &m_BufferID);
     glBindBuffer(m_Target, m_BufferID);
-    glBufferData(m_Target, static_cast<GLsizeiptr>(desc.size), desc.initialData, BufferUsageToGLHint(desc.usage));
+    glBufferData(m_Target, static_cast<GLsizeiptr>(desc.size), desc.initialData, BufferUsageToGLHint(desc));
     glBindBuffer(m_Target, 0);
 
     if (!desc.debugName.empty())

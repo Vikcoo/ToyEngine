@@ -44,13 +44,18 @@ void Engine::Init()
     MemoryInit();
     TE_LOG_INFO("Memory system initialized");
 
-    // 3. 创建窗口（会同时创建 OpenGL Context 并加载 glad）
+    // 3. 创建窗口；OpenGL 后端创建 Context，其它后端使用 No-API 窗口。
     FWindowConfig config{
         "ToyEngine - Model Loading (UE5 Architecture)",
         1280,
         720,
         true,
     };
+#if defined(TE_RHI_BACKEND_OPENGL)
+    config.graphicsAPI = EWindowGraphicsAPI::OpenGL;
+#else
+    config.graphicsAPI = EWindowGraphicsAPI::None;
+#endif
 
     m_Window = IWindow::Create(config);
     if (!m_Window)
@@ -118,23 +123,26 @@ bool Engine::InitRHI()
 {
     TE_LOG_INFO("Initializing RHI...");
 
-    // 1. 创建 RHI Device（工厂方法根据编译选项选择后端）
-    m_RHIDevice = RHIDevice::Create();
+    if (!m_Window)
+    {
+        return false;
+    }
+
+    RHIDeviceCreateDesc deviceDesc;
+    deviceDesc.nativeWindowHandle = m_Window->GetNativeHandle();
+    deviceDesc.platformUserData = m_Window.get();
+    deviceDesc.platformPresent = &IWindow::PresentCallback;
+    deviceDesc.vsync = m_Window->IsVSyncEnabled();
+
+    // 创建 RHI Device；帧 CommandBuffer 由 Device 的 BeginFrame 返回。
+    m_RHIDevice = RHIDevice::Create(deviceDesc);
     if (!m_RHIDevice)
     {
         TE_LOG_ERROR("Failed to create RHI Device!");
         return false;
     }
 
-    // 2. 创建命令缓冲区
-    m_CommandBuffer = m_RHIDevice->CreateCommandBuffer();
-    if (!m_CommandBuffer)
-    {
-        TE_LOG_ERROR("Failed to create command buffer!");
-        return false;
-    }
-
-    TE_LOG_INFO("RHI initialized - Device + CommandBuffer ready");
+    TE_LOG_INFO("RHI initialized - Device frame lifecycle ready");
     return true;
 }
 
@@ -142,13 +150,17 @@ void Engine::ShutdownRHI()
 {
     TE_LOG_INFO("Shutting down RHI...");
 
-    // 先销毁 UE5 架构模块（其中 Proxy 持有 RHI 资源）
+    if (m_RHIDevice)
+    {
+        m_RHIDevice->WaitIdle();
+    }
+
+    // GPU 空闲后销毁渲染模块及其 RHI 资源。
     m_World.reset();
     m_SceneRenderer.reset();
     m_Scene.reset();
 
     // 再销毁 RHI 核心
-    m_CommandBuffer.reset();
     m_RHIDevice.reset();
 
     m_CameraComponent = nullptr;
@@ -246,24 +258,45 @@ void Engine::SendAllEndOfFrameUpdates() const {
 void Engine::TickRenderThread(const float deltaTime) const {
     (void)deltaTime;
 
-    if (m_CameraComponent && m_Scene)
+    if (!m_SceneRenderer || !m_Scene || !m_RHIDevice || !m_Window)
     {
-        // 更新视口尺寸（以防窗口大小改变）
-        if (m_Window)
-        {
-            m_CameraComponent->SetViewportSize(
-                static_cast<float>(m_Window->GetFramebufferWidth()),
-                static_cast<float>(m_Window->GetFramebufferHeight())
-            );
-        }
-
-        const FViewInfo viewInfo = m_CameraComponent->BuildViewInfo();
-        m_Scene->SetViewInfo(viewInfo);
+        return;
     }
 
-    if (m_SceneRenderer && m_Scene && m_CommandBuffer)
+    RHIFrameBeginInfo beginInfo;
+    beginInfo.framebufferWidth = m_Window->GetFramebufferWidth();
+    beginInfo.framebufferHeight = m_Window->GetFramebufferHeight();
+    beginInfo.vsync = m_Window->IsVSyncEnabled();
+
+    RHIFrameContext frameContext;
+    const RHIFrameStatus beginStatus = m_RHIDevice->BeginFrame(beginInfo, frameContext);
+    if (beginStatus != RHIFrameStatus::Ready)
     {
-        m_SceneRenderer->Render(m_Scene.get(), m_RHIDevice.get(), m_CommandBuffer.get());
+        if (beginStatus == RHIFrameStatus::DeviceLost || beginStatus == RHIFrameStatus::Error)
+        {
+            TE_LOG_ERROR("RHI BeginFrame failed with status {}", static_cast<uint32_t>(beginStatus));
+        }
+        return;
+    }
+
+    if (!frameContext.commandBuffer)
+    {
+        TE_LOG_ERROR("RHI BeginFrame returned Ready without a command buffer");
+        return;
+    }
+
+    if (m_CameraComponent)
+    {
+        m_CameraComponent->SetViewportSize(static_cast<float>(beginInfo.framebufferWidth),
+                                           static_cast<float>(beginInfo.framebufferHeight));
+        m_Scene->SetViewInfo(m_CameraComponent->BuildViewInfo());
+    }
+
+    m_SceneRenderer->Render(m_Scene.get(), m_RHIDevice.get(), frameContext.commandBuffer);
+    const RHIFrameStatus endStatus = m_RHIDevice->EndFrame(frameContext);
+    if (endStatus == RHIFrameStatus::DeviceLost || endStatus == RHIFrameStatus::Error)
+    {
+        TE_LOG_ERROR("RHI EndFrame failed with status {}", static_cast<uint32_t>(endStatus));
     }
 }
 
@@ -274,16 +307,7 @@ void Engine::EndFrame(float deltaTime)
         m_InputManager->PostTick();
     }
 
-    PresentFrame();
     UpdateFrameStats(deltaTime);
-}
-
-void Engine::PresentFrame()
-{
-    if (m_Window)
-    {
-        m_Window->SwapBuffers();
-    }
 }
 
 void Engine::UpdateFrameStats(float deltaTime)

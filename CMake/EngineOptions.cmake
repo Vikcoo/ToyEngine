@@ -1,8 +1,8 @@
 # ToyEngine 构建选项
 # 此文件集中管理所有引擎构建选项
 
-# RHI 后端选择（Phase 2+ 使用，Phase 1 仅占位）
-option(TE_RHI_VULKAN "Build Vulkan RHI backend" OFF)
+# RHI 后端选择。Vulkan 选项当前用于启用 SPIR-V 前置构建；RHIVulkan 实现将在后续阶段接入。
+option(TE_RHI_VULKAN "Enable Vulkan backend prerequisites (RHIVulkan is planned)" OFF)
 option(TE_RHI_OPENGL "Build OpenGL RHI backend" ON)
 option(TE_RHI_D3D12 "Build D3D12 RHI backend" OFF)
 

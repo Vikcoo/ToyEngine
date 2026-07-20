@@ -290,7 +290,7 @@ std::unique_ptr<RHIBindGroupLayout> CreateSingleUniformLayout(RHIDevice* device,
     desc.debugName = debugName;
     desc.entries.push_back({
         binding,
-        RHIBindingType::UniformBuffer,
+        RHIBindingType::DynamicUniformBuffer,
         visibility
     });
     return device ? device->CreateBindGroupLayout(desc) : nullptr;
@@ -966,6 +966,9 @@ bool FRenderResourceManager::BuildStaticMeshBasePassPipeline(FPreparedPipeline& 
     pipelineDesc.depthStencil.depthCompareOp = RendererDepth::CompareOp;
     pipelineDesc.rasterization.cullMode = RHICullMode::Back;
     pipelineDesc.rasterization.frontFace = RHIFrontFace::CounterClockwise;
+    pipelineDesc.rendering.colorAttachmentFormats = {m_Device->GetBackBufferColorFormat()};
+    pipelineDesc.rendering.depthStencilFormat = m_Device->GetBackBufferDepthFormat();
+    pipelineDesc.rendering.colorBlendAttachments.resize(1);
     pipelineDesc.debugName = "StaticMesh_Pipeline";
 
     outPipeline.Pipeline = m_Device->CreatePipeline(pipelineDesc);

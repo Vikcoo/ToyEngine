@@ -5,11 +5,8 @@
 
 #include "RendererBindingSlots.h"
 #include "RenderPathTypes.h"
-#include "RHIBindGroup.h"
-#include "RHIBuffer.h"
 #include "RHICommandBuffer.h"
 #include "RHIDevice.h"
-#include "RHITypes.h"
 
 namespace TE {
 
@@ -72,87 +69,7 @@ Matrix4 ExpandNormalMatrixToMatrix4(const Matrix3& normalMatrix)
     return expanded;
 }
 
-template <typename TBindingState>
-bool CreateUniformBindingState(RHIDevice* device,
-                               TBindingState& state,
-                               uint64_t bufferSize,
-                               uint32_t binding,
-                               const char* bufferDebugName,
-                               const char* bindGroupDebugName,
-                               RHIShaderStage visibility)
-{
-    if (!device)
-    {
-        return false;
-    }
-
-    RHIBindGroupLayoutDesc layoutDesc;
-    layoutDesc.debugName = bindGroupDebugName;
-    layoutDesc.entries.push_back({
-        binding,
-        RHIBindingType::UniformBuffer,
-        visibility
-    });
-    state.Layout = device->CreateBindGroupLayout(layoutDesc);
-    if (!state.Layout || !state.Layout->IsValid())
-    {
-        return false;
-    }
-
-    RHIBufferDesc bufferDesc;
-    bufferDesc.size = bufferSize;
-    bufferDesc.usage = RHIBufferUsage::Uniform;
-    bufferDesc.debugName = bufferDebugName;
-    state.UniformBuffer = device->CreateBuffer(bufferDesc);
-    if (!state.UniformBuffer)
-    {
-        state.UniformBuffer.reset();
-        return false;
-    }
-
-    RHIBindGroupDesc bindGroupDesc;
-    bindGroupDesc.layout = state.Layout.get();
-    bindGroupDesc.debugName = bindGroupDebugName;
-    bindGroupDesc.entries.push_back({
-        binding,
-        RHIBindingType::UniformBuffer,
-        state.UniformBuffer.get(),
-        0,
-        bufferSize,
-        nullptr,
-        nullptr
-    });
-
-    state.BindGroup = device->CreateBindGroup(bindGroupDesc);
-    if (!state.BindGroup || !state.BindGroup->IsValid())
-    {
-        state.UniformBuffer.reset();
-        state.BindGroup.reset();
-        return false;
-    }
-
-    return true;
-}
-
 } // namespace
-
-bool EnsureObjectUniformBindingState(RHIDevice* device, FObjectUniformBindingState& state)
-{
-    if (state.Layout &&
-        state.UniformBuffer &&
-        state.BindGroup && state.BindGroup->IsValid())
-    {
-        return true;
-    }
-
-    return CreateUniformBindingState(device,
-                                     state,
-                                     sizeof(FObjectBlockCPU),
-                                     RendererBindings::PassBlock,
-                                     "Renderer_ObjectBlock_UBO",
-                                     "Renderer_ObjectBlock_BindGroup",
-                                     RHIShaderStage::Vertex);
-}
 
 bool UpdateAndBindObjectUniforms(RHIDevice* device,
                                  RHICommandBuffer* cmdBuf,
@@ -161,7 +78,7 @@ bool UpdateAndBindObjectUniforms(RHIDevice* device,
                                  const Matrix4& model,
                                  const Matrix3& normalMatrix)
 {
-    if (!cmdBuf || !EnsureObjectUniformBindingState(device, state))
+    if (!cmdBuf)
     {
         return false;
     }
@@ -171,31 +88,15 @@ bool UpdateAndBindObjectUniforms(RHIDevice* device,
     objectBlock.Model = model;
     objectBlock.NormalMatrix = ExpandNormalMatrixToMatrix4(normalMatrix);
 
-    if (!state.UniformBuffer->UpdateData(&objectBlock, sizeof(objectBlock)))
-    {
-        return false;
-    }
-
-    cmdBuf->SetBindGroup(RendererBindGroups::PassBlock, state.BindGroup.get());
-    return true;
-}
-
-bool EnsureDeferredPassUniformBindingState(RHIDevice* device, FDeferredPassUniformBindingState& state)
-{
-    if (state.Layout &&
-        state.UniformBuffer &&
-        state.BindGroup && state.BindGroup->IsValid())
-    {
-        return true;
-    }
-
-    return CreateUniformBindingState(device,
-                                     state,
-                                     sizeof(FDeferredPassBlockCPU),
-                                     RendererBindings::PassBlock,
-                                     "Renderer_DeferredPassBlock_UBO",
-                                     "Renderer_DeferredPassBlock_BindGroup",
-                                     RHIShaderStage::Fragment);
+    return AllocateAndBindTransientUniform(device,
+                                           cmdBuf,
+                                           state,
+                                           &objectBlock,
+                                           sizeof(objectBlock),
+                                           RendererBindGroups::PassBlock,
+                                           RendererBindings::PassBlock,
+                                           RHIShaderStage::Vertex,
+                                           "Renderer_ObjectBlock_DynamicBindGroup");
 }
 
 bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
@@ -207,7 +108,7 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
                                        const Vector3& cameraPosition,
                                        const Matrix4& invViewProjection)
 {
-    if (!cmdBuf || !EnsureDeferredPassUniformBindingState(device, state))
+    if (!cmdBuf)
     {
         return false;
     }
@@ -219,31 +120,15 @@ bool UpdateAndBindDeferredPassUniforms(RHIDevice* device,
     passBlock.CameraPosition_Pad = Vector4(cameraPosition, 0.0f);
     passBlock.InvViewProjection = invViewProjection;
 
-    if (!state.UniformBuffer->UpdateData(&passBlock, sizeof(passBlock)))
-    {
-        return false;
-    }
-
-    cmdBuf->SetBindGroup(RendererBindGroups::PassBlock, state.BindGroup.get());
-    return true;
-}
-
-bool EnsureMaterialUniformBindingState(RHIDevice* device, FMaterialUniformBindingState& state)
-{
-    if (state.Layout &&
-        state.UniformBuffer &&
-        state.BindGroup && state.BindGroup->IsValid())
-    {
-        return true;
-    }
-
-    return CreateUniformBindingState(device,
-                                     state,
-                                     sizeof(FMaterialBlockCPU),
-                                     RendererBindings::MaterialBlock,
-                                     "Renderer_MaterialBlock_UBO",
-                                     "Renderer_MaterialBlock_BindGroup",
-                                     RHIShaderStage::Fragment);
+    return AllocateAndBindTransientUniform(device,
+                                           cmdBuf,
+                                           state,
+                                           &passBlock,
+                                           sizeof(passBlock),
+                                           RendererBindGroups::PassBlock,
+                                           RendererBindings::PassBlock,
+                                           RHIShaderStage::Fragment,
+                                           "Renderer_DeferredPassBlock_DynamicBindGroup");
 }
 
 bool UpdateAndBindMaterialUniforms(RHIDevice* device,
@@ -252,7 +137,7 @@ bool UpdateAndBindMaterialUniforms(RHIDevice* device,
                                    const FMaterial* material,
                                    const Vector3& cameraPosition)
 {
-    if (!cmdBuf || !EnsureMaterialUniformBindingState(device, state))
+    if (!cmdBuf)
     {
         return false;
     }
@@ -269,31 +154,15 @@ bool UpdateAndBindMaterialUniforms(RHIDevice* device,
     materialBlock.EmissiveFactor_Pad = Vector4(sourceMaterial.EmissiveFactor, 0.0f);
     materialBlock.CameraPosition_Pad = Vector4(cameraPosition, 0.0f);
 
-    if (!state.UniformBuffer->UpdateData(&materialBlock, sizeof(materialBlock)))
-    {
-        return false;
-    }
-
-    cmdBuf->SetBindGroup(RendererBindGroups::MaterialBlock, state.BindGroup.get());
-    return true;
-}
-
-bool EnsureSkyUniformBindingState(RHIDevice* device, FSkyUniformBindingState& state)
-{
-    if (state.Layout &&
-        state.UniformBuffer &&
-        state.BindGroup && state.BindGroup->IsValid())
-    {
-        return true;
-    }
-
-    return CreateUniformBindingState(device,
-                                     state,
-                                     sizeof(FSkyBlockCPU),
-                                     RendererBindings::PassBlock,
-                                     "Renderer_SkyBlock_UBO",
-                                     "Renderer_SkyBlock_BindGroup",
-                                     RHIShaderStage::Fragment);
+    return AllocateAndBindTransientUniform(device,
+                                           cmdBuf,
+                                           state,
+                                           &materialBlock,
+                                           sizeof(materialBlock),
+                                           RendererBindGroups::MaterialBlock,
+                                           RendererBindings::MaterialBlock,
+                                           RHIShaderStage::Fragment,
+                                           "Renderer_MaterialBlock_DynamicBindGroup");
 }
 
 bool UpdateAndBindSkyUniforms(RHIDevice* device,
@@ -302,7 +171,7 @@ bool UpdateAndBindSkyUniforms(RHIDevice* device,
                               const Matrix4& invViewProjection,
                               const Vector3& cameraPosition)
 {
-    if (!cmdBuf || !EnsureSkyUniformBindingState(device, state))
+    if (!cmdBuf)
     {
         return false;
     }
@@ -311,13 +180,15 @@ bool UpdateAndBindSkyUniforms(RHIDevice* device,
     skyBlock.InvViewProjection = invViewProjection;
     skyBlock.CameraPosition_Pad = Vector4(cameraPosition, 0.0f);
 
-    if (!state.UniformBuffer->UpdateData(&skyBlock, sizeof(skyBlock)))
-    {
-        return false;
-    }
-
-    cmdBuf->SetBindGroup(RendererBindGroups::PassBlock, state.BindGroup.get());
-    return true;
+    return AllocateAndBindTransientUniform(device,
+                                           cmdBuf,
+                                           state,
+                                           &skyBlock,
+                                           sizeof(skyBlock),
+                                           RendererBindGroups::PassBlock,
+                                           RendererBindings::PassBlock,
+                                           RHIShaderStage::Fragment,
+                                           "Renderer_SkyBlock_DynamicBindGroup");
 }
 
 } // namespace TE

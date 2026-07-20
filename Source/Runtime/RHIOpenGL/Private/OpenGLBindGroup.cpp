@@ -39,6 +39,7 @@ OpenGLBindGroup::OpenGLBindGroup(const RHIBindGroupDesc& desc)
         switch (entry.type)
         {
         case RHIBindingType::UniformBuffer:
+        case RHIBindingType::DynamicUniformBuffer:
         {
             if (!entry.buffer) return;
             auto* glBuf = static_cast<OpenGLBuffer*>(entry.buffer);

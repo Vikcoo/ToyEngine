@@ -6,8 +6,6 @@
 #include "RendererBindingSlots.h"
 #include "LightSceneProxy.h"
 #include "RendererScene.h"
-#include "RHIBindGroup.h"
-#include "RHIBuffer.h"
 #include "RHICommandBuffer.h"
 #include "RHIDevice.h"
 
@@ -83,64 +81,12 @@ void FillLightBlockFromScene(const FScene* scene, FLightBlockCPU& outBlock)
 
 } // namespace
 
-bool EnsureLightUniformBindingState(RHIDevice* device, FLightUniformBindingState& state)
-{
-    if (!device)
-    {
-        return false;
-    }
-
-    if (state.Layout && state.UniformBuffer && state.BindGroup)
-    {
-        return true;
-    }
-
-    RHIBindGroupLayoutDesc layoutDesc;
-    layoutDesc.debugName = "Renderer_LightBlock_Layout";
-    layoutDesc.entries.push_back({
-        RendererBindings::LightBlock,
-        RHIBindingType::UniformBuffer,
-        RHIShaderStage::Fragment
-    });
-    state.Layout = device->CreateBindGroupLayout(layoutDesc);
-    if (!state.Layout || !state.Layout->IsValid())
-    {
-        return false;
-    }
-
-    RHIBufferDesc bufferDesc;
-    bufferDesc.usage = RHIBufferUsage::Uniform;
-    bufferDesc.size = sizeof(FLightBlockCPU);
-    bufferDesc.debugName = "Renderer_LightBlock_UBO";
-    state.UniformBuffer = device->CreateBuffer(bufferDesc);
-    if (!state.UniformBuffer)
-    {
-        return false;
-    }
-
-    RHIBindGroupDesc bindGroupDesc;
-    bindGroupDesc.layout = state.Layout.get();
-    bindGroupDesc.debugName = "Renderer_LightBlock_BindGroup";
-    bindGroupDesc.entries.push_back({
-        RendererBindings::LightBlock,
-        RHIBindingType::UniformBuffer,
-        state.UniformBuffer.get(),
-        0,
-        sizeof(FLightBlockCPU),
-        nullptr,
-        nullptr
-    });
-
-    state.BindGroup = device->CreateBindGroup(bindGroupDesc);
-    return state.BindGroup && state.BindGroup->IsValid();
-}
-
 bool UpdateAndBindSceneLightUniforms(const FScene* scene,
                                      RHIDevice* device,
                                      RHICommandBuffer* cmdBuf,
                                      FLightUniformBindingState& state)
 {
-    if (!cmdBuf || !EnsureLightUniformBindingState(device, state) || !state.UniformBuffer || !state.BindGroup)
+    if (!cmdBuf)
     {
         return false;
     }
@@ -148,13 +94,15 @@ bool UpdateAndBindSceneLightUniforms(const FScene* scene,
     FLightBlockCPU lightBlock;
     FillLightBlockFromScene(scene, lightBlock);
 
-    if (!state.UniformBuffer->UpdateData(&lightBlock, sizeof(lightBlock), 0))
-    {
-        return false;
-    }
-
-    cmdBuf->SetBindGroup(RendererBindGroups::LightBlock, state.BindGroup.get());
-    return true;
+    return AllocateAndBindTransientUniform(device,
+                                           cmdBuf,
+                                           state,
+                                           &lightBlock,
+                                           sizeof(lightBlock),
+                                           RendererBindGroups::LightBlock,
+                                           RendererBindings::LightBlock,
+                                           RHIShaderStage::Fragment,
+                                           "Renderer_LightBlock_DynamicBindGroup");
 }
 
 } // namespace TE

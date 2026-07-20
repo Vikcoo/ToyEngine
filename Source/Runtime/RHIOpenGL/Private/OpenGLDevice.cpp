@@ -15,9 +15,14 @@
 #include "Log/Log.h"
 #include <glad/glad.h>
 
+#include <algorithm>
+
 namespace TE {
 
-OpenGLDevice::OpenGLDevice()
+OpenGLDevice::OpenGLDevice(const RHIDeviceCreateDesc& desc)
+    : m_FrameCommandBuffer(std::make_unique<OpenGLCommandBuffer>())
+    , m_PlatformUserData(desc.platformUserData)
+    , m_PlatformPresent(desc.platformPresent)
 {
     TE_LOG_INFO("[RHIOpenGL] OpenGL Device initialized");
     TE_LOG_INFO("[RHIOpenGL] GL_VENDOR: {}", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
@@ -46,6 +51,106 @@ OpenGLDevice::OpenGLDevice()
     {
         TE_LOG_INFO("[RHIOpenGL] NDC depth remains [-1, 1], using matrix remapping via AdjustProjectionMatrix");
     }
+
+    GLint uniformAlignment = 256;
+    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformAlignment);
+    m_FramesInFlight = std::max(1u, desc.framesInFlight);
+    if (!m_TransientUniformAllocator.Initialize(desc.transientUniformBytesPerFrame,
+                                                m_FramesInFlight,
+                                                static_cast<uint64_t>(std::max(1, uniformAlignment))))
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Failed to initialize transient uniform allocator");
+        return;
+    }
+
+    RHIBufferDesc transientDesc;
+    transientDesc.usage = RHIBufferUsage::Uniform | RHIBufferUsage::CopyDestination;
+    transientDesc.memoryUsage = RHIMemoryUsage::CPUToGPU;
+    transientDesc.size = m_TransientUniformAllocator.GetTotalSize();
+    transientDesc.debugName = "RHIOpenGL_TransientUniformRing";
+    m_TransientUniformBuffer = CreateBuffer(transientDesc);
+    if (!m_TransientUniformBuffer)
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Failed to create transient uniform ring buffer");
+    }
+}
+
+RHIFrameStatus OpenGLDevice::BeginFrame(const RHIFrameBeginInfo& beginInfo, RHIFrameContext& outContext)
+{
+    outContext = {};
+    if (m_FrameActive)
+    {
+        TE_LOG_ERROR("[RHIOpenGL] BeginFrame called while another frame is active");
+        return RHIFrameStatus::Error;
+    }
+
+    if (beginInfo.framebufferWidth == 0 || beginInfo.framebufferHeight == 0)
+    {
+        return RHIFrameStatus::Skipped;
+    }
+
+    m_FrameActive = true;
+    const uint32_t frameIndex = static_cast<uint32_t>(m_FrameNumber % m_FramesInFlight);
+    m_TransientUniformAllocator.BeginFrame(frameIndex);
+    m_FrameCommandBuffer->Begin();
+    outContext.commandBuffer = m_FrameCommandBuffer.get();
+    outContext.frameNumber = m_FrameNumber;
+    outContext.frameIndex = frameIndex;
+    outContext.swapChainImageIndex = 0;
+    return RHIFrameStatus::Ready;
+}
+
+RHIFrameStatus OpenGLDevice::EndFrame(RHIFrameContext& context)
+{
+    if (!m_FrameActive || context.commandBuffer != m_FrameCommandBuffer.get())
+    {
+        TE_LOG_ERROR("[RHIOpenGL] EndFrame received an invalid frame context");
+        return RHIFrameStatus::Error;
+    }
+
+    m_FrameCommandBuffer->End();
+    if (m_PlatformPresent)
+    {
+        m_PlatformPresent(m_PlatformUserData);
+    }
+
+    context = {};
+    m_FrameActive = false;
+    ++m_FrameNumber;
+    return RHIFrameStatus::Ready;
+}
+
+void OpenGLDevice::WaitIdle()
+{
+    glFinish();
+}
+
+bool OpenGLDevice::AllocateTransientUniform(const void* data,
+                                            const uint64_t size,
+                                            RHITransientUniformAllocation& outAllocation)
+{
+    outAllocation = {};
+    if (!m_FrameActive || !m_TransientUniformBuffer || !data || size == 0)
+    {
+        return false;
+    }
+
+    uint64_t offset = 0;
+    if (!m_TransientUniformAllocator.Allocate(size, offset))
+    {
+        TE_LOG_ERROR("[RHIOpenGL] Transient uniform ring exhausted while allocating {} bytes", size);
+        return false;
+    }
+
+    if (!m_TransientUniformBuffer->UpdateData(data, size, offset))
+    {
+        return false;
+    }
+
+    outAllocation.buffer = m_TransientUniformBuffer.get();
+    outAllocation.offset = offset;
+    outAllocation.size = size;
+    return true;
 }
 
 OpenGLDevice::~OpenGLDevice()

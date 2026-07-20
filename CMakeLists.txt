@@ -20,6 +20,19 @@ option(TE_BUILD_TESTS   "Build test executables"    ON)
 add_subdirectory(ThirdParty)
 add_subdirectory(Source)
 
+te_compile_shaders(
+    TARGET VulkanShaders
+    SHADERS_DIR "${CMAKE_SOURCE_DIR}/Content/Shaders"
+    SHADERS
+        OpenGL/model.vert
+        OpenGL/model.frag
+        OpenGL/gbuffer.vert
+        OpenGL/gbuffer.frag
+        OpenGL/deferred_lighting.vert
+        OpenGL/deferred_lighting.frag
+        OpenGL/sky.frag
+)
+
 if(TE_BUILD_TESTS)
     add_subdirectory(Tests)
 endif()

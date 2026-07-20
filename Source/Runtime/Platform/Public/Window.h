@@ -73,6 +73,15 @@ public:
     /// 交换前后缓冲区。仅 OpenGL 后端有效，Vulkan/D3D12 后端通过各自的 SwapChain 机制提交。
     virtual void SwapBuffers() {}
 
+    /** 为不依赖 Platform 类型的后端创建描述提供呈现桥接。 */
+    static void PresentCallback(void* userData)
+    {
+        if (auto* const window = static_cast<IWindow*>(userData))
+        {
+            window->SwapBuffers();
+        }
+    }
+
     /// 设置垂直同步。仅 OpenGL 后端有效。
     virtual void SetVSync(bool enabled) { (void)enabled; }
 

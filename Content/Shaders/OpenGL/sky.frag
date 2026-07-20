@@ -1,15 +1,17 @@
 #version 450 core
 
-in vec2 vScreenUV;
+#include "../Common/RHIDescriptorBindings.glsl"
 
-layout(std140, binding = 1) uniform SkyBlock {
+layout(location = 0) in vec2 vScreenUV;
+
+TE_UNIFORM_BINDING(1, 1) uniform SkyBlock {
     mat4 u_InvViewProjection;
     vec4 u_CameraPosition_Pad;
 };
 
-layout(binding = 10) uniform samplerCube u_PrefilterMap;
+TE_RESOURCE_BINDING(4, 10) uniform samplerCube u_PrefilterMap;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 vec3 TonemapReinhard(vec3 color)
 {

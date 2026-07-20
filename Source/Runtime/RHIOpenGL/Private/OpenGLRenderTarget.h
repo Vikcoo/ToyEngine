@@ -42,7 +42,7 @@ public:
     [[nodiscard]] GLuint GetGLFramebufferID() const { return m_FBO; }
 
     /// 获取 color attachment 数量，供 `glDrawBuffers` 启用使用。
-    [[nodiscard]] uint32_t GetColorAttachmentCount() const { return static_cast<uint32_t>(m_ColorAttachments.size()); }
+    [[nodiscard]] uint32_t GetColorAttachmentCount() const override { return static_cast<uint32_t>(m_ColorAttachments.size()); }
 
 private:
     GLuint   m_FBO = 0;

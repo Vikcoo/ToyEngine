@@ -12,6 +12,41 @@
 
 namespace TE {
 
+namespace {
+
+GLenum BlendFactorToGL(const RHIBlendFactor factor)
+{
+    switch (factor)
+    {
+    case RHIBlendFactor::Zero: return GL_ZERO;
+    case RHIBlendFactor::One: return GL_ONE;
+    case RHIBlendFactor::SourceColor: return GL_SRC_COLOR;
+    case RHIBlendFactor::OneMinusSourceColor: return GL_ONE_MINUS_SRC_COLOR;
+    case RHIBlendFactor::SourceAlpha: return GL_SRC_ALPHA;
+    case RHIBlendFactor::OneMinusSourceAlpha: return GL_ONE_MINUS_SRC_ALPHA;
+    case RHIBlendFactor::DestinationColor: return GL_DST_COLOR;
+    case RHIBlendFactor::OneMinusDestinationColor: return GL_ONE_MINUS_DST_COLOR;
+    case RHIBlendFactor::DestinationAlpha: return GL_DST_ALPHA;
+    case RHIBlendFactor::OneMinusDestinationAlpha: return GL_ONE_MINUS_DST_ALPHA;
+    }
+    return GL_ONE;
+}
+
+GLenum BlendOpToGL(const RHIBlendOp op)
+{
+    switch (op)
+    {
+    case RHIBlendOp::Add: return GL_FUNC_ADD;
+    case RHIBlendOp::Subtract: return GL_FUNC_SUBTRACT;
+    case RHIBlendOp::ReverseSubtract: return GL_FUNC_REVERSE_SUBTRACT;
+    case RHIBlendOp::Min: return GL_MIN;
+    case RHIBlendOp::Max: return GL_MAX;
+    }
+    return GL_FUNC_ADD;
+}
+
+} // namespace
+
 void OpenGLCommandBuffer::Begin()
 {
     m_IsRecording = true;
@@ -66,19 +101,33 @@ void OpenGLCommandBuffer::BeginRenderPass(const RHIRenderPassBeginInfo& info)
         );
     }
 
-    // 清屏：必须在深度写入启用的状态下才会清深度，这里先开启以保证 glClear 有效
-    glDepthMask(GL_TRUE);
-
-    glClearColor(info.clearColor[0], info.clearColor[1], info.clearColor[2], info.clearColor[3]);
-    glClearDepth(info.clearDepth);
-
-    GLbitfield clearMask = GL_DEPTH_BUFFER_BIT;
-    // 默认帧缓冲或任何彩色附件存在时才清颜色，纯深度 RT 无颜色附件
-    if (info.renderTarget == nullptr || colorAttachmentCount > 0)
+    GLbitfield clearMask = 0;
+    if (info.colorLoadOp == RHIRenderPassBeginInfo::LoadOp::Clear &&
+        (info.renderTarget == nullptr || colorAttachmentCount > 0))
     {
+        glClearColor(info.clearColor[0], info.clearColor[1], info.clearColor[2], info.clearColor[3]);
         clearMask |= GL_COLOR_BUFFER_BIT;
     }
-    glClear(clearMask);
+
+    if (info.depthLoadOp == RHIRenderPassBeginInfo::LoadOp::Clear)
+    {
+        // glClear 受 depth write mask 影响，清除前必须显式开启。
+        glDepthMask(GL_TRUE);
+        glClearDepth(info.clearDepth);
+        clearMask |= GL_DEPTH_BUFFER_BIT;
+
+        if (info.renderTarget && info.renderTarget->GetDepthStencilAttachment() &&
+            info.renderTarget->GetDepthStencilAttachment()->GetFormat() == RHIFormat::D24_UNorm_S8_UInt)
+        {
+            glClearStencil(static_cast<GLint>(info.clearStencil));
+            clearMask |= GL_STENCIL_BUFFER_BIT;
+        }
+    }
+
+    if (clearMask != 0)
+    {
+        glClear(clearMask);
+    }
 }
 
 void OpenGLCommandBuffer::EndRenderPass()
@@ -210,6 +259,43 @@ void OpenGLCommandBuffer::SetScissor(const RHIScissorRect& scissor)
               static_cast<GLsizei>(scissor.height));
 }
 
+void OpenGLCommandBuffer::TransitionTexture(const RHITextureBarrier& barrier)
+{
+    if (!barrier.texture || barrier.before == barrier.after)
+    {
+        return;
+    }
+
+    auto* texture = static_cast<OpenGLTexture*>(barrier.texture);
+    if (texture->GetCurrentState() != barrier.before)
+    {
+        TE_LOG_WARN("[RHIOpenGL] Texture transition state mismatch: expected {}, actual {}, target {}",
+                    static_cast<uint32_t>(barrier.before),
+                    static_cast<uint32_t>(texture->GetCurrentState()),
+                    static_cast<uint32_t>(barrier.after));
+    }
+
+    GLbitfield barrierBits = 0;
+    if (barrier.before == RHIResourceState::RenderTarget || barrier.before == RHIResourceState::DepthWrite)
+    {
+        barrierBits |= GL_FRAMEBUFFER_BARRIER_BIT;
+    }
+    if (barrier.before == RHIResourceState::CopyDestination)
+    {
+        barrierBits |= GL_TEXTURE_UPDATE_BARRIER_BIT;
+    }
+    if (barrier.after == RHIResourceState::ShaderResource)
+    {
+        barrierBits |= GL_TEXTURE_FETCH_BARRIER_BIT;
+    }
+    if (barrierBits != 0)
+    {
+        glMemoryBarrier(barrierBits);
+    }
+
+    texture->SetCurrentState(barrier.after);
+}
+
 void OpenGLCommandBuffer::Draw(uint32_t vertexCount, uint32_t firstVertex,
                                 uint32_t instanceCount, uint32_t firstInstance)
 {
@@ -270,7 +356,9 @@ void OpenGLCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t firstIndex,
     }
 }
 
-void OpenGLCommandBuffer::SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGroup)
+void OpenGLCommandBuffer::SetBindGroup(const uint32_t groupIndex,
+                                       RHIBindGroup* bindGroup,
+                                       const std::span<const uint32_t> dynamicOffsets)
 {
     if (!bindGroup)
     {
@@ -278,7 +366,9 @@ void OpenGLCommandBuffer::SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGr
         return;
     }
 
+    (void)groupIndex;
     auto* glGroup = static_cast<OpenGLBindGroup*>(bindGroup);
+    size_t dynamicOffsetIndex = 0;
     for (const auto& entry : glGroup->GetEntries())
     {
         switch (entry.type)
@@ -302,6 +392,23 @@ void OpenGLCommandBuffer::SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGr
             }
             break;
         }
+        case RHIBindingType::DynamicUniformBuffer:
+        {
+            if (dynamicOffsetIndex >= dynamicOffsets.size() || entry.bufferSize == 0)
+            {
+                TE_LOG_ERROR("[RHIOpenGL] Dynamic uniform binding {} is missing a valid dynamic offset/range",
+                             entry.binding);
+                return;
+            }
+
+            const uint64_t finalOffset = entry.bufferOffset + dynamicOffsets[dynamicOffsetIndex++];
+            glBindBufferRange(GL_UNIFORM_BUFFER,
+                              entry.binding,
+                              entry.glBuffer,
+                              static_cast<GLintptr>(finalOffset),
+                              static_cast<GLsizeiptr>(entry.bufferSize));
+            break;
+        }
         case RHIBindingType::Texture2D:
         case RHIBindingType::TextureCube:
         {
@@ -323,6 +430,12 @@ void OpenGLCommandBuffer::SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGr
             break;
         }
         }
+    }
+
+    if (dynamicOffsetIndex != dynamicOffsets.size())
+    {
+        TE_LOG_WARN("[RHIOpenGL] SetBindGroup received {} unused dynamic offsets",
+                    dynamicOffsets.size() - dynamicOffsetIndex);
     }
 }
 
@@ -398,6 +511,41 @@ void OpenGLCommandBuffer::ApplyPipelineState()
     else
     {
         glDisable(GL_DEPTH_TEST);
+    }
+
+    const auto& blendAttachments = m_BoundPipeline->GetRenderingDesc().colorBlendAttachments;
+    if (blendAttachments.empty())
+    {
+        glDisable(GL_BLEND);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        return;
+    }
+
+    for (uint32_t index = 0; index < blendAttachments.size(); ++index)
+    {
+        const auto& blend = blendAttachments[index];
+        if (blend.blendEnable)
+        {
+            glEnablei(GL_BLEND, index);
+            glBlendFuncSeparatei(index,
+                                 BlendFactorToGL(blend.sourceColorFactor),
+                                 BlendFactorToGL(blend.destinationColorFactor),
+                                 BlendFactorToGL(blend.sourceAlphaFactor),
+                                 BlendFactorToGL(blend.destinationAlphaFactor));
+            glBlendEquationSeparatei(index,
+                                     BlendOpToGL(blend.colorBlendOp),
+                                     BlendOpToGL(blend.alphaBlendOp));
+        }
+        else
+        {
+            glDisablei(GL_BLEND, index);
+        }
+
+        glColorMaski(index,
+                     HasAnyFlags(blend.writeMask, RHIColorWriteMask::Red),
+                     HasAnyFlags(blend.writeMask, RHIColorWriteMask::Green),
+                     HasAnyFlags(blend.writeMask, RHIColorWriteMask::Blue),
+                     HasAnyFlags(blend.writeMask, RHIColorWriteMask::Alpha));
     }
 }
 

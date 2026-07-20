@@ -8,9 +8,10 @@
 namespace TE {
 
 class RHIDevice;
+struct RHIDeviceCreateDesc;
 
 /// 创建 RHIOpenGL 后端的 RHI Device。
 /// 该函数用于将具体后端创建逻辑暴露给外层装配模块，避免 RHI 抽象层反向依赖后端实现。
-[[nodiscard]] std::unique_ptr<RHIDevice> CreateRHIOpenGLDevice();
+[[nodiscard]] std::unique_ptr<RHIDevice> CreateRHIOpenGLDevice(const RHIDeviceCreateDesc& desc);
 
 } // namespace TE

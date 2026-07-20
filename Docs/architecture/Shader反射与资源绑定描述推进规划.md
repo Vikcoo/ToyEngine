@@ -4,7 +4,7 @@
 
 当前 Renderer 已经引入 `BindGroupLayout` / `PipelineLayout`，并把 BindGroup 的 group index 与 shader 内的 binding slot 拆开维护。这为 Vulkan / D3D12 资源绑定模型打下了基础，但资源布局仍然同时写在两处：
 
-- GLSL shader 内的 `layout(binding = N)`。
+- GLSL shader 内的 `TE_RESOURCE_BINDING(group, binding)` / `TE_UNIFORM_BINDING(group, binding)`。
 - C++ 侧的 `RendererBindings`、`RendererBindGroups` 与手写 `RHIBindGroupLayoutDesc`。
 
 这会让 Forward、Deferred、PBR 材质贴图、GBuffer、IBL、后处理和后续阴影系统越做越容易发生布局漂移。目标不是让 shader 反射替代所有渲染资源系统，而是让 GPU 接口形状逐步拥有单一真相源：
@@ -12,7 +12,14 @@
 - binding slot、资源类型、stage visibility、uniform block、sampler / texture 类型由 shader 编译或反射流程提取。
 - 材质语义、资源生命周期、默认资源、缓存策略、颜色空间和 RenderPath 组织仍由 C++ 渲染系统负责。
 
-本文描述的是计划中的推进步骤，当前仓库尚未实现正式 shader 反射、离线编译、生成代码或跨后端 shader 资产管线。
+本文描述的是计划中的推进步骤。当前仓库尚未实现正式 shader 反射、生成代码或完整跨后端 shader 资产管线；但 Vulkan 接入前置阶段已经完成共享 set/binding 宏、OpenGL include 展开和 CMake `glslc -> SPIR-V` 入口。
+
+## 进度更新（2026-07-21）
+
+- 已选定“共享 GLSL + 显式 set/group 与 binding 宏”的源文件路线，不再维持只有 OpenGL 全局 binding 的写法。
+- 已建立根 CMake 显式 Shader 清单和 `VulkanShaders` 目标；OpenGL-only 模式不依赖 Vulkan SDK。
+- 阶段一人工清单已同步到新的 group/set 与 `DynamicUniformBuffer` 语义。
+- 阶段二“自动反射/一致性校验”仍未实现，仍是下一项 Shader 工具化工作；现有构建入口不等于反射闭环。
 
 ## 推进原则
 
@@ -50,11 +57,11 @@
 
 当前阶段一清单已记录在 `Docs/reference/Shader资源绑定清单.md`。该清单是后续最小 GLSL 校验和生成工具的初始对照，不代表项目已经具备自动 shader 反射能力。
 
-### 你需要准备的内容
+### 已确定的前置选择
 
-- 是否允许调整现有 binding 编号。
-- 是否希望保留当前全局 binding 编号风格，还是改为更接近 Vulkan descriptor set / binding 的分组风格。
-- 近期是否准备新增阴影、后处理、材质 permutation 或 Vulkan / D3D12 后端。
+- 当前 binding 编号保持不变，降低 OpenGL 回归面。
+- group index 映射为 Vulkan descriptor set，binding slot 保留为 set 内 binding。
+- Vulkan 后端优先于 D3D12；阴影、后处理与 permutation 不阻塞第一个 Vulkan 垂直切片。
 
 ### 外界依赖
 

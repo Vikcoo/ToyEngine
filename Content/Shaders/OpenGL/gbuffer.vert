@@ -1,22 +1,24 @@
 #version 450 core
 
+#include "../Common/RHIDescriptorBindings.glsl"
+
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aTexCoord;
 layout(location = 3) in vec3 aColor;
 layout(location = 4) in vec3 aTangent;
 
-layout(std140, binding = 1) uniform ObjectBlock {
+TE_UNIFORM_BINDING(1, 1) uniform ObjectBlock {
     mat4 u_MVP;
     mat4 u_Model;
     mat4 u_NormalMatrix;
 };
 
-out vec3 vWorldNormal;
-out vec3 vWorldTangent;
-out vec3 vWorldPosition;
-out vec2 vTexCoord;
-out vec3 vColor;
+layout(location = 0) out vec3 vWorldNormal;
+layout(location = 1) out vec3 vWorldTangent;
+layout(location = 2) out vec3 vWorldPosition;
+layout(location = 3) out vec2 vTexCoord;
+layout(location = 4) out vec3 vColor;
 
 void main()
 {

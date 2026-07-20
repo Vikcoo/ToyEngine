@@ -22,6 +22,8 @@ class RHIBindGroup;
 class RHIBindGroupLayout;
 class RHIPipelineLayout;
 
+using RHIPlatformPresentCallback = void(*)(void* userData);
+
 // ============================================================
 // 枚举类型
 // ============================================================
@@ -38,13 +40,33 @@ enum class RHIShaderStage : uint8_t
 };
 
 /// 缓冲区用途
-enum class RHIBufferUsage : uint8_t
+enum class RHIBufferUsage : uint16_t
 {
-    Vertex,     // 顶点缓冲区
-    Index,      // 索引缓冲区
-    Uniform,    // Uniform 缓冲区
-    Storage,    // 存储缓冲区（Vulkan SSBO / D3D12 UAV）
-    Staging,    // 暂存缓冲区（用于数据上传/回读）
+    None = 0,
+    Vertex = 1u << 0u,
+    Index = 1u << 1u,
+    Uniform = 1u << 2u,
+    Storage = 1u << 3u,
+    CopySource = 1u << 4u,
+    CopyDestination = 1u << 5u,
+    Staging = 1u << 6u,
+};
+
+[[nodiscard]] constexpr RHIBufferUsage operator|(const RHIBufferUsage lhs, const RHIBufferUsage rhs)
+{
+    return static_cast<RHIBufferUsage>(static_cast<uint16_t>(lhs) | static_cast<uint16_t>(rhs));
+}
+
+[[nodiscard]] constexpr bool HasAnyFlags(const RHIBufferUsage value, const RHIBufferUsage flags)
+{
+    return (static_cast<uint16_t>(value) & static_cast<uint16_t>(flags)) != 0;
+}
+
+enum class RHIMemoryUsage : uint8_t
+{
+    GPUOnly,
+    CPUToGPU,
+    GPUToCPU,
 };
 
 /// 数据格式（用于顶点属性、纹理格式等）
@@ -141,6 +163,29 @@ enum class RHIIndexType : uint8_t
     UInt32,
 };
 
+enum class RHISampleCount : uint8_t
+{
+    Count1 = 1,
+    Count2 = 2,
+    Count4 = 4,
+    Count8 = 8,
+};
+
+enum class RHIResourceState : uint8_t
+{
+    Undefined,
+    CopySource,
+    CopyDestination,
+    VertexBuffer,
+    IndexBuffer,
+    UniformBuffer,
+    RenderTarget,
+    DepthWrite,
+    DepthRead,
+    ShaderResource,
+    Present,
+};
+
 // ============================================================
 // 描述符结构体
 // ============================================================
@@ -220,10 +265,69 @@ struct RHIDepthStencilDesc
     RHICompareOp    depthCompareOp = RHICompareOp::Less;
 };
 
+enum class RHIBlendFactor : uint8_t
+{
+    Zero,
+    One,
+    SourceColor,
+    OneMinusSourceColor,
+    SourceAlpha,
+    OneMinusSourceAlpha,
+    DestinationColor,
+    OneMinusDestinationColor,
+    DestinationAlpha,
+    OneMinusDestinationAlpha,
+};
+
+enum class RHIBlendOp : uint8_t
+{
+    Add,
+    Subtract,
+    ReverseSubtract,
+    Min,
+    Max,
+};
+
+enum class RHIColorWriteMask : uint8_t
+{
+    None = 0,
+    Red = 1u << 0u,
+    Green = 1u << 1u,
+    Blue = 1u << 2u,
+    Alpha = 1u << 3u,
+    All = 0x0Fu,
+};
+
+[[nodiscard]] constexpr bool HasAnyFlags(const RHIColorWriteMask value, const RHIColorWriteMask flags)
+{
+    return (static_cast<uint8_t>(value) & static_cast<uint8_t>(flags)) != 0;
+}
+
+struct RHIColorBlendAttachmentDesc
+{
+    bool blendEnable = false;
+    RHIBlendFactor sourceColorFactor = RHIBlendFactor::One;
+    RHIBlendFactor destinationColorFactor = RHIBlendFactor::Zero;
+    RHIBlendOp colorBlendOp = RHIBlendOp::Add;
+    RHIBlendFactor sourceAlphaFactor = RHIBlendFactor::One;
+    RHIBlendFactor destinationAlphaFactor = RHIBlendFactor::Zero;
+    RHIBlendOp alphaBlendOp = RHIBlendOp::Add;
+    RHIColorWriteMask writeMask = RHIColorWriteMask::All;
+};
+
+struct RHIPipelineRenderingDesc
+{
+    std::vector<RHIFormat> colorAttachmentFormats;
+    RHIFormat depthStencilFormat = RHIFormat::Undefined;
+    RHISampleCount sampleCount = RHISampleCount::Count1;
+    std::vector<RHIColorBlendAttachmentDesc> colorBlendAttachments;
+};
+
 /// 缓冲区创建描述符
 struct RHIBufferDesc
 {
     RHIBufferUsage  usage = RHIBufferUsage::Vertex;
+    RHIMemoryUsage  memoryUsage = RHIMemoryUsage::GPUOnly;
     uint64_t        size = 0;               // 缓冲区大小（字节）
     const void*     initialData = nullptr;  // 初始数据（可选）
     std::string     debugName;              // 调试名称（可选）
@@ -240,6 +344,50 @@ struct RHIShaderDesc
     std::string    debugName;
 };
 
+/// RHI 后端创建时所需的平台桥接信息。
+/// RHI 不依赖 Platform 模块；原生窗口句柄及 OpenGL 呈现回调由外层装配提供。
+struct RHIDeviceCreateDesc
+{
+    void* nativeWindowHandle = nullptr;
+    void* platformUserData = nullptr;
+    RHIPlatformPresentCallback platformPresent = nullptr;
+    bool vsync = true;
+    uint32_t framesInFlight = 2;
+    uint64_t transientUniformBytesPerFrame = 4ull * 1024ull * 1024ull;
+};
+
+enum class RHIFrameStatus : uint8_t
+{
+    Ready,
+    Skipped,
+    OutOfDate,
+    DeviceLost,
+    Error,
+};
+
+struct RHIFrameBeginInfo
+{
+    uint32_t framebufferWidth = 0;
+    uint32_t framebufferHeight = 0;
+    bool vsync = true;
+};
+
+/// BeginFrame 返回的短生命周期帧上下文，仅在配对的 EndFrame 前有效。
+struct RHIFrameContext
+{
+    RHICommandBuffer* commandBuffer = nullptr;
+    uint64_t frameNumber = 0;
+    uint32_t frameIndex = 0;
+    uint32_t swapChainImageIndex = 0;
+};
+
+struct RHITransientUniformAllocation
+{
+    RHIBuffer* buffer = nullptr;
+    uint64_t offset = 0;
+    uint64_t size = 0;
+};
+
 /// 图形管线创建描述符
 /// 对应 Vulkan 的 VkGraphicsPipelineCreateInfo（简化版）
 struct RHIPipelineDesc
@@ -251,6 +399,7 @@ struct RHIPipelineDesc
     RHIPrimitiveTopology    topology = RHIPrimitiveTopology::TriangleList;
     RHIRasterizationDesc    rasterization;
     RHIDepthStencilDesc     depthStencil;
+    RHIPipelineRenderingDesc rendering;
     std::string             debugName;      // 调试名称（可选）
 };
 
@@ -280,6 +429,19 @@ class RHIRenderTarget;
 /// 对应 Vulkan 的 VkRenderPassBeginInfo（简化版）
 struct RHIRenderPassBeginInfo
 {
+    enum class LoadOp : uint8_t
+    {
+        Load,
+        Clear,
+        DontCare,
+    };
+
+    enum class StoreOp : uint8_t
+    {
+        Store,
+        DontCare,
+    };
+
     float       clearColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     float       clearDepth = 1.0f;
     uint32_t    clearStencil = 0;
@@ -287,6 +449,10 @@ struct RHIRenderPassBeginInfo
 
     /// 渲染目标（nullptr 表示渲染到默认帧缓冲/交换链）
     RHIRenderTarget* renderTarget = nullptr;
+    LoadOp colorLoadOp = LoadOp::Clear;
+    StoreOp colorStoreOp = StoreOp::Store;
+    LoadOp depthLoadOp = LoadOp::Clear;
+    StoreOp depthStoreOp = StoreOp::Store;
 };
 
 /// 纹理过滤模式
@@ -310,6 +476,27 @@ enum class RHITextureDimension : uint8_t
     TextureCube,
 };
 
+enum class RHITextureUsage : uint16_t
+{
+    None = 0,
+    ShaderResource = 1u << 0u,
+    ColorAttachment = 1u << 1u,
+    DepthStencilAttachment = 1u << 2u,
+    CopySource = 1u << 3u,
+    CopyDestination = 1u << 4u,
+    Storage = 1u << 5u,
+};
+
+[[nodiscard]] constexpr RHITextureUsage operator|(const RHITextureUsage lhs, const RHITextureUsage rhs)
+{
+    return static_cast<RHITextureUsage>(static_cast<uint16_t>(lhs) | static_cast<uint16_t>(rhs));
+}
+
+[[nodiscard]] constexpr bool HasAnyFlags(const RHITextureUsage value, const RHITextureUsage flags)
+{
+    return (static_cast<uint16_t>(value) & static_cast<uint16_t>(flags)) != 0;
+}
+
 /// 2D 纹理创建描述符
 struct RHITextureDesc
 {
@@ -317,11 +504,25 @@ struct RHITextureDesc
     uint32_t    width = 0;
     uint32_t    height = 0;
     RHIFormat   format = RHIFormat::RGBA8_UNorm;
+    RHITextureUsage usage = RHITextureUsage::ShaderResource | RHITextureUsage::CopyDestination;
+    uint32_t    mipLevels = 0; // 0 表示按尺寸推导完整 mip 链
+    uint32_t    arrayLayers = 1;
+    RHISampleCount sampleCount = RHISampleCount::Count1;
     /// Texture2D 时指向单张图；TextureCube 时指向 +X/-X/+Y/-Y/+Z/-Z 六面连续数据。
     const void* initialData = nullptr;
+    uint64_t    initialDataSize = 0; // 0 表示紧密排列并由格式/尺寸推导
+    uint32_t    initialDataRowPitch = 0; // 0 表示紧密排列
     bool        generateMips = true;
     bool        srgb = true;
+    RHIResourceState initialState = RHIResourceState::Undefined;
     std::string debugName;
+};
+
+struct RHITextureBarrier
+{
+    RHITexture* texture = nullptr;
+    RHIResourceState before = RHIResourceState::Undefined;
+    RHIResourceState after = RHIResourceState::Undefined;
 };
 
 /// 采样器创建描述符
@@ -345,6 +546,7 @@ struct RHISamplerDesc
 enum class RHIBindingType : uint8_t
 {
     UniformBuffer,  // Vulkan UBO / D3D12 CBV / OpenGL UBO
+    DynamicUniformBuffer, // Vulkan dynamic UBO / OpenGL glBindBufferRange
     Texture2D,      // Vulkan Combined Image Sampler / D3D12 SRV / OpenGL texture unit
     TextureCube,    // Cubemap SRV / OpenGL samplerCube
     Sampler,        // 独立采样器（当前简化为与 Texture2D 配对）

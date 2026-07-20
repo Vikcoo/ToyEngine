@@ -117,10 +117,19 @@ OpenGLTexture::OpenGLTexture(const RHITextureDesc& desc)
     : m_Width(desc.width)
     , m_Height(desc.height)
     , m_Format(desc.format)
+    , m_Usage(desc.usage)
+    , m_SampleCount(desc.sampleCount)
+    , m_CurrentState(desc.initialState)
 {
     if (desc.width == 0 || desc.height == 0)
     {
         TE_LOG_ERROR("[RHIOpenGL] OpenGLTexture create failed: invalid size {}x{}", desc.width, desc.height);
+        return;
+    }
+
+    if (desc.sampleCount != RHISampleCount::Count1)
+    {
+        TE_LOG_ERROR("[RHIOpenGL] OpenGLTexture '{}' currently supports sampleCount=1 only", desc.debugName);
         return;
     }
 
@@ -222,6 +231,12 @@ OpenGLTexture::OpenGLTexture(const RHITextureDesc& desc)
     }
 
     glBindTexture(m_TextureTarget, 0);
+
+    if (desc.initialState == RHIResourceState::Undefined && desc.initialData &&
+        HasAnyFlags(desc.usage, RHITextureUsage::ShaderResource))
+    {
+        m_CurrentState = RHIResourceState::ShaderResource;
+    }
 }
 
 OpenGLTexture::~OpenGLTexture()

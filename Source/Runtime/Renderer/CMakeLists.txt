@@ -11,6 +11,7 @@ add_library(Renderer STATIC
     Private/RenderResourceManager.cpp
     Private/RendererLightUniforms.cpp
     Private/RendererPassUniforms.cpp
+    Private/RendererTransientUniforms.cpp
     Private/RendererTextureBindings.cpp
     Private/RendererScene.cpp
     Private/SceneRenderer.cpp

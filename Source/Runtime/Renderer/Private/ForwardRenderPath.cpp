@@ -33,7 +33,7 @@ std::unique_ptr<RHIBindGroupLayout> CreateSingleUniformLayout(RHIDevice* device,
 {
     RHIBindGroupLayoutDesc desc;
     desc.debugName = debugName;
-    desc.entries.push_back({binding, RHIBindingType::UniformBuffer, visibility});
+    desc.entries.push_back({binding, RHIBindingType::DynamicUniformBuffer, visibility});
     return device ? device->CreateBindGroupLayout(desc) : nullptr;
 }
 
@@ -128,8 +128,6 @@ void FForwardRenderPath::Render(const FScene* scene,
 
     const auto& viewInfo = scene->GetViewInfo();
 
-    cmdBuf->Begin();
-
     RHIRenderPassBeginInfo passInfo;
     passInfo.clearColor[0] = 0.1f;
     passInfo.clearColor[1] = 0.1f;
@@ -146,7 +144,6 @@ void FForwardRenderPath::Render(const FScene* scene,
     SubmitDrawCommands(drawCommands, scene, device, cmdBuf, outStats);
     cmdBuf->EndRenderPass();
 
-    cmdBuf->End();
 }
 
 bool FForwardRenderPath::EnsureSkyPipeline(RHIDevice* device)
@@ -210,6 +207,9 @@ bool FForwardRenderPath::BuildSkyPipeline(RHIDevice* device)
     pipelineDesc.depthStencil.depthCompareOp = RHICompareOp::Always;
     pipelineDesc.rasterization.cullMode = RHICullMode::None;
     pipelineDesc.rasterization.frontFace = RHIFrontFace::CounterClockwise;
+    pipelineDesc.rendering.colorAttachmentFormats = {device->GetBackBufferColorFormat()};
+    pipelineDesc.rendering.depthStencilFormat = device->GetBackBufferDepthFormat();
+    pipelineDesc.rendering.colorBlendAttachments.resize(1);
     pipelineDesc.debugName = "Sky_Pipeline";
 
     m_SkyPipeline.Pipeline = device->CreatePipeline(pipelineDesc);

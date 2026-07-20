@@ -13,3 +13,4 @@
 #include "RHIRenderTarget.h"
 #include "RHICommandBuffer.h"
 #include "RHIDevice.h"
+#include "RHITransientAllocator.h"

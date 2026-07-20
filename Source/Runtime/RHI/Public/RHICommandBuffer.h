@@ -6,6 +6,8 @@
 
 #include "RHITypes.h"
 
+#include <span>
+
 namespace TE {
 
 /// 命令缓冲区抽象接口
@@ -59,6 +61,9 @@ public:
     /// 动态设置裁剪矩形
     virtual void SetScissor(const RHIScissorRect& scissor) = 0;
 
+    /** 显式声明纹理在两个用途之间的状态切换。 */
+    virtual void TransitionTexture(const RHITextureBarrier& barrier) = 0;
+
     /// 非索引绘制
     /// @param vertexCount 顶点数量
     /// @param firstVertex 起始顶点索引
@@ -82,7 +87,9 @@ public:
     /// 绑定资源组到指定槽位
     /// @param groupIndex 绑定组索引（对应 Vulkan descriptor set index / D3D12 root parameter index）
     /// @param bindGroup  资源绑定组
-    virtual void SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGroup) = 0;
+    virtual void SetBindGroup(uint32_t groupIndex,
+                              RHIBindGroup* bindGroup,
+                              std::span<const uint32_t> dynamicOffsets = {}) = 0;
 
     /// 结束录制命令
     virtual void End() = 0;

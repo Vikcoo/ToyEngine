@@ -13,6 +13,7 @@ struct RHIAttachmentDesc
 {
     RHIFormat format = RHIFormat::RGBA8_UNorm;
     bool      isDepthStencil = false;
+    bool      shaderReadable = true;
 };
 
 /// 渲染目标创建描述
@@ -23,6 +24,7 @@ struct RHIRenderTargetDesc
     std::vector<RHIAttachmentDesc> colorAttachments;
     RHIAttachmentDesc              depthStencilAttachment;
     bool                           hasDepthStencil = true;
+    RHISampleCount                 sampleCount = RHISampleCount::Count1;
     std::string                    debugName;
 };
 
@@ -36,6 +38,7 @@ public:
     [[nodiscard]] virtual bool IsValid() const = 0;
     [[nodiscard]] virtual uint32_t GetWidth() const = 0;
     [[nodiscard]] virtual uint32_t GetHeight() const = 0;
+    [[nodiscard]] virtual uint32_t GetColorAttachmentCount() const = 0;
 
     /// 获取指定 color attachment 对应的纹理（可用于后续 Pass 采样）
     [[nodiscard]] virtual RHITexture* GetColorAttachment(uint32_t index) const = 0;

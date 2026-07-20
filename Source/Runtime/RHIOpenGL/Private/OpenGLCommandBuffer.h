@@ -30,12 +30,15 @@ public:
     void BindIndexBuffer(RHIBuffer* buffer, RHIIndexType indexType = RHIIndexType::UInt32, uint64_t offset = 0) override;
     void SetViewport(const RHIViewport& viewport) override;
     void SetScissor(const RHIScissorRect& scissor) override;
+    void TransitionTexture(const RHITextureBarrier& barrier) override;
     void Draw(uint32_t vertexCount, uint32_t firstVertex = 0,
               uint32_t instanceCount = 1, uint32_t firstInstance = 0) override;
     void DrawIndexed(uint32_t indexCount, uint32_t firstIndex = 0,
                      int32_t vertexOffset = 0,
                      uint32_t instanceCount = 1, uint32_t firstInstance = 0) override;
-    void SetBindGroup(uint32_t groupIndex, RHIBindGroup* bindGroup) override;
+    void SetBindGroup(uint32_t groupIndex,
+                      RHIBindGroup* bindGroup,
+                      std::span<const uint32_t> dynamicOffsets) override;
     void End() override;
 
 private:

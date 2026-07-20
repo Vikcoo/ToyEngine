@@ -73,6 +73,7 @@ private:
     std::unique_ptr<RHIRenderTarget> m_GBuffer;
     uint32_t m_GBufferWidth = 0;
     uint32_t m_GBufferHeight = 0;
+    bool m_GBufferShaderReadable = false;
     ERenderDebugView m_DebugViewMode = ERenderDebugView::Lit;
     std::unique_ptr<FLightUniformBindingState> m_LightBindingState;
     std::unique_ptr<FObjectUniformBindingState> m_ObjectBindingState;

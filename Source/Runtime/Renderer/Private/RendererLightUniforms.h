@@ -5,6 +5,7 @@
 
 #include "RHIBindGroup.h"
 #include "RHIBuffer.h"
+#include "RendererTransientUniforms.h"
 
 #include <memory>
 
@@ -15,14 +16,8 @@ class RHIBindGroupLayout;
 class RHICommandBuffer;
 class RHIDevice;
 
-struct FLightUniformBindingState
-{
-    std::unique_ptr<RHIBindGroupLayout> Layout;
-    std::unique_ptr<RHIBuffer> UniformBuffer;
-    std::unique_ptr<RHIBindGroup> BindGroup;
-};
+struct FLightUniformBindingState : FTransientUniformBindingState {};
 
-bool EnsureLightUniformBindingState(RHIDevice* device, FLightUniformBindingState& state);
 bool UpdateAndBindSceneLightUniforms(const FScene* scene,
                                      RHIDevice* device,
                                      RHICommandBuffer* cmdBuf,

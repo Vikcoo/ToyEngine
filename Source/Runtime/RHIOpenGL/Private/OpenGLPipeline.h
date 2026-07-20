@@ -37,6 +37,7 @@ public:
     /// 获取管线描述信息（用于 CommandBuffer 设置状态）
     [[nodiscard]] const RHIRasterizationDesc& GetRasterizationDesc() const { return m_Rasterization; }
     [[nodiscard]] const RHIDepthStencilDesc& GetDepthStencilDesc() const { return m_DepthStencil; }
+    [[nodiscard]] const RHIPipelineRenderingDesc& GetRenderingDesc() const { return m_Rendering; }
 
     /// 获取顶点输入布局描述（用于 BindVertexBuffer 时配置顶点属性）
     [[nodiscard]] const RHIVertexInputDesc& GetVertexInputDesc() const { return m_VertexInput; }
@@ -54,6 +55,7 @@ private:
     GLenum                  m_GLTopology = GL_TRIANGLES;
     RHIRasterizationDesc    m_Rasterization;
     RHIDepthStencilDesc     m_DepthStencil;
+    RHIPipelineRenderingDesc m_Rendering;
     RHIVertexInputDesc      m_VertexInput;
     const OpenGLPipelineLayout* m_Layout = nullptr;
 };

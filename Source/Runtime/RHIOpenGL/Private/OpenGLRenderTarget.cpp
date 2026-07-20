@@ -11,12 +11,25 @@ namespace {
 
 /// 将 RHIRenderTargetDesc 中的单个附件描述转换成创建 OpenGLTexture 用的 RHITextureDesc。
 /// 附件纹理统一不生成 mipmap，不携带初始数据，sRGB 标志随彩色附件格式推断。
-RHITextureDesc MakeAttachmentTextureDesc(uint32_t width, uint32_t height, const RHIAttachmentDesc& attach, const std::string& debugBase, uint32_t indexForDebug)
+RHITextureDesc MakeAttachmentTextureDesc(uint32_t width,
+                                         uint32_t height,
+                                         const RHIAttachmentDesc& attach,
+                                         RHISampleCount sampleCount,
+                                         const std::string& debugBase,
+                                         uint32_t indexForDebug)
 {
     RHITextureDesc desc;
     desc.width = width;
     desc.height = height;
     desc.format = attach.format;
+    desc.sampleCount = sampleCount;
+    desc.usage = attach.isDepthStencil
+        ? RHITextureUsage::DepthStencilAttachment
+        : RHITextureUsage::ColorAttachment;
+    if (attach.shaderReadable)
+    {
+        desc.usage = desc.usage | RHITextureUsage::ShaderResource;
+    }
     desc.initialData = nullptr;
     desc.generateMips = false;
 
@@ -60,7 +73,12 @@ OpenGLRenderTarget::OpenGLRenderTarget(const RHIRenderTargetDesc& desc)
     m_ColorAttachments.reserve(desc.colorAttachments.size());
     for (uint32_t i = 0; i < desc.colorAttachments.size(); ++i)
     {
-        auto attachDesc = MakeAttachmentTextureDesc(desc.width, desc.height, desc.colorAttachments[i], desc.debugName, i);
+        auto attachDesc = MakeAttachmentTextureDesc(desc.width,
+                                                    desc.height,
+                                                    desc.colorAttachments[i],
+                                                    desc.sampleCount,
+                                                    desc.debugName,
+                                                    i);
         auto tex = std::make_unique<OpenGLTexture>(attachDesc);
         if (!tex->IsValid())
         {
@@ -82,7 +100,12 @@ OpenGLRenderTarget::OpenGLRenderTarget(const RHIRenderTargetDesc& desc)
     // 创建并绑定深度附件（可选）
     if (desc.hasDepthStencil)
     {
-        auto attachDesc = MakeAttachmentTextureDesc(desc.width, desc.height, desc.depthStencilAttachment, desc.debugName, 0);
+        auto attachDesc = MakeAttachmentTextureDesc(desc.width,
+                                                    desc.height,
+                                                    desc.depthStencilAttachment,
+                                                    desc.sampleCount,
+                                                    desc.debugName,
+                                                    0);
         attachDesc.debugName = desc.debugName + "_Depth";
 
         auto tex = std::make_unique<OpenGLTexture>(attachDesc);

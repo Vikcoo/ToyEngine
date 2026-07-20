@@ -2,7 +2,17 @@
 
 本文是 `Shader 反射与资源绑定描述推进规划` 的阶段一产物，用于记录当前 shader 侧声明与 C++ 侧资源绑定描述的基准状态。它不是自动反射结果，而是对当前手写约定的人工盘点，后续阶段的校验工具应以本文中的结构为初始对照。
 
-当前仓库仍以 OpenGL GLSL 作为实际运行 shader，Renderer 通过逻辑 shader 名称请求 shader，`RHIOpenGL` 再映射到 `Content/Shaders/OpenGL/` 下的文件。
+当前仓库仍以 OpenGL GLSL 作为实际运行 shader，Renderer 通过逻辑 shader 名称请求 shader，`RHIOpenGL` 再映射到 `Content/Shaders/OpenGL/` 下的文件。同一批源文件通过 `Content/Shaders/Common/RHIDescriptorBindings.glsl` 携带 Vulkan descriptor set 信息，启用 Vulkan 构建选项时可由 `glslc` 离线编译为 SPIR-V。
+
+## 跨后端声明规则
+
+- `TE_RESOURCE_BINDING(group, binding)` 用于纹理/采样资源。
+- `TE_UNIFORM_BINDING(group, binding)` 用于 `std140` Uniform Block。
+- OpenGL loader 递归展开相对路径 include，宏结果为 `layout(binding = N)`。
+- Vulkan 编译定义 `TE_RHI_VULKAN=1`，宏结果为 `layout(set = group, binding = N)`。
+- `TE_VERTEX_INDEX` 在 OpenGL 映射到 `gl_VertexID`，在 Vulkan 映射到 `gl_VertexIndex`。
+
+因此 shader 的每个资源声明现在同时携带 group/set 和 binding；下文表格中的 group 由“Renderer BindGroup 约定”给出，binding 由“Renderer Binding Slot 约定”给出。
 
 ## 逻辑 Shader 映射
 
@@ -28,10 +38,10 @@
 
 | Group 名称 | Group index | 当前资源类型 | 当前用途 |
 | --- | ---: | --- | --- |
-| `LightBlock` | 0 | UniformBuffer | Forward BasePass / Deferred Lighting 的光源数据 |
-| `PassBlock` | 1 | UniformBuffer | ObjectBlock、DeferredPassBlock、SkyBlock，按 pipeline 语境复用 |
+| `LightBlock` | 0 | DynamicUniformBuffer | Forward BasePass / Deferred Lighting 的光源数据 |
+| `PassBlock` | 1 | DynamicUniformBuffer | ObjectBlock、DeferredPassBlock、SkyBlock，按 pipeline 语境复用 |
 | `MaterialTextures` | 2 | Texture2D 组 | Forward BasePass / Deferred GBuffer 的材质贴图 |
-| `MaterialBlock` | 3 | UniformBuffer | Forward BasePass / Deferred GBuffer 的材质参数 |
+| `MaterialBlock` | 3 | DynamicUniformBuffer | Forward BasePass / Deferred GBuffer 的材质参数 |
 | `Environment` | 4 | TextureCube / Texture2D 组 | IBL 环境资源与天空资源 |
 | `GBufferTextures` | 2 | Texture2D 组 | Deferred Lighting 的 GBuffer 输入 |
 
@@ -43,15 +53,15 @@
 
 | Binding 名称 | Binding slot | RHI 类型 | Shader 侧名称 |
 | --- | ---: | --- | --- |
-| `LightBlock` | 0 | `UniformBuffer` | `LightBlock` |
-| `PassBlock` | 1 | `UniformBuffer` | `ObjectBlock` / `DeferredPassBlock` / `SkyBlock` |
+| `LightBlock` | 0 | `DynamicUniformBuffer` | `LightBlock` |
+| `PassBlock` | 1 | `DynamicUniformBuffer` | `ObjectBlock` / `DeferredPassBlock` / `SkyBlock` |
 | `BaseColorTexture` | 2 | `Texture2D` | `u_BaseColorTex` |
 | `NormalTexture` | 3 | `Texture2D` | `u_NormalTex` |
 | `MetallicTexture` | 4 | `Texture2D` | `u_MetallicTex` |
 | `RoughnessTexture` | 5 | `Texture2D` | `u_RoughnessTex` |
 | `AOTexture` | 6 | `Texture2D` | `u_AOTex` |
 | `EmissiveTexture` | 7 | `Texture2D` | `u_EmissiveTex` |
-| `MaterialBlock` | 8 | `UniformBuffer` | `MaterialBlock` |
+| `MaterialBlock` | 8 | `DynamicUniformBuffer` | `MaterialBlock` |
 | `IrradianceMap` | 9 | `TextureCube` | `u_IrradianceMap` |
 | `PrefilterMap` | 10 | `TextureCube` | `u_PrefilterMap` |
 | `BRDFLUT` | 11 | `Texture2D` | `u_BRDFLUT` |
@@ -61,7 +71,7 @@
 | `GBufferDepth` | 5 | `Texture2D` | `u_GBufferDepth` |
 | `GBufferMaterial` | 6 | `Texture2D` | `u_GBufferMaterial` |
 
-注意：材质贴图 binding `2..7` 与 GBuffer 输入 binding `2..6` 共享编号区间，依赖不同 PipelineLayout 语境隔离。后续如果引入 Vulkan descriptor set / binding，应明确表达 set / group，而不是继续只依赖 OpenGL 风格的 binding。
+注意：材质贴图 binding `2..7` 与 GBuffer 输入 binding `2..6` 共享编号区间，依赖不同 PipelineLayout 语境隔离。当前 Shader 已显式表达 set/group，但布局仍按 pipeline 语境解释，不能把 `(group, binding)` 当作全项目资源类型唯一键。
 
 ## Shader 侧资源声明
 
@@ -121,7 +131,7 @@
 
 ### `deferred_lighting.vert`
 
-当前没有显式 vertex input、uniform block、sampler 或 fragment output 声明。它使用 `gl_VertexID` 生成全屏三角形。
+当前没有显式 vertex input、uniform block、sampler 或 fragment output 声明。它使用 `TE_VERTEX_INDEX` 生成全屏三角形，以适配 OpenGL `gl_VertexID` 与 Vulkan `gl_VertexIndex` 的命名差异。
 
 ### `deferred_lighting.frag`
 
@@ -155,10 +165,10 @@
 
 | Group | Binding 内容 | 资源类型 | Stage |
 | ---: | --- | --- | --- |
-| 0 | `LightBlock` binding 0 | UniformBuffer | Fragment |
-| 1 | `ObjectBlock` binding 1 | UniformBuffer | Vertex |
+| 0 | `LightBlock` binding 0 | DynamicUniformBuffer | Fragment |
+| 1 | `ObjectBlock` binding 1 | DynamicUniformBuffer | Vertex |
 | 2 | `BaseColor/Normal/Metallic/Roughness/AO/Emissive` binding 2..7 | Texture2D | Fragment |
-| 3 | `MaterialBlock` binding 8 | UniformBuffer | Fragment |
+| 3 | `MaterialBlock` binding 8 | DynamicUniformBuffer | Fragment |
 | 4 | `IrradianceMap/PrefilterMap/BRDFLUT` binding 9..11 | TextureCube / Texture2D | Fragment |
 
 ### Deferred GBuffer Pipeline
@@ -167,9 +177,9 @@
 
 | Group | Binding 内容 | 资源类型 | Stage |
 | ---: | --- | --- | --- |
-| 1 | `ObjectBlock` binding 1 | UniformBuffer | Vertex |
+| 1 | `ObjectBlock` binding 1 | DynamicUniformBuffer | Vertex |
 | 2 | `BaseColor/Normal/Metallic/Roughness/AO/Emissive` binding 2..7 | Texture2D | Fragment |
-| 3 | `MaterialBlock` binding 8 | UniformBuffer | Fragment |
+| 3 | `MaterialBlock` binding 8 | DynamicUniformBuffer | Fragment |
 
 ### Deferred Lighting Pipeline
 
@@ -177,8 +187,8 @@
 
 | Group | Binding 内容 | 资源类型 | Stage |
 | ---: | --- | --- | --- |
-| 0 | `LightBlock` binding 0 | UniformBuffer | Fragment |
-| 1 | `DeferredPassBlock` binding 1 | UniformBuffer | Fragment |
+| 0 | `LightBlock` binding 0 | DynamicUniformBuffer | Fragment |
+| 1 | `DeferredPassBlock` binding 1 | DynamicUniformBuffer | Fragment |
 | 2 | `GBufferAlbedo/Normal/WorldPosition/Depth/Material` binding 2..6 | Texture2D | Fragment |
 | 4 | `IrradianceMap/PrefilterMap/BRDFLUT` binding 9..11 | TextureCube / Texture2D | Fragment |
 
@@ -188,7 +198,7 @@
 
 | Group | Binding 内容 | 资源类型 | Stage |
 | ---: | --- | --- | --- |
-| 1 | `SkyBlock` binding 1 | UniformBuffer | Fragment |
+| 1 | `SkyBlock` binding 1 | DynamicUniformBuffer | Fragment |
 | 4 | `IrradianceMap/PrefilterMap/BRDFLUT` binding 9..11 | TextureCube / Texture2D | Fragment |
 
 注意：`sky.frag` 当前只采样 `u_PrefilterMap` binding 10，但 C++ 侧 `Sky_EnvironmentTextures_Layout` 仍使用完整 Environment layout，包含 binding 9、10、11。这是当前允许的冗余绑定，后续校验工具应区分“shader 必需资源缺失”和“layout 包含 shader 未使用资源”。
@@ -197,26 +207,26 @@
 
 | 资源组 | 创建位置 | 当前说明 |
 | --- | --- | --- |
-| LightBlock | `RendererLightUniforms.cpp` | 创建光源 UBO 与 group 0 |
-| ObjectBlock | `RendererPassUniforms.cpp` | 使用 `PassBlock` binding 1 / group 1 |
-| DeferredPassBlock | `RendererPassUniforms.cpp` | 使用 `PassBlock` binding 1 / group 1 |
-| SkyBlock | `RendererPassUniforms.cpp` | 使用 `PassBlock` binding 1 / group 1 |
-| MaterialBlock | `RendererPassUniforms.cpp` | 使用 `MaterialBlock` binding 8 / group 3 |
+| LightBlock | `RendererLightUniforms.cpp` | 分配 transient Uniform 范围并绑定 group 0 + dynamic offset |
+| ObjectBlock | `RendererPassUniforms.cpp` | 分配 transient Uniform 范围并绑定 group 1 + dynamic offset |
+| DeferredPassBlock | `RendererPassUniforms.cpp` | 分配 transient Uniform 范围并绑定 group 1 + dynamic offset |
+| SkyBlock | `RendererPassUniforms.cpp` | 分配 transient Uniform 范围并绑定 group 1 + dynamic offset |
+| MaterialBlock | `RendererPassUniforms.cpp` | 分配 transient Uniform 范围并绑定 group 3 + dynamic offset |
 | MaterialTextures | `RendererTextureBindings.cpp` | 创建材质贴图 group 2 |
 | GBufferTextures | `RendererTextureBindings.cpp` | 创建 Deferred Lighting GBuffer 输入 group 2 |
 | Environment | `RendererTextureBindings.cpp` | 创建 IBL 环境资源 group 4 |
 
-## 阶段一结论
+## 当前结论
 
 当前绑定体系可以继续支撑 OpenGL 单后端运行，但已经存在后续自动化必须处理的约束：
 
 1. `PassBlock` binding 1 在不同 pipeline 中代表 `ObjectBlock`、`DeferredPassBlock` 或 `SkyBlock`，需要按 pipeline 语境解释。
 2. `MaterialTextures` 与 `GBufferTextures` 共享 group index 2，需要按 pipeline 语境隔离。
 3. Environment layout 在 Sky Pipeline 中存在冗余资源声明，校验工具不能简单要求 layout 与 shader 使用资源完全相等。
-4. OpenGL GLSL 当前只有 `binding`，没有显式 `set` / `group`，后续如果要对齐 Vulkan，需要新增 group 元数据约定或切到 SPIR-V 反射。
+4. Shader 已通过公共宏显式携带 `set/group + binding`，但 C++ PipelineLayout 仍是独立手写真相源；自动一致性检查尚未完成。
 5. `RendererBindings` 的命名与 shader 变量名并非完全一致，生成工具需要一套稳定的命名映射规则。
 
-阶段二应在本文清单基础上实现最小 GLSL 扫描或解析校验，优先检查：
+后续反射/校验阶段应在本文清单基础上优先检查：
 
 - shader 中声明的 binding 是否都能在对应 PipelineLayout 中找到。
 - C++ layout 中的资源类型是否与 shader 类型一致。
