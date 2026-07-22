@@ -13,7 +13,7 @@
 
 - CMake 工程，当前配置要求 `CMake 3.18+`
 - 项目使用 `C++20`
-- 当前启用的渲染后端是 `OpenGL`
+- 可在配置期互斥选择 `OpenGL` 或 `Vulkan`；OpenGL 提供完整 Forward/Deferred 场景渲染，Vulkan 当前完成阶段 B 的基础资源、Descriptor/Pipeline 与静态网格验证绘制
 - `Source/Sandbox/Main.cpp` 是当前可执行入口
 - 项目采用单线程运行流，但已经显式区分游戏侧对象与渲染侧对象
 

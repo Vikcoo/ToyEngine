@@ -2,7 +2,7 @@
 
 本文是 `Shader 反射与资源绑定描述推进规划` 的阶段一产物，用于记录当前 shader 侧声明与 C++ 侧资源绑定描述的基准状态。它不是自动反射结果，而是对当前手写约定的人工盘点，后续阶段的校验工具应以本文中的结构为初始对照。
 
-当前仓库仍以 OpenGL GLSL 作为实际运行 shader，Renderer 通过逻辑 shader 名称请求 shader，`RHIOpenGL` 再映射到 `Content/Shaders/OpenGL/` 下的文件。同一批源文件通过 `Content/Shaders/Common/RHIDescriptorBindings.glsl` 携带 Vulkan descriptor set 信息，启用 Vulkan 构建选项时可由 `glslc` 离线编译为 SPIR-V。
+完整 Renderer 场景路径仍由 OpenGL GLSL 实际运行，Renderer 通过逻辑 shader 名称请求 shader，`RHIOpenGL` 再映射到 `Content/Shaders/OpenGL/` 下的文件。同一批源文件通过 `Content/Shaders/Common/RHIDescriptorBindings.glsl` 携带 Vulkan descriptor set 信息。Vulkan 阶段 B 构建生成 9 个 SPIR-V 产物，并已在运行时消费专用 `stage_b_validation.vert/frag.spv` 创建 ShaderModule；其余完整场景 Shader 尚未进入 Vulkan 运行路径。
 
 ## 跨后端声明规则
 
@@ -158,6 +158,17 @@
 | TextureCube | `u_PrefilterMap` | 10 | Fragment | `RendererBindings::PrefilterMap` |
 
 ## PipelineLayout 对照
+
+### Vulkan Stage B Validation Pipeline
+
+构建位置：`FStaticMeshValidationRenderPath::EnsureResources`
+
+| Group | Binding 内容 | 资源类型 | Stage |
+| ---: | --- | --- | --- |
+| 0 | `StageBObjectBlock` binding 0 | DynamicUniformBuffer | Vertex |
+| 1 | `u_Texture` binding 0 | Texture2D / CombinedImageSampler | Fragment |
+
+该 Pipeline 只服务 Vulkan 阶段 B 垂直切片。它故意使用局部 binding 0，而不复用完整 Renderer 的 group 0～4 语义；Shader 逻辑名为 `StaticMesh/StageBValidationVS/PS`，SPIR-V 产物为 `stage_b_validation.vert/frag.spv`。
 
 ### StaticMesh BasePass Pipeline
 

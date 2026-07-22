@@ -6,6 +6,8 @@
 
 #if defined(TE_RHI_BACKEND_OPENGL)
     #include "RHIOpenGLEntry.h"
+#elif defined(TE_RHI_BACKEND_VULKAN)
+    #include "RHIVulkanEntry.h"
 #endif
 
 namespace TE {
@@ -16,9 +18,9 @@ std::unique_ptr<RHIDevice> RHIDevice::Create(const RHIDeviceCreateDesc& desc)
     TE_LOG_INFO("[RHI] Creating RHIOpenGL Device");
     return CreateRHIOpenGLDevice(desc);
 
-// #elif defined(TE_RHI_BACKEND_VULKAN)
-//     TE_LOG_INFO("[RHI] Creating Vulkan RHI Device");
-//     return CreateVulkanRHIDevice(desc);
+#elif defined(TE_RHI_BACKEND_VULKAN)
+    TE_LOG_INFO("[RHI] Creating RHIVulkan Device");
+    return CreateRHIVulkanDevice(desc);
 
 // #elif defined(TE_RHI_BACKEND_D3D12)
 //     TE_LOG_INFO("[RHI] Creating D3D12 RHI Device");

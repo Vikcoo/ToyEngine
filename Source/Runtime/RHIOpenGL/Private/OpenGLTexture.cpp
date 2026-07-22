@@ -33,6 +33,10 @@ bool ConvertFormat(RHIFormat format, bool srgb, GLint& outInternalFormat, GLenum
         outInternalFormat = srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         outFormat = GL_RGBA;
         return true;
+    case RHIFormat::BGRA8_UNorm:
+        outInternalFormat = srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
+        outFormat = GL_BGRA;
+        return true;
     case RHIFormat::RGBA32_Float:
         outInternalFormat = GL_RGBA32F;
         outFormat = GL_RGBA;
@@ -45,6 +49,10 @@ bool ConvertFormat(RHIFormat format, bool srgb, GLint& outInternalFormat, GLenum
     case RHIFormat::RGBA8_sRGB:
         outInternalFormat = GL_SRGB8_ALPHA8;
         outFormat = GL_RGBA;
+        return true;
+    case RHIFormat::BGRA8_sRGB:
+        outInternalFormat = GL_SRGB8_ALPHA8;
+        outFormat = GL_BGRA;
         return true;
     // 深度 / 深度模板格式：用于 FBO 深度附件
     // OpenGLTexture 作为深度纹理时，不做 sRGB 转换，不参与像素行序翻转
@@ -106,6 +114,8 @@ uint32_t GetPixelByteSize(RHIFormat format)
     case RHIFormat::RGB8_sRGB:   return 3;
     case RHIFormat::RGBA8_UNorm: return 4;
     case RHIFormat::RGBA8_sRGB:  return 4;
+    case RHIFormat::BGRA8_UNorm: return 4;
+    case RHIFormat::BGRA8_sRGB:  return 4;
     case RHIFormat::RGBA32_Float: return 16;
     default: return 0;
     }

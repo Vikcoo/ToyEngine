@@ -11,18 +11,12 @@
 
 namespace TE {
 
-/// GPU 设备抽象接口
-///
-/// Device 是 RHI 的核心对象，负责创建所有 GPU 资源：
-/// - Buffer（顶点/索引/Uniform 缓冲区）
-/// - Shader（着色器模块）
-/// - Pipeline（图形管线状态对象）
-/// - CommandBuffer（命令缓冲区）
-///
-/// 每个图形 API 后端提供一个 Device 实现：
-/// - OpenGLDevice: 封装 OpenGL 上下文中的资源创建
-/// - VulkanDevice: 封装 VkDevice 的资源创建（未来）
-/// - D3D12Device:  封装 ID3D12Device 的资源创建（未来）
+/**
+ * GPU 设备抽象接口。
+ *
+ * Device 负责帧生命周期以及 Buffer、Shader、Pipeline、CommandBuffer 等 GPU 资源创建。
+ * OpenGLDevice 已实现完整场景路径；VulkanDevice 阶段 B 已实现基础资源、Descriptor 与静态网格验证路径；D3D12Device 尚未实现。
+ */
 class RHIDevice
 {
 public:

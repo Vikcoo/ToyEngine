@@ -24,6 +24,8 @@ te_compile_shaders(
     TARGET VulkanShaders
     SHADERS_DIR "${CMAKE_SOURCE_DIR}/Content/Shaders"
     SHADERS
+        Vulkan/stage_b_validation.vert
+        Vulkan/stage_b_validation.frag
         OpenGL/model.vert
         OpenGL/model.frag
         OpenGL/gbuffer.vert

@@ -17,6 +17,8 @@
 #include "SceneRenderer.h"
 #include "InputManager.h"
 
+#include <thread>
+
 namespace TE {
 
 Engine& Engine::Get()
@@ -106,8 +108,12 @@ void Engine::Init()
     m_ShouldExit = false;
     m_CameraComponent = nullptr;
 
-    // 7. 调用应用层场景初始化回调（由 Sandbox 提供）
-    if (m_SceneSetupCallback)
+    // 7. 完整 Renderer 可用时才搭建应用场景；阶段性后端使用内部验证路径。
+    if (!m_RHIDevice->GetBackendTraits().bSupportsFullSceneRendering)
+    {
+        TE_LOG_INFO("RHI backend is running in staged validation mode; application scene setup is deferred");
+    }
+    else if (m_SceneSetupCallback)
     {
         m_SceneSetupCallback(*this);
     }
@@ -237,7 +243,7 @@ void Engine::TickInput(const float deltaTime) const {
 
 void Engine::TickGameThread(const float deltaTime)
 {
-    if (m_FrameUpdateCallback)
+    if (m_RHIDevice && m_RHIDevice->GetBackendTraits().bSupportsFullSceneRendering && m_FrameUpdateCallback)
     {
         m_FrameUpdateCallback(*this, deltaTime);
     }
@@ -272,6 +278,11 @@ void Engine::TickRenderThread(const float deltaTime) const {
     const RHIFrameStatus beginStatus = m_RHIDevice->BeginFrame(beginInfo, frameContext);
     if (beginStatus != RHIFrameStatus::Ready)
     {
+        if (beginStatus == RHIFrameStatus::Skipped)
+        {
+            // 最小化期间没有可提交的 back buffer，避免主循环无上限空转。
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        }
         if (beginStatus == RHIFrameStatus::DeviceLost || beginStatus == RHIFrameStatus::Error)
         {
             TE_LOG_ERROR("RHI BeginFrame failed with status {}", static_cast<uint32_t>(beginStatus));
@@ -285,14 +296,32 @@ void Engine::TickRenderThread(const float deltaTime) const {
         return;
     }
 
-    if (m_CameraComponent)
+    const bool supportsSceneRendering = m_RHIDevice->GetBackendTraits().bSupportsSceneRendering;
+    if (supportsSceneRendering && m_CameraComponent)
     {
         m_CameraComponent->SetViewportSize(static_cast<float>(beginInfo.framebufferWidth),
                                            static_cast<float>(beginInfo.framebufferHeight));
         m_Scene->SetViewInfo(m_CameraComponent->BuildViewInfo());
     }
 
-    m_SceneRenderer->Render(m_Scene.get(), m_RHIDevice.get(), frameContext.commandBuffer);
+    if (supportsSceneRendering)
+    {
+        m_SceneRenderer->Render(m_Scene.get(), m_RHIDevice.get(), frameContext.commandBuffer);
+    }
+    else
+    {
+        RHIRenderPassBeginInfo clearPass;
+        clearPass.clearColor[0] = 0.015f;
+        clearPass.clearColor[1] = 0.025f;
+        clearPass.clearColor[2] = 0.055f;
+        clearPass.clearColor[3] = 1.0f;
+        clearPass.viewport = {0.0f, 0.0f,
+                              static_cast<float>(beginInfo.framebufferWidth),
+                              static_cast<float>(beginInfo.framebufferHeight),
+                              0.0f, 1.0f};
+        frameContext.commandBuffer->BeginRenderPass(clearPass);
+        frameContext.commandBuffer->EndRenderPass();
+    }
     const RHIFrameStatus endStatus = m_RHIDevice->EndFrame(frameContext);
     if (endStatus == RHIFrameStatus::DeviceLost || endStatus == RHIFrameStatus::Error)
     {

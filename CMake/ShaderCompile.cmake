@@ -22,12 +22,16 @@ function(te_compile_shaders)
         return()
     endif()
 
-    find_program(TE_GLSLC_EXECUTABLE
-        NAMES glslc glslc.exe
-        HINTS
-            "$ENV{VULKAN_SDK}/Bin"
-            "$ENV{VULKAN_SDK}/bin"
-    )
+    if(Vulkan_GLSLC_EXECUTABLE)
+        set(TE_GLSLC_EXECUTABLE "${Vulkan_GLSLC_EXECUTABLE}")
+    else()
+        find_program(TE_GLSLC_EXECUTABLE
+            NAMES glslc glslc.exe
+            HINTS
+                "$ENV{VULKAN_SDK}/Bin"
+                "$ENV{VULKAN_SDK}/bin"
+        )
+    endif()
     if(NOT TE_GLSLC_EXECUTABLE)
         message(FATAL_ERROR
             "[Shader] TE_RHI_VULKAN=ON requires glslc. Install the Vulkan SDK and configure VULKAN_SDK.")

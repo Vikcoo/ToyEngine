@@ -15,6 +15,7 @@ add_library(Renderer STATIC
     Private/RendererTextureBindings.cpp
     Private/RendererScene.cpp
     Private/SceneRenderer.cpp
+    Private/StaticMeshValidationRenderPath.cpp
 )
 
 # 头文件搜索路径

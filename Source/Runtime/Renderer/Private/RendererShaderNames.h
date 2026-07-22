@@ -5,6 +5,8 @@
 
 namespace TE::RendererShaderNames {
 
+inline constexpr const char* StageBValidationVS = "StaticMesh/StageBValidationVS";
+inline constexpr const char* StageBValidationPS = "StaticMesh/StageBValidationPS";
 inline constexpr const char* StaticMeshBasePassVS = "StaticMesh/BasePassVS";
 inline constexpr const char* StaticMeshBasePassPS = "StaticMesh/BasePassPS";
 inline constexpr const char* StaticMeshGBufferVS = "StaticMesh/GBufferVS";

@@ -136,9 +136,12 @@ void GLFWWindow::SwapBuffers()
 
 void GLFWWindow::SetVSync(bool enabled)
 {
-    glfwSwapInterval(enabled ? 1 : 0);
+    if (m_graphicsAPI == EWindowGraphicsAPI::OpenGL)
+    {
+        glfwSwapInterval(enabled ? 1 : 0);
+    }
     m_vsyncEnabled = enabled;
-    TE_LOG_INFO("[Platform] VSync {}", enabled ? "ON (locked to display refresh rate)" : "OFF (unlocked framerate)");
+    TE_LOG_INFO("[Platform] VSync preference {}", enabled ? "ON" : "OFF");
 }
 
 bool GLFWWindow::IsVSyncEnabled() const

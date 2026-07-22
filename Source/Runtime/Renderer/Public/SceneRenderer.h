@@ -14,6 +14,7 @@ class FScene;
 class IRenderPath;
 class RHICommandBuffer;
 class RHIDevice;
+class FStaticMeshValidationRenderPath;
 
 /// 场景渲染调度器。
 ///
@@ -43,6 +44,7 @@ private:
     [[nodiscard]] static std::unique_ptr<IRenderPath> CreateRenderPath(ERenderPathType type);
 
     std::unique_ptr<IRenderPath> m_RenderPath;
+    std::unique_ptr<FStaticMeshValidationRenderPath> m_ValidationRenderPath;
     ERenderPathType m_RenderPathType = ERenderPathType::Forward;
     ERenderDebugView m_DebugViewMode = ERenderDebugView::Lit;
     FRenderStats m_LastStats;

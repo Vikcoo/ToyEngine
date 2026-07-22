@@ -44,8 +44,10 @@ public:
     /// 获取引擎单例
     [[nodiscard]] static Engine& Get();
 
-    /// 初始化所有子系统
-    /// 顺序：Log → Memory → Window → RHI → World/FScene/SceneRenderer → 应用层场景回调
+    /**
+     * 初始化所有子系统。
+     * @note 顺序为 Log → Memory → Window → RHI → World/FScene/SceneRenderer；仅完整场景后端执行应用层场景回调。
+     */
     void Init();
 
     /// 运行主循环（阻塞直到退出）
@@ -79,9 +81,9 @@ public:
     /// 获取当前帧数
     [[nodiscard]] uint64_t GetFrameCount() const { return m_FrameCount; }
 
-    /// 应用层场景初始化回调（通常由 Sandbox 注册）
+    /** 注册应用层场景初始化回调；仅 `bSupportsFullSceneRendering` 后端执行。 */
     void SetSceneSetupCallback(std::function<void(Engine&)> callback);
-    /// 应用层每帧逻辑回调（在 World::Tick 前执行）
+    /** 注册应用层每帧逻辑回调；仅完整场景后端在 World::Tick 前执行。 */
     void SetFrameUpdateCallback(std::function<void(Engine&, float)> callback);
     /// 设置当前主相机组件（用于构建 ViewInfo）
     void SetActiveCameraComponent(CameraComponent* camera) { m_CameraComponent = camera; }

@@ -12,7 +12,7 @@
 - binding slot、资源类型、stage visibility、uniform block、sampler / texture 类型由 shader 编译或反射流程提取。
 - 材质语义、资源生命周期、默认资源、缓存策略、颜色空间和 RenderPath 组织仍由 C++ 渲染系统负责。
 
-本文描述的是计划中的推进步骤。当前仓库尚未实现正式 shader 反射、生成代码或完整跨后端 shader 资产管线；但 Vulkan 接入前置阶段已经完成共享 set/binding 宏、OpenGL include 展开和 CMake `glslc -> SPIR-V` 入口。
+本文描述的是计划中的推进步骤。当前仓库尚未实现正式 shader 反射、生成代码或完整跨后端 shader 资产管线；Vulkan 接入前置阶段已经完成共享 set/binding 宏、OpenGL include 展开和 CMake `glslc -> SPIR-V` 入口。阶段 B 当前生成 9 个 SPIR-V 产物，并已为专用静态网格验证 Shader 创建运行时 ShaderModule；完整 Forward/Deferred Shader 仍未进入 Vulkan 运行路径。
 
 ## 进度更新（2026-07-21）
 
@@ -20,6 +20,12 @@
 - 已建立根 CMake 显式 Shader 清单和 `VulkanShaders` 目标；OpenGL-only 模式不依赖 Vulkan SDK。
 - 阶段一人工清单已同步到新的 group/set 与 `DynamicUniformBuffer` 语义。
 - 阶段二“自动反射/一致性校验”仍未实现，仍是下一项 Shader 工具化工作；现有构建入口不等于反射闭环。
+
+## 进度更新（2026-07-23）
+
+- Vulkan 阶段 B 已落地 ShaderModule、DescriptorSetLayout、PipelineLayout 与 Graphics Pipeline，证明手写 `(set,binding)` 契约可以被真实后端消费。
+- 阶段 B 专用 Shader 与 C++ layout 仍是两份手写声明；Validation Layer 只能验证 Vulkan API 使用，不能替代 Shader 反射的一致性检查。
+- 自动反射、布局校验、生成资产清单与 permutation 仍为计划中，不能因首个 Pipeline 工作而标记完成。
 
 ## 推进原则
 

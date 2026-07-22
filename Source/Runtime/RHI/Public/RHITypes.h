@@ -97,11 +97,13 @@ enum class RHIFormat : uint8_t
     RG8_UNorm,
     RGB8_UNorm,
     RGBA8_UNorm,
+    BGRA8_UNorm,
     RGBA32_Float,
 
     // sRGB 格式（纹理采样时自动做 sRGB -> Linear 转换）
     RGB8_sRGB,
     RGBA8_sRGB,
+    BGRA8_sRGB,
 
     // 深度/模板格式
     D16_UNorm,
@@ -211,8 +213,10 @@ inline uint32_t GetFormatSize(RHIFormat format)
         case RHIFormat::RG8_UNorm:   return 2;
         case RHIFormat::RGB8_UNorm:  return 3;
         case RHIFormat::RGBA8_UNorm: return 4;
+        case RHIFormat::BGRA8_UNorm: return 4;
         case RHIFormat::RGB8_sRGB:   return 3;
         case RHIFormat::RGBA8_sRGB:  return 4;
+        case RHIFormat::BGRA8_sRGB:  return 4;
         case RHIFormat::RGBA32_Float: return 16;
         case RHIFormat::D16_UNorm:   return 2;
         case RHIFormat::D24_UNorm_S8_UInt: return 4;
@@ -641,6 +645,12 @@ struct RHIBackendTraits
 
     // GPU 渲染到 RT 后再作为纹理采样时，是否需要在 shader 中翻转 V。
     bool bRTSampleRequiresFlipY = false;
+
+    /** 当前后端阶段是否已具备完整 Scene Renderer 资源与绘制能力。 */
+    bool bSupportsSceneRendering = true;
+
+    /** 是否已具备应用场景、完整 Forward/Deferred 与 PBR 资源能力。 */
+    bool bSupportsFullSceneRendering = true;
 };
 
 } // namespace TE

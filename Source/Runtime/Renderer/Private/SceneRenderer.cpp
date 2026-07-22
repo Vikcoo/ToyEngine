@@ -7,6 +7,8 @@
 #include "ForwardRenderPath.h"
 #include "IRenderPath.h"
 #include "RenderStats.h"
+#include "StaticMeshValidationRenderPath.h"
+#include "RHIDevice.h"
 #include "Log/Log.h"
 
 namespace TE {
@@ -73,6 +75,16 @@ void FSceneRenderer::Render(const FScene* scene, RHIDevice* device, RHICommandBu
     if (!m_RenderPath)
     {
         TE_LOG_ERROR("[Renderer] SceneRenderer::Render called without active render path");
+        return;
+    }
+
+    if (!device->GetBackendTraits().bSupportsFullSceneRendering)
+    {
+        if (!m_ValidationRenderPath)
+        {
+            m_ValidationRenderPath = std::make_unique<FStaticMeshValidationRenderPath>();
+        }
+        m_ValidationRenderPath->Render(device, cmdBuf, m_LastStats);
         return;
     }
 

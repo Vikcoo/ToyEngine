@@ -19,6 +19,10 @@ if(TE_RHI_OPENGL)
     target_compile_definitions(Engine PRIVATE TE_RHI_BACKEND_OPENGL=1)
     target_link_libraries(Engine PRIVATE RHIOpenGL)
 endif()
+if(TE_RHI_VULKAN)
+    target_compile_definitions(Engine PRIVATE TE_RHI_BACKEND_VULKAN=1)
+    target_link_libraries(Engine PRIVATE RHIVulkan)
+endif()
 
 # 提供项目根目录宏，用于定位 Shader 文件等资源
 target_compile_definitions(Engine PRIVATE
