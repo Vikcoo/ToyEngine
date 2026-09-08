@@ -1,5 +1,7 @@
 # Shader 反射与资源绑定描述推进规划
 
+> 当前状态（2026-09-09）：阶段一人工绑定清单和 Vulkan 手写 set/binding 消费路径已经完成；阶段二反射校验及后续生成流程尚未实现，是当前有效规划。
+
 ## 背景与目标
 
 当前 Renderer 已经引入 `BindGroupLayout` / `PipelineLayout`，并把 BindGroup 的 group index 与 shader 内的 binding slot 拆开维护。这为 Vulkan / D3D12 资源绑定模型打下了基础，但资源布局仍然同时写在两处：

@@ -1,5 +1,7 @@
 # PBR 渲染前置规划
 
+> 当前状态（2026-09-09）：基础材质、Forward/Deferred Direct PBR 与运行时 IBL 初版已经完成；正式 GGX specular prefilter、PBR/IBL DebugView、曝光、Tonemapping、缓存与热重载仍在计划中。已完成段落保留为实施历史。
+
 本文档记录进入 PBR 渲染实现前建议先补齐的基础能力。除明确标注为“已完成”的条目外，其余内容仍是计划中，不代表当前代码已经实现。
 
 ## 背景
