@@ -4,6 +4,7 @@
 #include "LightComponent.h"
 
 #include "Log/Log.h"
+#include "RenderSceneCommandRecorder.h"
 
 #include <atomic>
 
@@ -25,16 +26,6 @@ LightComponent::LightComponent()
 {
 }
 
-LightComponent::~LightComponent()
-{
-    if (m_BoundRenderScene && m_IsRegisteredToRenderScene)
-    {
-        m_BoundRenderScene->RemoveLight(m_LightComponentId);
-    }
-    m_BoundRenderScene = nullptr;
-    m_IsRegisteredToRenderScene = false;
-}
-
 std::unique_ptr<FLightSceneProxy> LightComponent::CreateLightSceneProxy() const
 {
     auto proxy = std::make_unique<FLightSceneProxy>();
@@ -45,17 +36,11 @@ std::unique_ptr<FLightSceneProxy> LightComponent::CreateLightSceneProxy() const
     return proxy;
 }
 
-void LightComponent::RegisterToRenderScene(IRenderScene* renderScene)
+void LightComponent::CreateRenderState(FRenderSceneCommandRecorder& recorder)
 {
-    if (!renderScene)
+    if (m_IsRenderStateCreated)
     {
-        TE_LOG_WARN("[Scene] LightComponent::RegisterToRenderScene called with null render scene");
         return;
-    }
-
-    if (m_IsRegisteredToRenderScene)
-    {
-        UnregisterFromRenderScene(renderScene);
     }
 
     auto proxy = CreateLightSceneProxy();
@@ -65,31 +50,24 @@ void LightComponent::RegisterToRenderScene(IRenderScene* renderScene)
         return;
     }
 
-    if (!renderScene->AddLight(this, m_LightComponentId, std::move(proxy)))
+    if (!recorder.AddLight(m_LightComponentId, std::move(proxy)))
     {
-        TE_LOG_WARN("[Scene] Render scene failed to add light");
+        TE_LOG_WARN("[Scene] Failed to record light add command");
         return;
     }
 
-    m_BoundRenderScene = renderScene;
-    m_IsRegisteredToRenderScene = true;
+    m_IsRenderStateCreated = true;
     m_LightStateDirty = false;
     TE_LOG_INFO("[Scene] LightComponent registered to render scene");
 }
 
-void LightComponent::UnregisterFromRenderScene(IRenderScene* renderScene)
+void LightComponent::DestroyRenderState(FRenderSceneCommandRecorder& recorder)
 {
-    if (!renderScene)
+    if (m_IsRenderStateCreated)
     {
-        return;
-    }
-
-    if (m_IsRegisteredToRenderScene)
-    {
-        renderScene->RemoveLight(m_LightComponentId);
-        m_IsRegisteredToRenderScene = false;
-        m_BoundRenderScene = nullptr;
-        TE_LOG_INFO("[Scene] LightComponent unregistered from render scene");
+        recorder.RemoveLight(m_LightComponentId);
+        m_IsRenderStateCreated = false;
+        TE_LOG_INFO("[Scene] LightComponent render state destroyed");
     }
 }
 

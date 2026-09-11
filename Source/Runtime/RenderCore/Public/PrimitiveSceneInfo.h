@@ -11,27 +11,21 @@
 
 namespace TE {
 
-class PrimitiveComponent;
-
 class FPrimitiveSceneInfo
 {
 public:
     FPrimitiveSceneInfo(FPrimitiveComponentId primitiveComponentId,
-                        const PrimitiveComponent* primitiveComponent,
                         std::unique_ptr<FPrimitiveSceneProxy> proxy)
         : m_PrimitiveComponentId(primitiveComponentId)
-        , m_PrimitiveComponent(primitiveComponent)
         , m_Proxy(std::move(proxy))
     {
     }
 
     [[nodiscard]] FPrimitiveComponentId GetPrimitiveComponentId() const { return m_PrimitiveComponentId; }
-    [[nodiscard]] const PrimitiveComponent* GetPrimitiveComponent() const { return m_PrimitiveComponent; }
     [[nodiscard]] FPrimitiveSceneProxy* GetProxy() const { return m_Proxy.get(); }
 
 private:
     FPrimitiveComponentId m_PrimitiveComponentId;
-    const PrimitiveComponent* m_PrimitiveComponent = nullptr;
     std::unique_ptr<FPrimitiveSceneProxy> m_Proxy;
 };
 

@@ -2,7 +2,7 @@
 // TComponent - 组件基类
 // 对应 UE5 的 UActorComponent
 //
-// 最基础的组件，提供 Owner 指针和虚方法 Tick()
+// 最基础的组件，提供只读 Owner 关系和虚方法 Tick()
 // 所有组件（SceneComponent、PrimitiveComponent 等）都继承自此类
 
 #pragma once
@@ -33,8 +33,7 @@ public:
     /// 每帧更新（子类 override）
     virtual void Tick(float deltaTime) {}
 
-    /// 获取/设置所属 Actor
-    void SetOwner(Actor* owner) { m_Owner = owner; }
+    /** 获取所属 Actor；所有权关系只允许 Actor 修改。 */
     [[nodiscard]] Actor* GetOwner() const { return m_Owner; }
 
     /// 调试名称
@@ -44,6 +43,10 @@ public:
 protected:
     Actor*     m_Owner = nullptr;
     std::string m_Name;
+
+private:
+    friend class Actor;
+    void SetOwner(Actor* owner) { m_Owner = owner; }
 };
 
 } // namespace TE

@@ -12,10 +12,12 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace TE {
 
 class SceneComponent;
+class World;
 
 /// 实体类
 ///
@@ -43,27 +45,22 @@ public:
     [[nodiscard]] T* AddComponent(Args&&... args)
     {
         auto component = std::make_unique<T>(std::forward<Args>(args)...);
-        T* ptr = component.get();
-        ptr->SetOwner(this);
-
-        // 如果是 SceneComponent 且没有 RootComponent，自动设为 Root
-        if (!m_RootComponent)
-        {
-            if (auto* sceneComp = dynamic_cast<SceneComponent*>(ptr))
-            {
-                m_RootComponent = sceneComp;
-            }
-        }
-
-        m_Components.push_back(std::move(component));
+        T* const ptr = component.get();
+        AddOwnedComponent(std::move(component));
         return ptr;
     }
+
+    /** 注销并销毁一个由当前 Actor 拥有的组件。 */
+    [[nodiscard]] bool RemoveComponent(Component* component);
 
     /// 每帧更新（遍历所有组件）
     virtual void Tick(float deltaTime);
 
     /// 获取所有组件
     [[nodiscard]] const std::vector<std::unique_ptr<Component>>& GetComponents() const { return m_Components; }
+
+    /** 获取当前注册到的游戏世界；未加入 World 时返回 nullptr。 */
+    [[nodiscard]] World* GetWorld() const { return m_World; }
 
     /// 获取 RootComponent 的 Transform（Actor 的位置/旋转/缩放）
     [[nodiscard]] Transform& GetTransform();
@@ -78,8 +75,14 @@ public:
     [[nodiscard]] const std::string& GetName() const { return m_Name; }
 
 private:
+    friend class World;
+
+    void AddOwnedComponent(std::unique_ptr<Component> component);
+    void SetWorld(World* world) { m_World = world; }
+
     std::vector<std::unique_ptr<Component>>    m_Components;
     SceneComponent*                            m_RootComponent = nullptr;
+    World*                                     m_World = nullptr;
     std::string                                 m_Name;
 
     // 当没有 RootComponent 时使用的默认 Transform

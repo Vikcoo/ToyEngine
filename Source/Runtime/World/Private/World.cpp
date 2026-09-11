@@ -5,10 +5,22 @@
 #include "World.h"
 #include "LightComponent.h"
 #include "PrimitiveComponent.h"
+#include "RenderSceneCommandRecorder.h"
 #include "Log/Log.h"
 #include <algorithm>
 
 namespace TE {
+
+World::~World()
+{
+    SetRenderSceneCommandRecorder(nullptr);
+    for (const auto& actor : m_Actors)
+    {
+        actor->SetWorld(nullptr);
+    }
+    m_PrimitiveComponents.clear();
+    m_LightComponents.clear();
+}
 
 Actor* World::AddActor(std::unique_ptr<Actor> actor)
 {
@@ -18,36 +30,39 @@ Actor* World::AddActor(std::unique_ptr<Actor> actor)
         return nullptr;
     }
 
-
     m_Actors.push_back(std::move(actor));
-    Actor* ptr = m_Actors.back().get();
-    // 遍历 Actor 的所有组件，注册 PrimitiveComponent 到渲染场景接口
-    for (const auto& comp : ptr->GetComponents())
+    Actor* const ptr = m_Actors.back().get();
+    ptr->SetWorld(this);
+
+    for (const auto& component : ptr->GetComponents())
     {
-        if (auto* primComp = dynamic_cast<PrimitiveComponent*>(comp.get()))
-        {
-            RegisterPrimitiveComponent(primComp);
-
-            // 如果有渲染场景对象，自动注册到渲染侧
-            if (m_RenderScene)
-            {
-                primComp->RegisterToRenderScene(m_RenderScene);
-            }
-        }
-
-        if (auto* lightComp = dynamic_cast<LightComponent*>(comp.get()))
-        {
-            RegisterLightComponent(lightComp);
-            if (m_RenderScene)
-            {
-                lightComp->RegisterToRenderScene(m_RenderScene);
-            }
-        }
+        RegisterComponent(component.get());
     }
 
     TE_LOG_INFO("[Scene] TWorld::AddActor '{}', total actors: {}",
                 ptr->GetName(), m_Actors.size());
     return ptr;
+}
+
+bool World::RemoveActor(Actor* actor)
+{
+    const auto it = std::find_if(m_Actors.begin(), m_Actors.end(),
+                                 [actor](const std::unique_ptr<Actor>& ownedActor)
+                                 {
+                                     return ownedActor.get() == actor;
+                                 });
+    if (it == m_Actors.end())
+    {
+        return false;
+    }
+
+    for (const auto& component : (*it)->GetComponents())
+    {
+        UnregisterComponent(component.get());
+    }
+    (*it)->SetWorld(nullptr);
+    m_Actors.erase(it);
+    return true;
 }
 
 void World::Tick(float deltaTime)
@@ -61,68 +76,156 @@ void World::Tick(float deltaTime)
 
 void World::SyncToScene()
 {
-    if (!m_RenderScene)
+    if (!m_RenderSceneCommandRecorder)
         return;
 
     // 遍历所有已注册的 PrimitiveComponent
-    // 如果标记为脏，将 WorldMatrix 同步到渲染场景接口
+    // 如果标记为脏，将 WorldMatrix 记录为渲染场景命令。
     for (auto* comp : m_PrimitiveComponents)
     {
-        if (comp->IsRenderStateDirty() && comp->IsRegisteredToRenderScene())
+        if (comp->IsRenderStateDirty() && comp->IsRenderStateCreated())
         {
-            // 单线程版本：直接更新（安全）
-            // 将来双线程：改为 Enqueue 命令
-            m_RenderScene->UpdatePrimitiveTransform(comp->GetPrimitiveComponentId(), comp->GetWorldMatrix());
+            m_RenderSceneCommandRecorder->UpdatePrimitiveTransform(comp->GetPrimitiveComponentId(),
+                                                                    comp->GetWorldMatrix());
             comp->ClearRenderStateDirty();
         }
     }
 
     for (auto* comp : m_LightComponents)
     {
-        if (comp->IsLightStateDirty() && comp->IsRegisteredToRenderScene())
+        if (comp->IsLightStateDirty() && comp->IsRenderStateCreated())
         {
-            m_RenderScene->UpdateLight(comp->GetLightComponentId(), comp->CreateLightSceneProxy());
+            m_RenderSceneCommandRecorder->UpdateLight(comp->GetLightComponentId(),
+                                                       comp->CreateLightSceneProxy());
             comp->ClearLightStateDirty();
         }
     }
 }
 
-void World::RegisterPrimitiveComponent(PrimitiveComponent* comp)
+void World::RegisterComponent(Component* component)
 {
-    if (!comp) return;
-
-    auto it = std::find(m_PrimitiveComponents.begin(), m_PrimitiveComponents.end(), comp);
-    if (it == m_PrimitiveComponents.end())
+    if (!component)
     {
-        m_PrimitiveComponents.push_back(comp);
+        return;
+    }
+    if (!component->GetOwner() || component->GetOwner()->GetWorld() != this)
+    {
+        TE_LOG_WARN("[Scene] World::RegisterComponent rejected a component not owned by this world");
+        return;
+    }
+
+    if (auto* primitiveComponent = dynamic_cast<PrimitiveComponent*>(component))
+    {
+        RegisterPrimitiveComponent(primitiveComponent);
+    }
+    if (auto* lightComponent = dynamic_cast<LightComponent*>(component))
+    {
+        RegisterLightComponent(lightComponent);
     }
 }
 
-void World::UnregisterPrimitiveComponent(PrimitiveComponent* comp)
+void World::UnregisterComponent(Component* component)
 {
-    auto it = std::find(m_PrimitiveComponents.begin(), m_PrimitiveComponents.end(), comp);
+    if (!component)
+    {
+        return;
+    }
+
+    if (auto* primitiveComponent = dynamic_cast<PrimitiveComponent*>(component))
+    {
+        UnregisterPrimitiveComponent(primitiveComponent);
+    }
+    if (auto* lightComponent = dynamic_cast<LightComponent*>(component))
+    {
+        UnregisterLightComponent(lightComponent);
+    }
+}
+
+void World::SetRenderSceneCommandRecorder(FRenderSceneCommandRecorder* recorder)
+{
+    if (m_RenderSceneCommandRecorder == recorder)
+    {
+        return;
+    }
+
+    if (m_RenderSceneCommandRecorder)
+    {
+        for (PrimitiveComponent* component : m_PrimitiveComponents)
+        {
+            component->DestroyRenderState(*m_RenderSceneCommandRecorder);
+        }
+        for (LightComponent* component : m_LightComponents)
+        {
+            component->DestroyRenderState(*m_RenderSceneCommandRecorder);
+        }
+    }
+
+    m_RenderSceneCommandRecorder = recorder;
+    if (m_RenderSceneCommandRecorder)
+    {
+        for (PrimitiveComponent* component : m_PrimitiveComponents)
+        {
+            component->CreateRenderState(*m_RenderSceneCommandRecorder);
+        }
+        for (LightComponent* component : m_LightComponents)
+        {
+            component->CreateRenderState(*m_RenderSceneCommandRecorder);
+        }
+    }
+}
+
+void World::RegisterPrimitiveComponent(PrimitiveComponent* component)
+{
+    if (!component) return;
+
+    const auto it = std::find(m_PrimitiveComponents.begin(), m_PrimitiveComponents.end(), component);
+    if (it == m_PrimitiveComponents.end())
+    {
+        m_PrimitiveComponents.push_back(component);
+        if (m_RenderSceneCommandRecorder)
+        {
+            component->CreateRenderState(*m_RenderSceneCommandRecorder);
+        }
+    }
+}
+
+void World::UnregisterPrimitiveComponent(PrimitiveComponent* component)
+{
+    const auto it = std::find(m_PrimitiveComponents.begin(), m_PrimitiveComponents.end(), component);
     if (it != m_PrimitiveComponents.end())
     {
+        if (m_RenderSceneCommandRecorder)
+        {
+            component->DestroyRenderState(*m_RenderSceneCommandRecorder);
+        }
         m_PrimitiveComponents.erase(it);
     }
 }
 
-void World::RegisterLightComponent(LightComponent* comp)
+void World::RegisterLightComponent(LightComponent* component)
 {
-    if (!comp) return;
+    if (!component) return;
 
-    auto it = std::find(m_LightComponents.begin(), m_LightComponents.end(), comp);
+    const auto it = std::find(m_LightComponents.begin(), m_LightComponents.end(), component);
     if (it == m_LightComponents.end())
     {
-        m_LightComponents.push_back(comp);
+        m_LightComponents.push_back(component);
+        if (m_RenderSceneCommandRecorder)
+        {
+            component->CreateRenderState(*m_RenderSceneCommandRecorder);
+        }
     }
 }
 
-void World::UnregisterLightComponent(LightComponent* comp)
+void World::UnregisterLightComponent(LightComponent* component)
 {
-    auto it = std::find(m_LightComponents.begin(), m_LightComponents.end(), comp);
+    const auto it = std::find(m_LightComponents.begin(), m_LightComponents.end(), component);
     if (it != m_LightComponents.end())
     {
+        if (m_RenderSceneCommandRecorder)
+        {
+            component->DestroyRenderState(*m_RenderSceneCommandRecorder);
+        }
         m_LightComponents.erase(it);
     }
 }

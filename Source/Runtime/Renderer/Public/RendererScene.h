@@ -9,7 +9,7 @@
 #include "PrimitiveSceneInfo.h"
 #include "PrimitiveSceneProxy.h"
 #include "MeshDrawCommand.h"
-#include "RenderScene.h"
+#include "RenderSceneCommand.h"
 #include "ViewInfo.h"
 
 #include <memory>
@@ -19,8 +19,6 @@
 namespace TE {
 
 class FRenderResourceManager;
-class LightComponent;
-class PrimitiveComponent;
 class RHIDevice;
 class RHIPipeline;
 class RHISampler;
@@ -30,23 +28,17 @@ struct FMaterial;
 struct FPreparedMaterialTextures;
 struct FEnvironmentIBLResources;
 
-class FScene : public IRenderScene
+class FScene
 {
 public:
     explicit FScene(RHIDevice* device);
-    ~FScene() override;
+    ~FScene();
 
-    [[nodiscard]] bool AddPrimitive(const PrimitiveComponent* primitiveComponent,
-                                    FPrimitiveComponentId primitiveComponentId,
-                                    std::unique_ptr<FPrimitiveSceneProxy> proxy) override;
-    void RemovePrimitive(FPrimitiveComponentId primitiveComponentId) override;
-    void UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId, const Matrix4& worldMatrix) override;
-
-    [[nodiscard]] bool AddLight(const LightComponent* lightComponent,
-                                FLightComponentId lightComponentId,
-                                std::unique_ptr<FLightSceneProxy> proxy) override;
-    void UpdateLight(FLightComponentId lightComponentId, std::unique_ptr<FLightSceneProxy> proxy) override;
-    void RemoveLight(FLightComponentId lightComponentId) override;
+    /**
+     * 按记录顺序消费一批渲染场景命令。
+     * @note 只能由渲染阶段调用。
+     */
+    void ApplyCommands(std::vector<FRenderSceneCommand> commands);
 
     [[nodiscard]] const std::vector<FPrimitiveSceneProxy*>& GetPrimitives() const { return m_Primitives; }
     [[nodiscard]] const std::vector<FLightSceneProxy*>& GetLights() const { return m_Lights; }
@@ -64,9 +56,16 @@ public:
     [[nodiscard]] const FViewInfo& GetViewInfo() const { return m_ViewInfo; }
 
 private:
+    [[nodiscard]] bool AddPrimitive(FPrimitiveComponentId primitiveComponentId,
+                                    std::unique_ptr<FPrimitiveSceneProxy> proxy);
+    void RemovePrimitive(FPrimitiveComponentId primitiveComponentId);
+    void UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId, const Matrix4& worldMatrix);
+    [[nodiscard]] bool AddLight(FLightComponentId lightComponentId,
+                                std::unique_ptr<FLightSceneProxy> proxy);
+    void UpdateLight(FLightComponentId lightComponentId, std::unique_ptr<FLightSceneProxy> proxy);
+    void RemoveLight(FLightComponentId lightComponentId);
     [[nodiscard]] bool PrepareProxyResources(FPrimitiveSceneProxy& proxy);
     [[nodiscard]] bool InsertPrimitive(FPrimitiveComponentId primitiveComponentId,
-                                       const PrimitiveComponent* primitiveComponent,
                                        std::unique_ptr<FPrimitiveSceneProxy> proxy);
     void RebuildPrimitiveView();
     void RebuildLightView();

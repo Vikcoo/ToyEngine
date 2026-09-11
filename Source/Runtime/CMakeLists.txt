@@ -20,7 +20,7 @@ add_subdirectory(RHI)
 add_subdirectory(Asset)
 
 # UE5 风格运行时渲染结构：
-# - RenderCore：SceneProxy / DrawCommand / RenderData 等共享渲染类型
+# - RenderCore：场景命令 / SceneProxy / DrawCommand / RenderData 等共享渲染边界
 # - World：游戏侧对象与 CreateSceneProxy 入口
 # - Renderer：FScene 容器与实际渲染提交
 add_subdirectory(RenderCore)

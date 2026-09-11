@@ -5,6 +5,8 @@
 #pragma once
 
 #include "RenderPathTypes.h"
+#include "RenderFramePacket.h"
+#include "RenderSceneCommandRecorder.h"
 
 #include <memory>
 #include <chrono>
@@ -31,8 +33,8 @@ namespace TE {
 ///   → PumpPlatformMessages()
 ///   → TickInput(deltaTime)
 ///   → TickGameThread(deltaTime)       // 应用层逻辑 + World Tick
-///   → SendAllEndOfFrameUpdates()      // 游戏侧状态同步到渲染侧
-///   → TickRenderThread(deltaTime)     // 当前仍在主线程中模拟渲染阶段
+///   → SendAllEndOfFrameUpdates()      // 生成渲染帧包
+///   → TickRenderThread(...)           // 当前仍在主线程中消费帧包
 ///   → EndFrame(deltaTime)             // 输入收尾、统计
 class Engine
 {
@@ -109,8 +111,8 @@ private:
     void PumpPlatformMessages() const;
     void TickInput(float deltaTime) const;
     void TickGameThread(float deltaTime);
-    void SendAllEndOfFrameUpdates() const;
-    void TickRenderThread(float deltaTime) const;
+    [[nodiscard]] FRenderFramePacket SendAllEndOfFrameUpdates();
+    void TickRenderThread(float deltaTime, FRenderFramePacket renderFrame);
     void EndFrame(float deltaTime);
     void UpdateFrameStats(float deltaTime);
 
@@ -122,6 +124,7 @@ private:
     std::unique_ptr<RHIDevice> m_RHIDevice;
 
     // UE5 架构核心模块
+    FRenderSceneCommandRecorder          m_RenderSceneCommandRecorder; // 游戏线程命令收集器
     std::unique_ptr<World>         m_World;            // 游戏世界（Actor/Component）
     std::unique_ptr<FScene>         m_Scene;            // 渲染场景（Proxy 容器）
     std::unique_ptr<FSceneRenderer>  m_SceneRenderer;    // 渲染调度器

@@ -1,9 +1,10 @@
 // ToyEngine Scene Module
 // TPrimitiveComponent 实现
-// 核心同步：RegisterToRenderScene / UnregisterFromRenderScene / MarkRenderStateDirty
+// 核心同步：CreateRenderState / DestroyRenderState / MarkRenderStateDirty
 
 #include "PrimitiveComponent.h"
 #include "Log/Log.h"
+#include "RenderSceneCommandRecorder.h"
 
 #include <atomic>
 
@@ -25,29 +26,11 @@ PrimitiveComponent::PrimitiveComponent()
 {
 }
 
-PrimitiveComponent::~PrimitiveComponent()
+void PrimitiveComponent::CreateRenderState(FRenderSceneCommandRecorder& recorder)
 {
-    // 如果组件析构时仍处于注册状态，主动反注册，避免渲染侧残留对象
-    if (m_BoundRenderScene && m_IsRegisteredToRenderScene)
+    if (m_IsRenderStateCreated)
     {
-        m_BoundRenderScene->RemovePrimitive(m_PrimitiveComponentId);
-    }
-    m_BoundRenderScene = nullptr;
-    m_IsRegisteredToRenderScene = false;
-}
-
-void PrimitiveComponent::RegisterToRenderScene(IRenderScene* renderScene)
-{
-    if (!renderScene)
-    {
-        TE_LOG_WARN("[Scene] RegisterToRenderScene called with null render scene");
         return;
-    }
-
-    // 如果已有渲染对象，先注销
-    if (m_IsRegisteredToRenderScene)
-    {
-        UnregisterFromRenderScene(renderScene);
     }
 
     auto proxy = CreateSceneProxy();
@@ -58,30 +41,24 @@ void PrimitiveComponent::RegisterToRenderScene(IRenderScene* renderScene)
     }
 
     proxy->SetWorldMatrix(GetWorldMatrix());
-    if (!renderScene->AddPrimitive(this, m_PrimitiveComponentId, std::move(proxy)))
+    if (!recorder.AddPrimitive(m_PrimitiveComponentId, std::move(proxy)))
     {
-        TE_LOG_WARN("[Scene] Render scene failed to add primitive");
+        TE_LOG_WARN("[Scene] Failed to record primitive add command");
         return;
     }
 
-    m_BoundRenderScene = renderScene;
-    m_IsRegisteredToRenderScene = true;
+    m_IsRenderStateCreated = true;
     m_RenderStateDirty = false;
     TE_LOG_INFO("[Scene] TPrimitiveComponent registered to render scene");
 }
 
-void PrimitiveComponent::UnregisterFromRenderScene(IRenderScene* renderScene)
+void PrimitiveComponent::DestroyRenderState(FRenderSceneCommandRecorder& recorder)
 {
-    if (!renderScene)
+    if (m_IsRenderStateCreated)
     {
-        return;
-    }
-    if (m_IsRegisteredToRenderScene)
-    {
-        renderScene->RemovePrimitive(m_PrimitiveComponentId);
-        m_IsRegisteredToRenderScene = false;
-        m_BoundRenderScene = nullptr;
-        TE_LOG_INFO("[Scene] TPrimitiveComponent unregistered from render scene");
+        recorder.RemovePrimitive(m_PrimitiveComponentId);
+        m_IsRenderStateCreated = false;
+        TE_LOG_INFO("[Scene] TPrimitiveComponent render state destroyed");
     }
 }
 

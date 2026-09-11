@@ -4,7 +4,7 @@
 //
 // 重构说明：
 // - 持有 shared_ptr<TStaticMesh> 资产引用（对应 UE5 中 UStaticMeshComponent 引用 UStaticMesh）
-// - 通过 CreateSceneProxy() 提供渲染创建数据，具体渲染对象由渲染场景接口创建
+// - 通过 CreateSceneProxy() 提供渲染创建数据，再由命令收集器移交到渲染侧
 
 #pragma once
 

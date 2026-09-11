@@ -12,7 +12,7 @@ target_include_directories(Engine
 )
 
 # Engine 通过 RHI 抽象层操作 GPU，通过 World/Renderer 模块实现 UE5 架构
-target_link_libraries(Engine PUBLIC Platform RHI World Renderer Input)
+target_link_libraries(Engine PUBLIC Platform RHI World Renderer RenderCore Input)
 
 # 具体 RHI 后端由外层装配（Engine）选择，避免 RHI 抽象层反向依赖后端实现
 if(TE_RHI_OPENGL)

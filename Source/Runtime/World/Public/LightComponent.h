@@ -5,28 +5,27 @@
 
 #include "LightComponentId.h"
 #include "LightSceneProxy.h"
-#include "RenderScene.h"
 #include "SceneComponent.h"
 
 #include <memory>
 
 namespace TE {
 
+class FRenderSceneCommandRecorder;
+
 class LightComponent : public SceneComponent
 {
 public:
     LightComponent();
-    ~LightComponent() override;
+    ~LightComponent() override = default;
 
     [[nodiscard]] virtual std::unique_ptr<FLightSceneProxy> CreateLightSceneProxy() const;
 
-    void RegisterToRenderScene(IRenderScene* renderScene);
-    void UnregisterFromRenderScene(IRenderScene* renderScene);
     void MarkLightStateDirty() { m_LightStateDirty = true; }
     void ClearLightStateDirty() { m_LightStateDirty = false; }
 
     [[nodiscard]] bool IsLightStateDirty() const { return m_LightStateDirty; }
-    [[nodiscard]] bool IsRegisteredToRenderScene() const { return m_IsRegisteredToRenderScene; }
+    [[nodiscard]] bool IsRenderStateCreated() const { return m_IsRenderStateCreated; }
     [[nodiscard]] FLightComponentId GetLightComponentId() const { return m_LightComponentId; }
 
     void SetColor(const Vector3& color) { m_Color = color; MarkLightStateDirty(); }
@@ -38,12 +37,19 @@ public:
 protected:
     [[nodiscard]] Vector3 GetWorldForward() const;
 
-    IRenderScene* m_BoundRenderScene = nullptr;
     FLightComponentId m_LightComponentId;
     Vector3 m_Color = Vector3::One;
     float m_Intensity = 1.0f;
-    bool m_IsRegisteredToRenderScene = false;
+    bool m_IsRenderStateCreated = false;
     bool m_LightStateDirty = true;
+
+private:
+    friend class World;
+
+    /** 为已注册到 World 的组件创建渲染状态。 */
+    void CreateRenderState(FRenderSceneCommandRecorder& recorder);
+    /** 销毁渲染状态，但不改变 Actor 对组件的所有权。 */
+    void DestroyRenderState(FRenderSceneCommandRecorder& recorder);
 };
 
 class DirectionalLightComponent final : public LightComponent

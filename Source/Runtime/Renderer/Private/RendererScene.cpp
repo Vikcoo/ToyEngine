@@ -7,6 +7,10 @@
 #include "StaticMeshSceneProxy.h"
 #include "Log/Log.h"
 
+#include <type_traits>
+#include <utility>
+#include <variant>
+
 namespace TE {
 
 FScene::FScene(RHIDevice* device)
@@ -16,13 +20,51 @@ FScene::FScene(RHIDevice* device)
 
 FScene::~FScene() = default;
 
-bool FScene::AddPrimitive(const PrimitiveComponent* primitiveComponent,
-                          FPrimitiveComponentId primitiveComponentId,
+void FScene::ApplyCommands(std::vector<FRenderSceneCommand> commands)
+{
+    for (auto& command : commands)
+    {
+        std::visit([this](auto& typedCommand)
+        {
+            using TCommand = std::remove_cvref_t<decltype(typedCommand)>;
+            if constexpr (std::is_same_v<TCommand, FAddPrimitiveCommand>)
+            {
+                (void)AddPrimitive(typedCommand.PrimitiveId, std::move(typedCommand.Proxy));
+            }
+            else if constexpr (std::is_same_v<TCommand, FUpdatePrimitiveTransformCommand>)
+            {
+                UpdatePrimitiveTransform(typedCommand.PrimitiveId, typedCommand.WorldMatrix);
+            }
+            else if constexpr (std::is_same_v<TCommand, FRemovePrimitiveCommand>)
+            {
+                RemovePrimitive(typedCommand.PrimitiveId);
+            }
+            else if constexpr (std::is_same_v<TCommand, FAddLightCommand>)
+            {
+                (void)AddLight(typedCommand.LightId, std::move(typedCommand.Proxy));
+            }
+            else if constexpr (std::is_same_v<TCommand, FUpdateLightCommand>)
+            {
+                UpdateLight(typedCommand.LightId, std::move(typedCommand.Proxy));
+            }
+            else if constexpr (std::is_same_v<TCommand, FRemoveLightCommand>)
+            {
+                RemoveLight(typedCommand.LightId);
+            }
+            else
+            {
+                static_assert(!sizeof(TCommand), "Unhandled render scene command");
+            }
+        }, command);
+    }
+}
+
+bool FScene::AddPrimitive(FPrimitiveComponentId primitiveComponentId,
                           std::unique_ptr<FPrimitiveSceneProxy> proxy)
 {
-    if (!primitiveComponent || !proxy || !primitiveComponentId.IsValid())
+    if (!proxy || !primitiveComponentId.IsValid())
     {
-        TE_LOG_WARN("[Renderer] FScene::AddPrimitive called with invalid primitive/proxy/id");
+        TE_LOG_WARN("[Renderer] FScene::AddPrimitive called with invalid proxy/id");
         return false;
     }
 
@@ -33,7 +75,7 @@ bool FScene::AddPrimitive(const PrimitiveComponent* primitiveComponent,
     }
 
     RemovePrimitive(primitiveComponentId);
-    return InsertPrimitive(primitiveComponentId, primitiveComponent, std::move(proxy));
+    return InsertPrimitive(primitiveComponentId, std::move(proxy));
 }
 
 void FScene::RemovePrimitive(FPrimitiveComponentId primitiveComponentId)
@@ -80,21 +122,20 @@ void FScene::UpdatePrimitiveTransform(FPrimitiveComponentId primitiveComponentId
     proxy->SetWorldMatrix(worldMatrix);
 }
 
-bool FScene::AddLight(const LightComponent* lightComponent,
-                      FLightComponentId lightComponentId,
+bool FScene::AddLight(FLightComponentId lightComponentId,
                       std::unique_ptr<FLightSceneProxy> proxy)
 {
-    if (!lightComponent || !proxy || !lightComponentId.IsValid())
+    if (!proxy || !lightComponentId.IsValid())
     {
-        TE_LOG_WARN("[Renderer] FScene::AddLight called with invalid light/proxy/id");
+        TE_LOG_WARN("[Renderer] FScene::AddLight called with invalid proxy/id");
         return false;
     }
 
     RemoveLight(lightComponentId);
     m_LightStorage[lightComponentId] = std::move(proxy);
     RebuildLightView();
-    TE_LOG_INFO("[Renderer] FScene::AddLight id={}, component={}, total lights: {}",
-                lightComponentId.Value, static_cast<const void*>(lightComponent), m_LightStorage.size());
+    TE_LOG_INFO("[Renderer] FScene::AddLight id={}, total lights: {}",
+                lightComponentId.Value, m_LightStorage.size());
     return true;
 }
 
@@ -230,20 +271,19 @@ bool FScene::PrepareProxyResources(FPrimitiveSceneProxy& proxy)
 }
 
 bool FScene::InsertPrimitive(FPrimitiveComponentId primitiveComponentId,
-                             const PrimitiveComponent* primitiveComponent,
                              std::unique_ptr<FPrimitiveSceneProxy> proxy)
 {
-    if (!primitiveComponent || !proxy || !primitiveComponentId.IsValid())
+    if (!proxy || !primitiveComponentId.IsValid())
     {
-        TE_LOG_WARN("[Renderer] FScene::InsertPrimitive called with invalid primitive/proxy/id");
+        TE_LOG_WARN("[Renderer] FScene::InsertPrimitive called with invalid proxy/id");
         return false;
     }
 
-    auto sceneInfo = std::make_unique<FPrimitiveSceneInfo>(primitiveComponentId, primitiveComponent, std::move(proxy));
+    auto sceneInfo = std::make_unique<FPrimitiveSceneInfo>(primitiveComponentId, std::move(proxy));
     m_PrimitiveStorage[primitiveComponentId] = std::move(sceneInfo);
     RebuildPrimitiveView();
-    TE_LOG_INFO("[Renderer] FScene::InsertPrimitive id={}, component={}, total primitives: {}",
-                primitiveComponentId.Value, static_cast<const void*>(primitiveComponent), m_PrimitiveStorage.size());
+    TE_LOG_INFO("[Renderer] FScene::InsertPrimitive id={}, total primitives: {}",
+                primitiveComponentId.Value, m_PrimitiveStorage.size());
     return true;
 }
 

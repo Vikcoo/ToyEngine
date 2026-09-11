@@ -1,5 +1,5 @@
 # ToyEngine RenderCore Module
-# 渲染侧共享数据结构：SceneProxy、MeshDrawCommand、资产级 RenderData
+# 渲染侧共享边界：场景命令、SceneProxy、MeshDrawCommand、资产级 RenderData
 
 add_library(RenderCore STATIC
     Private/StaticMeshRenderData.cpp

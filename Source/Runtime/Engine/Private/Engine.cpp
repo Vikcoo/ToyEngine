@@ -18,6 +18,7 @@
 #include "InputManager.h"
 
 #include <thread>
+#include <utility>
 
 namespace TE {
 
@@ -83,12 +84,10 @@ void Engine::Init()
     // 5. 创建 UE5 架构核心模块
     m_Scene = std::make_unique<FScene>(m_RHIDevice.get());
     m_SceneRenderer = std::make_unique<FSceneRenderer>();
-    m_SceneRenderer->SetRenderPath(m_RenderPathType);
-    m_SceneRenderer->SetDebugView(m_RenderDebugViewMode);
     m_World = std::make_unique<World>();
 
-    // 设置 World 的渲染场景接口
-    m_World->SetRenderScene(m_Scene.get());
+    // 设置游戏线程的渲染帧命令记录器
+    m_World->SetRenderSceneCommandRecorder(&m_RenderSceneCommandRecorder);
 
     TE_LOG_INFO("UE5 architecture modules created: World + FScene + SceneRenderer");
 
@@ -163,6 +162,7 @@ void Engine::ShutdownRHI()
 
     // GPU 空闲后销毁渲染模块及其 RHI 资源。
     m_World.reset();
+    (void)m_RenderSceneCommandRecorder.TakeCommands();
     m_SceneRenderer.reset();
     m_Scene.reset();
 
@@ -220,8 +220,7 @@ void Engine::Tick(const float deltaTime)
     PumpPlatformMessages();
     TickInput(deltaTime);
     TickGameThread(deltaTime);
-    SendAllEndOfFrameUpdates();
-    TickRenderThread(deltaTime);
+    TickRenderThread(deltaTime, SendAllEndOfFrameUpdates());
     EndFrame(deltaTime);
 }
 
@@ -254,14 +253,38 @@ void Engine::TickGameThread(const float deltaTime)
     }
 }
 
-void Engine::SendAllEndOfFrameUpdates() const {
-    if (m_World && m_Scene)
+FRenderFramePacket Engine::SendAllEndOfFrameUpdates()
+{
+    if (m_World)
     {
         m_World->SyncToScene();
     }
+
+    FRenderFramePacket renderFrame;
+    renderFrame.FrameNumber = m_FrameCount;
+    renderFrame.SceneCommands = m_RenderSceneCommandRecorder.TakeCommands();
+    renderFrame.RenderPath = m_RenderPathType;
+    renderFrame.DebugView = m_RenderDebugViewMode;
+
+    if (m_Window)
+    {
+        renderFrame.FramebufferWidth = m_Window->GetFramebufferWidth();
+        renderFrame.FramebufferHeight = m_Window->GetFramebufferHeight();
+        renderFrame.bVSync = m_Window->IsVSyncEnabled();
+    }
+
+    if (m_CameraComponent)
+    {
+        m_CameraComponent->SetViewportSize(static_cast<float>(renderFrame.FramebufferWidth),
+                                           static_cast<float>(renderFrame.FramebufferHeight));
+        renderFrame.View = m_CameraComponent->BuildViewInfo();
+    }
+
+    return renderFrame;
 }
 
-void Engine::TickRenderThread(const float deltaTime) const {
+void Engine::TickRenderThread(const float deltaTime, FRenderFramePacket renderFrame)
+{
     (void)deltaTime;
 
     if (!m_SceneRenderer || !m_Scene || !m_RHIDevice || !m_Window)
@@ -269,10 +292,18 @@ void Engine::TickRenderThread(const float deltaTime) const {
         return;
     }
 
+    m_Scene->ApplyCommands(std::move(renderFrame.SceneCommands));
+    m_SceneRenderer->SetRenderPath(renderFrame.RenderPath);
+    m_SceneRenderer->SetDebugView(renderFrame.DebugView);
+    if (renderFrame.View)
+    {
+        m_Scene->SetViewInfo(*renderFrame.View);
+    }
+
     RHIFrameBeginInfo beginInfo;
-    beginInfo.framebufferWidth = m_Window->GetFramebufferWidth();
-    beginInfo.framebufferHeight = m_Window->GetFramebufferHeight();
-    beginInfo.vsync = m_Window->IsVSyncEnabled();
+    beginInfo.framebufferWidth = renderFrame.FramebufferWidth;
+    beginInfo.framebufferHeight = renderFrame.FramebufferHeight;
+    beginInfo.vsync = renderFrame.bVSync;
 
     RHIFrameContext frameContext;
     const RHIFrameStatus beginStatus = m_RHIDevice->BeginFrame(beginInfo, frameContext);
@@ -297,13 +328,6 @@ void Engine::TickRenderThread(const float deltaTime) const {
     }
 
     const bool supportsSceneRendering = m_RHIDevice->GetBackendTraits().bSupportsSceneRendering;
-    if (supportsSceneRendering && m_CameraComponent)
-    {
-        m_CameraComponent->SetViewportSize(static_cast<float>(beginInfo.framebufferWidth),
-                                           static_cast<float>(beginInfo.framebufferHeight));
-        m_Scene->SetViewInfo(m_CameraComponent->BuildViewInfo());
-    }
-
     if (supportsSceneRendering)
     {
         m_SceneRenderer->Render(m_Scene.get(), m_RHIDevice.get(), frameContext.commandBuffer);
@@ -408,19 +432,11 @@ void Engine::SetFrameUpdateCallback(std::function<void(Engine&, float)> callback
 void Engine::SetRenderPath(ERenderPathType type)
 {
     m_RenderPathType = type;
-    if (m_SceneRenderer)
-    {
-        m_SceneRenderer->SetRenderPath(type);
-    }
 }
 
 void Engine::SetRenderDebugView(ERenderDebugView mode)
 {
     m_RenderDebugViewMode = mode;
-    if (m_SceneRenderer)
-    {
-        m_SceneRenderer->SetDebugView(mode);
-    }
 }
 
 } // namespace TE
